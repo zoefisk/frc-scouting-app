@@ -1,26 +1,18 @@
-"use client";
-
-import React from "react";
-import { Button } from "@mui/material";
-import { saveMatchScoutingEntry } from "@/lib/firebase/client/entries";
 import { MatchScoutingPayload } from "@/components/match-scouting/types";
-import { useToast } from "@/lib/hooks/useToast";
+import {Button} from "@mui/material";
+import {useToast} from "@/lib/hooks/useToast";
+import {saveMatchScoutingEntry} from "@/lib/firebase/saveMatchScoutingEntry";
 
 type Props = {
     payload: MatchScoutingPayload;
     onReset?: () => void;
-    onSuccess?: () => void;
 };
 
-export default function ScoutingSaveCloudButton({
-                                                    payload,
-                                                    onReset,
-                                                    onSuccess,
-                                                }: Props) {
+export default function ScoutingSaveCloudButton({ payload, onReset }: Props) {
     const toast = useToast();
 
     const handleSaveCloud = async () => {
-        if (!payload.teamNumber) {
+        if (!payload.selectedTeamKey || payload.teamNumber == null) {
             toast.warning("No team selected.");
             return;
         }
@@ -52,7 +44,6 @@ export default function ScoutingSaveCloudButton({
             });
 
             toast.success("Saved to cloud.");
-            onSuccess?.();
             onReset?.();
         } catch (error) {
             console.error(error);

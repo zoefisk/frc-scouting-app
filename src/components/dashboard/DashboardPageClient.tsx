@@ -10,22 +10,51 @@ import MatchCoverageTable from "@/components/dashboard/MatchCoverageTable";
 import DashboardQuickActions from "@/components/dashboard/DashboardQuickActions";
 
 import { useSyncMode } from "@/components/providers/SyncModeProvider";
-import {
-    getAppSetting,
-    getScannedEntries,
-    getSubmissions,
-} from "@/lib/db/indexDb";
-import type { MatchCoverageWarning } from "@/lib/analysis/buildCoverageWarnings";
+import {buildCoverageWarnings, MatchCoverageWarning} from "@/lib/analysis/dashboard/buildCoverageWarnings";
+import {getAppSetting, getScannedEntries, getSubmissions} from "@/lib/db";
+import {getAllMatchScoutingEntriesForEvent} from "@/lib/firebase/server/entries";
+
+type RawTbaMatch = {
+    key: string;
+    comp_level: string;
+    match_number: number;
+    alliances: {
+        blue: {
+            team_keys: string[];
+            score: number;
+        };
+        red: {
+            team_keys: string[];
+            score: number;
+        };
+    };
+};
+
+type EventQualificationMatch = {
+    matchKey: string;
+    matchNumber: number;
+    blueTeams: number[];
+    redTeams: number[];
+};
 
 const ALLIANCE_PICKER_EVENT_KEY = "alliancePickerEventKey";
 const FALLBACK_EVENT_KEY = "2026cthar";
 
-type CoverageApiResponse = {
-    eventKey: string;
-    currentMatch: number | null;
-    warnings: MatchCoverageWarning[];
-    error?: string;
-};
+function teamKeyToNumber(teamKey: string): number {
+    return Number(teamKey.replace("frc", ""));
+}
+
+function buildQualificationMatches(matches: RawTbaMatch[]): EventQualificationMatch[] {
+    return matches
+        .filter((match) => match.comp_level === "qm")
+        .sort((a, b) => a.match_number - b.match_number)
+        .map((match) => ({
+            matchKey: match.key,
+            matchNumber: match.match_number,
+            blueTeams: match.alliances.blue.team_keys.map(teamKeyToNumber),
+            redTeams: match.alliances.red.team_keys.map(teamKeyToNumber),
+        }));
+}
 
 export default function DashboardPageClient() {
     const { effectiveOnline } = useSyncMode();
@@ -57,44 +86,39 @@ export default function DashboardPageClient() {
 
                 setEventKey(resolvedEventKey);
 
-                const [pendingSubmissions, scannedEntries, coverageRes] =
+                const [pendingSubmissions, scannedEntries, matchesRes, entries] =
                     await Promise.all([
                         getSubmissions(),
                         getScannedEntries(),
-                        fetch(`/api/dashboard/${resolvedEventKey}/coverage`),
+                        fetch(`/api/tba/event-matches/${resolvedEventKey}`),
+                        getAllMatchScoutingEntriesForEvent(resolvedEventKey),
                     ]);
 
                 setPendingSubmissionCount(pendingSubmissions.length);
                 setScannedEntryCount(scannedEntries.length);
 
-                const rawText = await coverageRes.text();
-                let coverageData: CoverageApiResponse | null = null;
-
-                try {
-                    coverageData = rawText ? (JSON.parse(rawText) as CoverageApiResponse) : null;
-                } catch {
-                    coverageData = null;
+                if (!matchesRes.ok) {
+                    throw new Error("Could not load event matches.");
                 }
 
-                if (!coverageRes.ok) {
-                    throw new Error(
-                        coverageData?.error ||
-                        rawText ||
-                        `Dashboard coverage request failed with status ${coverageRes.status}.`
-                    );
-                }
+                const rawMatches = (await matchesRes.json()) as RawTbaMatch[];
+                const qualificationMatches = buildQualificationMatches(rawMatches);
+                const nextWarnings = buildCoverageWarnings(qualificationMatches, entries);
 
-                if (!coverageData) {
-                    throw new Error("Dashboard coverage response was empty.");
-                }
+                setWarnings(nextWarnings);
 
-                setWarnings(coverageData.warnings);
-                setCurrentMatch(coverageData.currentMatch);
+                const incomplete = nextWarnings.filter((warning) => !warning.isComplete);
+                const nextCurrentMatch =
+                    incomplete.length > 0
+                        ? incomplete[0].matchNumber
+                        : nextWarnings.length > 0
+                            ? nextWarnings[nextWarnings.length - 1].matchNumber
+                            : null;
+
+                setCurrentMatch(nextCurrentMatch);
             } catch (err) {
                 console.error("Failed to load dashboard:", err);
-                setError(
-                    err instanceof Error ? err.message : "Could not load dashboard data."
-                );
+                setError("Could not load dashboard data.");
             } finally {
                 setLoading(false);
             }

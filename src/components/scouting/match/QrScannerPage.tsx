@@ -3,10 +3,10 @@
 import React from "react";
 import { Alert, Box, Button, Paper, Stack, Typography } from "@mui/material";
 import { Html5Qrcode } from "html5-qrcode";
+import { getScannedEntries, saveScannedEntry } from "@/lib/db/indexDb";
 import {parseScannedMatchPayload} from "@/components/match-scouting/parseScannedMatchPayload";
 import ScoutingActionBar from "@/components/match-scouting/actions/ScoutingActionBar";
 import {useSyncMode} from "@/components/providers/SyncModeProvider";
-import {getScannedEntries, saveScannedEntry} from "@/lib/db";
 
 type ScannedEntry = {
     scanId: string;

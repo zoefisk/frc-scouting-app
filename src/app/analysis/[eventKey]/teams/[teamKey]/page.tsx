@@ -9,15 +9,14 @@ import TeamRadarCompareContainer from "@/components/analysis/team/TeamRadarCompa
 import TeamMatchHistoryTable from "@/components/analysis/team/TeamMatchHistoryTable";
 import TeamScoutCommentsAccordion from "@/components/analysis/team/TeamScoutCommentsAccordion";
 import TeamSummaryStats from "@/components/analysis/team/TeamSummaryStats";
-
-import { getEventTeamsWithRanks } from "@/lib/tba/server";
-import { getTeamEventMatches } from "@/lib/tba/getTeamEventMatches";
-import { getTeamEventSummary } from "@/lib/tba/getTeamEventSummary";
-import { buildTeamRadarSummary } from "@/lib/analysis/buildTeamRadarMetrics";
-import { buildTeamCommentsSummary } from "@/lib/analysis/buildTeamCommentsSummary";
-import { buildTeamTeleopSummary } from "@/lib/analysis/buildTeamTeleopSummary";
-import { buildTeamAutoSummary } from "@/lib/analysis/buildTeamAutoSummary";
-import { getTeamMatchScoutingEntries } from "@/lib/firebase/server/getTeamMatchScoutingEntries";
+import {getTeamMatchScoutingEntries} from "@/lib/firebase/server/entries";
+import {getEventTeamsWithRanks} from "@/lib/tba/server/teams";
+import {getTeamEventSummary} from "@/lib/tba/server/teamEventSummary";
+import {getTeamEventMatches} from "@/lib/tba/server/teamEventMatches";
+import {buildTeamRadarSummary} from "@/lib/analysis/team/buildTeamRadarMetrics";
+import {buildTeamCommentsSummary} from "@/lib/analysis/team/buildTeamCommentsSummary";
+import {buildTeamTeleopSummary} from "@/lib/analysis/team/buildTeamTeleopSummary";
+import {buildTeamAutoSummary} from "@/lib/analysis/team/buildTeamAutoSummary";
 
 type Props = {
     params: Promise<{

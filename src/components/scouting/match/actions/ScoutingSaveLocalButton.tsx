@@ -2,21 +2,16 @@
 
 import React from "react";
 import { Button } from "@mui/material";
-import { saveSubmission } from "@/lib/db";
-import { MatchScoutingPayload } from "@/components/match-scouting/types";
+import { saveSubmission } from "@/lib/db/indexDb";
 import { useToast } from "@/lib/hooks/useToast";
+import { MatchScoutingPayload } from "@/components/match-scouting/types";
 
 type Props = {
     payload: MatchScoutingPayload;
     onReset?: () => void;
-    onSuccess?: () => void;
 };
 
-export default function ScoutingSaveLocalButton({
-                                                    payload,
-                                                    onReset,
-                                                    onSuccess,
-                                                }: Props) {
+export default function ScoutingSaveLocalButton({ payload, onReset }: Props) {
     const toast = useToast();
 
     const handleSaveLocal = async () => {
@@ -47,7 +42,6 @@ export default function ScoutingSaveLocalButton({
             });
 
             toast.success("Saved locally.");
-            onSuccess?.();
             onReset?.();
         } catch (error) {
             console.error(error);

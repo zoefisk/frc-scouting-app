@@ -15,12 +15,11 @@ const app =
     getApps().length > 0
         ? getApps()[0]
         : initializeApp({
-              credential: cert({
-                  projectId,
-                  clientEmail,
-                  privateKey: privateKey.replace(/\n/g, "
-"),
-              }),
-          });
+            credential: cert({
+                projectId,
+                clientEmail,
+                privateKey: privateKey.replace(/\\n/g, "\n"),
+            }),
+        });
 
 export const adminDb = getFirestore(app);

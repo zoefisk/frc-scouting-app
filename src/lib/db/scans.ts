@@ -2,6 +2,11 @@
 
 import { getDb, type ScannedEntry } from "@/lib/db/indexDb";
 
+export async function deleteScannedEntry(scanId: string) {
+    const db = await getDb();
+    await db.delete("scannedEntries", scanId);
+}
+
 export async function saveScannedEntry(entry: ScannedEntry) {
     const db = await getDb();
     await db.put("scannedEntries", entry);

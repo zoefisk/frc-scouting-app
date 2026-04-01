@@ -42,8 +42,8 @@ import {
     verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import {getAppSetting, saveAppSetting} from "@/lib/db";
 
-import { getAppSetting, saveAppSetting } from "@/lib/db/indexDb";
 
 type EventOption = {
     key: string;

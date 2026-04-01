@@ -13,14 +13,12 @@ type Props = {
     effectiveOnline: boolean;
     payload: MatchScoutingPayload;
     onReset?: () => void;
-    onSuccess?: () => void;
 };
 
 export default function ScoutingActionBar({
                                               effectiveOnline,
                                               payload,
                                               onReset,
-                                              onSuccess,
                                           }: Props) {
     return (
         <Stack
@@ -28,18 +26,10 @@ export default function ScoutingActionBar({
             spacing={2}
             sx={{ pt: 1 }}
         >
-            <ScoutingSaveLocalButton
-                payload={payload}
-                onReset={onReset}
-                onSuccess={onSuccess}
-            />
+            <ScoutingSaveLocalButton payload={payload} onReset={onReset} />
 
             {effectiveOnline && (
-                <ScoutingSaveCloudButton
-                    payload={payload}
-                    onReset={onReset}
-                    onSuccess={onSuccess}
-                />
+                <ScoutingSaveCloudButton payload={payload} onReset={onReset} />
             )}
 
             <ScoutingDownloadCsvButton payload={payload} />
@@ -58,7 +48,7 @@ export default function ScoutingActionBar({
                 finalCommentsData={payload.finalCommentsData}
             />
 
-            <ScoutingResetButton onReset={onReset} />
+            {onReset && <ScoutingResetButton onReset={onReset} />}
         </Stack>
     );
 }
