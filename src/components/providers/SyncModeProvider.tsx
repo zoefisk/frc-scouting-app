@@ -1,7 +1,8 @@
 "use client";
 
 import React from "react";
-import {getAppSetting, saveAppSetting} from "@/lib/db";
+import { getAppSetting, saveAppSetting } from "@/lib/db";
+import { useToast } from "@/lib/hooks/useToast";
 
 type SyncMode = "online" | "forced_offline";
 
@@ -16,11 +17,15 @@ type SyncModeContextValue = {
 const SyncModeContext = React.createContext<SyncModeContextValue | null>(null);
 
 export function SyncModeProvider({ children }: { children: React.ReactNode }) {
+    const toast = useToast();
+
     const [actualOnline, setActualOnline] = React.useState(
         typeof window !== "undefined" ? navigator.onLine : true
     );
     const [syncMode, setSyncModeState] = React.useState<SyncMode>("online");
     const [loaded, setLoaded] = React.useState(false);
+
+    const previousActualOnlineRef = React.useRef<boolean | null>(null);
 
     React.useEffect(() => {
         async function loadPreference() {
@@ -50,15 +55,37 @@ export function SyncModeProvider({ children }: { children: React.ReactNode }) {
         };
     }, []);
 
+    React.useEffect(() => {
+        if (!loaded) return;
+
+        if (previousActualOnlineRef.current === null) {
+            previousActualOnlineRef.current = actualOnline;
+            return;
+        }
+
+        if (previousActualOnlineRef.current !== actualOnline) {
+            if (actualOnline) {
+                toast.success("Back online.");
+            } else {
+                toast.warning("You are offline.");
+            }
+        }
+
+        previousActualOnlineRef.current = actualOnline;
+    }, [actualOnline, loaded, toast]);
+
     const setSyncMode = React.useCallback(async (mode: SyncMode) => {
         setSyncModeState(mode);
         await saveAppSetting("syncMode", mode);
+        window.location.reload();
     }, []);
 
     const toggleSyncMode = React.useCallback(async () => {
         const nextMode = syncMode === "online" ? "forced_offline" : "online";
         setSyncModeState(nextMode);
         await saveAppSetting("syncMode", nextMode);
+
+        window.location.reload();
     }, [syncMode]);
 
     const value = React.useMemo(

@@ -30,17 +30,17 @@ export default function RootLayout({
             {/*    thickness={12}*/}
             {/*    size={24}*/}
             {/*>*/}
+            <ToastProvider>
                 <SyncModeProvider>
-                    <SubmissionSyncProvider>
-                        <AuthProvider>
-                            <ToastProvider>
-                                <ServiceWorkerRegistration />
-                                <Navbar/>
-                                {children}
-                            </ToastProvider>
-                        </AuthProvider>
-                    </SubmissionSyncProvider>
-                </SyncModeProvider>
+                        <SubmissionSyncProvider>
+                            <AuthProvider>
+                                    <ServiceWorkerRegistration />
+                                    <Navbar/>
+                                    {children}
+                            </AuthProvider>
+                        </SubmissionSyncProvider>
+                    </SyncModeProvider>
+                </ToastProvider>
             {/*</GridBackground>*/}
         </AppRouterCacheProvider>
         </body>

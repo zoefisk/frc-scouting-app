@@ -43,6 +43,8 @@ import {
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import {getAppSetting, saveAppSetting} from "@/lib/db";
+import {getOfflineEventOptions} from "@/lib/offline/getOfflineEventOptions";
+import {useSyncMode} from "@/components/providers/SyncModeProvider";
 
 
 type EventOption = {
@@ -251,6 +253,8 @@ export default function AlliancePicker({
     const [loadingRankings, setLoadingRankings] = React.useState(false);
     const [error, setError] = React.useState("");
 
+    const { effectiveOnline } = useSyncMode();
+
     const [detailTeam, setDetailTeam] = React.useState<AllianceTeam | null>(null);
     const [activeTeamKey, setActiveTeamKey] = React.useState<string | null>(null);
 
@@ -330,41 +334,25 @@ export default function AlliancePicker({
 
     React.useEffect(() => {
         async function loadEvents() {
-            if (!settingsLoaded) return;
             if (!year) return;
 
-            setLoadingEvents(true);
-            setError("");
-            setTeams([]);
-            setRemovedTeams([]);
-
-            try {
-                const res = await fetch(`/api/tba/events/${year}`);
-                if (!res.ok) {
-                    throw new Error("Could not load events.");
-                }
-
-                const data: EventOption[] = await res.json();
-                setEvents(data);
-
-                setSelectedEvent((prev) => {
-                    if (!prev) return null;
-
-                    const matchingEvent =
-                        data.find((event) => event.key === prev.key) ?? null;
-
-                    return matchingEvent;
-                });
-            } catch (err) {
-                console.error(err);
-                setError("Could not load events.");
-            } finally {
-                setLoadingEvents(false);
+            if (!effectiveOnline) {
+                const offlineEvents = await getOfflineEventOptions(year);
+                setEvents(offlineEvents);
+                return;
             }
+
+            const res = await fetch(`/api/tba/events/${year}`);
+            if (!res.ok) {
+                throw new Error("Could not load events.");
+            }
+
+            const data: EventOption[] = await res.json();
+            setEvents(data);
         }
 
         loadEvents();
-    }, [year, settingsLoaded]);
+    }, [year, effectiveOnline]);
 
     React.useEffect(() => {
         async function loadRankingsAndTeams() {

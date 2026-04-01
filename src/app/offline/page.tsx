@@ -1,9 +1,10 @@
-// src/app/offline/page.tsx
-export default function OfflinePage() {
+import PageShell from "@/components/layout/PageShell";
+import OfflineEventsManager from "@/components/offline/OfflineEventsManager";
+
+export default function OfflineEventsPage() {
     return (
-        <main style={{ padding: "2rem" }}>
-            <h1>Offline</h1>
-            <p>The app is offline, but cached scouting features should still work.</p>
-        </main>
+        <PageShell width="lg">
+            <OfflineEventsManager />
+        </PageShell>
     );
 }
