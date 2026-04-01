@@ -6,15 +6,15 @@ import { TeleopData } from "@/components/match-scouting/teleop/types";
 import { FinalCommentsData } from "@/components/match-scouting/final/types";
 
 export type MatchScoutingPayload = {
-    eventKey: string;
-    matchNumber: string;
-    scoutingPosition: ScoutingPosition;
-    selectedTeamKey: string;
-    teamNumber: number | null;
-    teamName: string;
-    robotPosition: RobotPosition;
-    teamPresence: TeamPresence;
-    autoData: AutonomousData;
-    teleopData: TeleopData;
-    finalCommentsData: FinalCommentsData;
+  eventKey: string;
+  matchNumber: string;
+  scoutingPosition: ScoutingPosition | null;
+  selectedTeamKey: string | null;
+  teamNumber: number | null;
+  teamName: string;
+  robotPosition: RobotPosition;
+  teamPresence: TeamPresence;
+  autoData: AutonomousData;
+  teleopData: TeleopData;
+  finalCommentsData: FinalCommentsData;
 };

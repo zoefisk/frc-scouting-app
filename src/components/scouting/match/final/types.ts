@@ -1,6 +1,6 @@
 export type FinalCommentsData = {
-    overallPerformance: number;
-    didWell: string;
-    canImprove: string;
-    generalComments: string;
+  overallPerformance: number;
+  didWell: string;
+  canImprove: string;
+  generalComments: string;
 };

@@ -1,110 +1,155 @@
 "use client";
 
 import React from "react";
-import { ScoutingPosition, TeamData, TbaMatch } from "@/lib/scouting/types";
-import { getTeamNumberFromPosition } from "@/lib/scouting/utils";
-import { getEventMatches, saveEventMatches } from "@/lib/db/events";
+import { getEventMatches } from "@/lib/db";
+import { ScoutingPosition } from "@/lib/scouting/types";
 
-type Args = {
-    eventKey: string;
-    matchNumber: string;
-    scoutingPosition: ScoutingPosition;
-    eventTeams: TeamData[];
+type TeamData = {
+  key: string;
+  team_number: number;
+  nickname?: string;
 };
 
-export function useAutofillTeam({ eventKey, matchNumber, scoutingPosition, eventTeams }: Args) {
-    const [selectedTeamKey, setSelectedTeamKey] = React.useState("");
-    const [lookupLoading, setLookupLoading] = React.useState(false);
-    const [lookupError, setLookupError] = React.useState("");
-    const [isAutofilled, setIsAutofilled] = React.useState(false);
-    const [usingCachedMatches, setUsingCachedMatches] = React.useState(false);
+type MatchAlliance = {
+  team_keys: string[];
+};
 
-    React.useEffect(() => {
-        async function autofillTeam() {
-            setLookupError("");
-            setIsAutofilled(false);
-            setUsingCachedMatches(false);
+type MatchData = {
+  key: string;
+  comp_level: string;
+  match_number: number;
+  alliances: {
+    blue: MatchAlliance;
+    red: MatchAlliance;
+  };
+};
 
-            if (!matchNumber || !scoutingPosition || eventTeams.length === 0) return;
+type Args = {
+  eventKey: string;
+  matchNumber: string;
+  scoutingPosition: ScoutingPosition | null;
+  eventTeams: TeamData[];
+};
 
-            setLookupLoading(true);
+type Result = {
+  selectedTeamKey: string | null;
+  setSelectedTeamKey: React.Dispatch<React.SetStateAction<string | null>>;
+  lookupLoading: boolean;
+  lookupError: string;
+  isAutofilled: boolean;
+  setIsAutofilled: React.Dispatch<React.SetStateAction<boolean>>;
+  usingCachedMatches: boolean;
+};
 
-            try {
-                let matches: TbaMatch[] | undefined;
+function getAllianceAndIndex(position: ScoutingPosition) {
+  if (position.startsWith("blue")) {
+    return {
+      alliance: "blue" as const,
+      index: Number(position.replace("blue", "")) - 1,
+    };
+  }
 
-                if (navigator.onLine) {
-                    try {
-                        const matchesRes = await fetch(`/api/tba/event-matches/${eventKey}`);
-                        if (!matchesRes.ok) {
-                            throw new Error("Could not load live event matches.");
-                        }
+  return {
+    alliance: "red" as const,
+    index: Number(position.replace("red", "")) - 1,
+  };
+}
 
-                        matches = await matchesRes.json();
-                        await saveEventMatches(eventKey, matches);
-                    } catch (liveError) {
-                        console.error("Live match fetch failed, trying cache:", liveError);
-                    }
-                }
+export function useAutofillTeam({
+  eventKey,
+  matchNumber,
+  scoutingPosition,
+  eventTeams,
+}: Args): Result {
+  const [selectedTeamKey, setSelectedTeamKey] = React.useState<string | null>(
+    null
+  );
+  const [lookupLoading, setLookupLoading] = React.useState(false);
+  const [lookupError, setLookupError] = React.useState("");
+  const [isAutofilled, setIsAutofilled] = React.useState(false);
+  const [usingCachedMatches, setUsingCachedMatches] = React.useState(false);
 
-                if (!matches) {
-                    const cachedMatches = await getEventMatches<TbaMatch[]>(eventKey);
+  React.useEffect(() => {
+    async function autofillTeam() {
+      if (
+        !eventKey ||
+        !matchNumber ||
+        !scoutingPosition ||
+        eventTeams.length === 0
+      ) {
+        return;
+      }
 
-                    if (!cachedMatches || cachedMatches.length === 0) {
-                        throw new Error("No cached event matches available.");
-                    }
+      setLookupLoading(true);
+      setLookupError("");
+      setUsingCachedMatches(false);
 
-                    matches = cachedMatches;
-                    setUsingCachedMatches(true);
-                }
+      try {
+        const cachedMatches = await getEventMatches<MatchData[]>(eventKey);
 
-                const targetMatch = matches.find(
-                    (match) => match.comp_level === "qm" && match.match_number === Number(matchNumber)
-                );
-
-                if (!targetMatch) {
-                    throw new Error("Could not find that qualification match.");
-                }
-
-                const derivedTeamNumber = getTeamNumberFromPosition(
-                    targetMatch,
-                    scoutingPosition as Exclude<ScoutingPosition, "">
-                );
-
-                if (!derivedTeamNumber) {
-                    throw new Error("Could not determine team from position.");
-                }
-
-                const matchingTeam = eventTeams.find(
-                    (team) => team.team_number === derivedTeamNumber
-                );
-
-                if (!matchingTeam) {
-                    throw new Error("That team was not found in the event team list.");
-                }
-
-                setSelectedTeamKey(matchingTeam.key);
-                setIsAutofilled(true);
-            } catch (error) {
-                console.error(error);
-                setLookupError(
-                    "Automatic lookup is unavailable right now. Select the team manually from the dropdown."
-                );
-                setIsAutofilled(false);
-            } finally {
-                setLookupLoading(false);
-            }
+        if (!cachedMatches || cachedMatches.length === 0) {
+          setLookupError("No cached match data available for this event.");
+          return;
         }
 
-        autofillTeam();
-    }, [eventKey, matchNumber, scoutingPosition, eventTeams]);
+        setUsingCachedMatches(true);
 
-    return {
-        selectedTeamKey,
-        setSelectedTeamKey,
-        lookupLoading,
-        lookupError,
-        isAutofilled,
-        setIsAutofilled,
-        usingCachedMatches,
-    };
+        const numericMatchNumber = Number(matchNumber);
+        if (Number.isNaN(numericMatchNumber)) {
+          setLookupError("Invalid match number.");
+          return;
+        }
+
+        const targetMatch = cachedMatches.find(
+          (match) =>
+            match.comp_level === "qm" &&
+            match.match_number === numericMatchNumber
+        );
+
+        if (!targetMatch) {
+          setLookupError("Could not find that match in cached event data.");
+          return;
+        }
+
+        const { alliance, index } = getAllianceAndIndex(scoutingPosition);
+        const allianceTeams = targetMatch.alliances[alliance]?.team_keys ?? [];
+        const teamKey = allianceTeams[index] ?? null;
+
+        if (!teamKey) {
+          setLookupError(
+            "Could not determine a team for that scouting position."
+          );
+          return;
+        }
+
+        const teamExists = eventTeams.some((team) => team.key === teamKey);
+        if (!teamExists) {
+          setLookupError(
+            "Autofilled team was not found in the event team list."
+          );
+          return;
+        }
+
+        setSelectedTeamKey(teamKey);
+        setIsAutofilled(true);
+      } catch (error) {
+        console.error("Failed to autofill team:", error);
+        setLookupError("Failed to autofill team.");
+      } finally {
+        setLookupLoading(false);
+      }
+    }
+
+    autofillTeam();
+  }, [eventKey, matchNumber, scoutingPosition, eventTeams]);
+
+  return {
+    selectedTeamKey,
+    setSelectedTeamKey,
+    lookupLoading,
+    lookupError,
+    isAutofilled,
+    setIsAutofilled,
+    usingCachedMatches,
+  };
 }

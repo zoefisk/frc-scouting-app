@@ -1,10 +1,7 @@
-
-
 export default function AnalysisPage() {
-
-    return (
-        <>
-            <p>hey</p>
-        </>
-    )
+  return (
+    <>
+      <p>hey</p>
+    </>
+  );
 }

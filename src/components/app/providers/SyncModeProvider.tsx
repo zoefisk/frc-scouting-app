@@ -6,85 +6,85 @@ import { getAppSetting, saveAppSetting } from "@/lib/db/indexDb";
 type SyncMode = "online" | "forced_offline";
 
 type SyncModeContextValue = {
-    actualOnline: boolean;
-    syncMode: SyncMode;
-    effectiveOnline: boolean;
-    toggleSyncMode: () => Promise<void>;
-    setSyncMode: (mode: SyncMode) => Promise<void>;
+  actualOnline: boolean;
+  syncMode: SyncMode;
+  effectiveOnline: boolean;
+  toggleSyncMode: () => Promise<void>;
+  setSyncMode: (mode: SyncMode) => Promise<void>;
 };
 
 const SyncModeContext = React.createContext<SyncModeContextValue | null>(null);
 
 export function SyncModeProvider({ children }: { children: React.ReactNode }) {
-    const [actualOnline, setActualOnline] = React.useState(
-        typeof window !== "undefined" ? navigator.onLine : true
-    );
-    const [syncMode, setSyncModeState] = React.useState<SyncMode>("online");
-    const [loaded, setLoaded] = React.useState(false);
+  const [actualOnline, setActualOnline] = React.useState(
+    typeof window !== "undefined" ? navigator.onLine : true
+  );
+  const [syncMode, setSyncModeState] = React.useState<SyncMode>("online");
+  const [loaded, setLoaded] = React.useState(false);
 
-    React.useEffect(() => {
-        async function loadPreference() {
-            try {
-                const saved = await getAppSetting<SyncMode>("syncMode");
-                if (saved === "forced_offline" || saved === "online") {
-                    setSyncModeState(saved);
-                }
-            } finally {
-                setLoaded(true);
-            }
+  React.useEffect(() => {
+    async function loadPreference() {
+      try {
+        const saved = await getAppSetting<SyncMode>("syncMode");
+        if (saved === "forced_offline" || saved === "online") {
+          setSyncModeState(saved);
         }
+      } finally {
+        setLoaded(true);
+      }
+    }
 
-        loadPreference();
-    }, []);
+    loadPreference();
+  }, []);
 
-    React.useEffect(() => {
-        const goOnline = () => setActualOnline(true);
-        const goOffline = () => setActualOnline(false);
+  React.useEffect(() => {
+    const goOnline = () => setActualOnline(true);
+    const goOffline = () => setActualOnline(false);
 
-        window.addEventListener("online", goOnline);
-        window.addEventListener("offline", goOffline);
+    window.addEventListener("online", goOnline);
+    window.addEventListener("offline", goOffline);
 
-        return () => {
-            window.removeEventListener("online", goOnline);
-            window.removeEventListener("offline", goOffline);
-        };
-    }, []);
+    return () => {
+      window.removeEventListener("online", goOnline);
+      window.removeEventListener("offline", goOffline);
+    };
+  }, []);
 
-    const setSyncMode = React.useCallback(async (mode: SyncMode) => {
-        setSyncModeState(mode);
-        await saveAppSetting("syncMode", mode);
-    }, []);
+  const setSyncMode = React.useCallback(async (mode: SyncMode) => {
+    setSyncModeState(mode);
+    await saveAppSetting("syncMode", mode);
+  }, []);
 
-    const toggleSyncMode = React.useCallback(async () => {
-        const nextMode = syncMode === "online" ? "forced_offline" : "online";
-        setSyncModeState(nextMode);
-        await saveAppSetting("syncMode", nextMode);
-    }, [syncMode]);
+  const toggleSyncMode = React.useCallback(async () => {
+    const nextMode = syncMode === "online" ? "forced_offline" : "online";
+    setSyncModeState(nextMode);
+    await saveAppSetting("syncMode", nextMode);
+  }, [syncMode]);
 
-    const value = React.useMemo(
-        () => ({
-            actualOnline,
-            syncMode,
-            effectiveOnline: actualOnline && syncMode === "online",
-            toggleSyncMode,
-            setSyncMode,
-        }),
-        [actualOnline, syncMode, toggleSyncMode, setSyncMode]
-    );
+  const value = React.useMemo(
+    () => ({
+      actualOnline,
+      syncMode,
+      effectiveOnline: actualOnline && syncMode === "online",
+      toggleSyncMode,
+      setSyncMode,
+    }),
+    [actualOnline, syncMode, toggleSyncMode, setSyncMode]
+  );
 
-    if (!loaded) return null;
+  if (!loaded) return null;
 
-    return (
-        <SyncModeContext.Provider value={value}>
-            {children}
-        </SyncModeContext.Provider>
-    );
+  return (
+    <SyncModeContext.Provider value={value}>
+      {children}
+    </SyncModeContext.Provider>
+  );
 }
 
 export function useSyncMode() {
-    const context = React.useContext(SyncModeContext);
-    if (!context) {
-        throw new Error("useSyncMode must be used within SyncModeProvider");
-    }
-    return context;
+  const context = React.useContext(SyncModeContext);
+  if (!context) {
+    throw new Error("useSyncMode must be used within SyncModeProvider");
+  }
+  return context;
 }

@@ -1,2 +1,1 @@
 # frc-scouting-app
-

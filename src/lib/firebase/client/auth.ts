@@ -4,9 +4,9 @@ import { auth } from "@/lib/firebase/client/app";
 const googleProvider = new GoogleAuthProvider();
 
 export async function signInWithGoogle() {
-    return signInWithPopup(auth, googleProvider);
+  return signInWithPopup(auth, googleProvider);
 }
 
 export async function signOutUser() {
-    return signOut(auth);
+  return signOut(auth);
 }

@@ -2,23 +2,12 @@ import PageShell from "@/components/layout/PageShell";
 import ScoutingSetupForm from "@/components/match-scouting/setup/ScoutingSetupForm";
 
 export default function Home() {
-    return (
-        <PageShell width={"md"}>
-            <ScoutingSetupForm />
-        </PageShell>
-    );
+  return (
+    <PageShell width={"md"}>
+      <ScoutingSetupForm />
+    </PageShell>
+  );
 }
-
-
-
-
-
-
-
-
-
-
-
 
 //
 // import Box from '@mui/material/Box';
@@ -61,6 +50,5 @@ export default function Home() {
 //         </Box>
 //     );
 // }
-
 
 // reminder... want to use combobox as much as possible :)

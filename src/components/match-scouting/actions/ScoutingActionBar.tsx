@@ -1,5 +1,3 @@
-"use client";
-
 import React from "react";
 import { Stack } from "@mui/material";
 import ScoutingSaveLocalButton from "./ScoutingSaveLocalButton";
@@ -10,55 +8,55 @@ import { MatchScoutingPayload } from "@/components/match-scouting/types";
 import ScoutingResetButton from "@/components/match-scouting/actions/ScoutingResetButton";
 
 type Props = {
-    effectiveOnline: boolean;
-    payload: MatchScoutingPayload;
-    onReset?: () => void;
-    onSuccess?: () => void;
+  effectiveOnline: boolean;
+  payload: MatchScoutingPayload;
+  draftId?: string;
+  onReset?: () => void;
+  onSuccess?: () => void;
 };
 
 export default function ScoutingActionBar({
-                                              effectiveOnline,
-                                              payload,
-                                              onReset,
-                                              onSuccess,
-                                          }: Props) {
-    return (
-        <Stack
-            direction={{ xs: "column", sm: "row" }}
-            spacing={2}
-            sx={{ pt: 1 }}
-        >
-            <ScoutingSaveLocalButton
-                payload={payload}
-                onReset={onReset}
-                onSuccess={onSuccess}
-            />
+  effectiveOnline,
+  payload,
+  draftId,
+  onReset,
+  onSuccess,
+}: Props) {
+  return (
+    <Stack direction={{ xs: "column", sm: "row" }} spacing={2} sx={{ pt: 1 }}>
+      <ScoutingSaveLocalButton
+        payload={payload}
+        draftId={draftId}
+        onReset={onReset}
+        onSuccess={onSuccess}
+      />
 
-            {effectiveOnline && (
-                <ScoutingSaveCloudButton
-                    payload={payload}
-                    onReset={onReset}
-                    onSuccess={onSuccess}
-                />
-            )}
+      {effectiveOnline && (
+        <ScoutingSaveCloudButton
+          payload={payload}
+          draftId={draftId}
+          onReset={onReset}
+          onSuccess={onSuccess}
+        />
+      )}
 
-            <ScoutingDownloadCsvButton payload={payload} />
+      <ScoutingDownloadCsvButton payload={payload} />
 
-            <ScoutingSetupQr
-                eventKey={payload.eventKey}
-                matchNumber={payload.matchNumber}
-                scoutingPosition={payload.scoutingPosition}
-                teamKey={payload.selectedTeamKey}
-                teamNumber={payload.teamNumber}
-                teamName={payload.teamName}
-                robotPosition={payload.robotPosition}
-                teamPresence={payload.teamPresence}
-                autoData={payload.autoData}
-                teleopData={payload.teleopData}
-                finalCommentsData={payload.finalCommentsData}
-            />
+      <ScoutingSetupQr
+        eventKey={payload.eventKey}
+        matchNumber={payload.matchNumber}
+        scoutingPosition={payload.scoutingPosition}
+        teamKey={payload.selectedTeamKey}
+        teamNumber={payload.teamNumber}
+        teamName={payload.teamName}
+        robotPosition={payload.robotPosition}
+        teamPresence={payload.teamPresence}
+        autoData={payload.autoData}
+        teleopData={payload.teleopData}
+        finalCommentsData={payload.finalCommentsData}
+      />
 
-            <ScoutingResetButton onReset={onReset} />
-        </Stack>
-    );
+        {onReset && <ScoutingResetButton onReset={onReset} />}
+    </Stack>
+  );
 }

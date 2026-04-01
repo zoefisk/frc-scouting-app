@@ -1,1 +1,1 @@
-export * from "@/lib/db/indexDb";
+export * from "./indexDb";

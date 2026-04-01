@@ -1,62 +1,76 @@
 "use client";
 
 import React from "react";
-import { DEFAULT_EVENT_KEY } from "@/lib/scouting/constants";
-import { ScoutingPosition, TeamData } from "@/lib/scouting/types";
 import { useEventTeams } from "@/lib/scouting/hooks/useEventTeams";
 import { useAutofillTeam } from "@/lib/scouting/hooks/useAutofillTeam";
+import { DEFAULT_EVENT_KEY } from "@/lib/scouting/constants";
+import { ScoutingPosition, TeamData } from "@/lib/scouting/types"
 
-export function useScoutingSetupForm() {
-    const [matchNumber, setMatchNumber] = React.useState("");
-    const [scoutingPosition, setScoutingPosition] = React.useState<ScoutingPosition>("");
+type UseScoutingSetupFormResult = {
+  eventKey: string;
+  matchNumber: string;
+  setMatchNumber: React.Dispatch<React.SetStateAction<string>>;
+  scoutingPosition: ScoutingPosition | null;
+  setScoutingPosition: React.Dispatch<
+    React.SetStateAction<ScoutingPosition | null>
+  >;
+  eventTeams: TeamData[];
+  teamsLoading: boolean;
+  teamsError: string;
+  selectedTeamKey: string | null;
+  lookupLoading: boolean;
+  lookupError: string;
+  isAutofilled: boolean;
+  usingCachedMatches: boolean;
+  handleTeamChange: (team: TeamData | null) => void;
+};
 
-    const { eventTeams, teamsLoading, teamsError, usingCachedTeams } =
-        useEventTeams(DEFAULT_EVENT_KEY);
+export function useScoutingSetupForm(): UseScoutingSetupFormResult {
+  const eventKey = DEFAULT_EVENT_KEY;
 
-    const {
-        selectedTeamKey,
-        setSelectedTeamKey,
-        lookupLoading,
-        lookupError,
-        isAutofilled,
-        setIsAutofilled,
-        usingCachedMatches,
-    } = useAutofillTeam({
-        eventKey: DEFAULT_EVENT_KEY,
-        matchNumber,
-        scoutingPosition,
-        eventTeams,
-    });
+  const [matchNumber, setMatchNumber] = React.useState("");
+  const [scoutingPosition, setScoutingPosition] =
+    React.useState<ScoutingPosition | null>(null);
 
-    const handleTeamChange = React.useCallback(
-        (team: TeamData | null) => {
-            if (!team) {
-                setSelectedTeamKey("");
-                setIsAutofilled(false);
-                return;
-            }
+  const { eventTeams, teamsLoading, teamsError } = useEventTeams(eventKey);
 
-            setSelectedTeamKey(team.key);
-            setIsAutofilled(false);
-        },
-        [setSelectedTeamKey, setIsAutofilled]
-    );
+  const {
+    selectedTeamKey,
+    setSelectedTeamKey,
+    lookupLoading,
+    lookupError,
+    isAutofilled,
+    setIsAutofilled,
+    usingCachedMatches,
+  } = useAutofillTeam({
+    eventKey,
+    matchNumber,
+    scoutingPosition,
+    eventTeams,
+  });
 
-    return {
-        eventKey: DEFAULT_EVENT_KEY,
-        matchNumber,
-        setMatchNumber,
-        scoutingPosition,
-        setScoutingPosition,
-        eventTeams,
-        teamsLoading,
-        teamsError,
-        usingCachedTeams,
-        selectedTeamKey,
-        lookupLoading,
-        lookupError,
-        isAutofilled,
-        usingCachedMatches,
-        handleTeamChange,
-    };
+  const handleTeamChange = React.useCallback(
+    (team: TeamData | null) => {
+      setSelectedTeamKey(team?.key ?? null);
+      setIsAutofilled(false);
+    },
+    [setSelectedTeamKey, setIsAutofilled]
+  );
+
+  return {
+    eventKey,
+    matchNumber,
+    setMatchNumber,
+    scoutingPosition,
+    setScoutingPosition,
+    eventTeams,
+    teamsLoading,
+    teamsError,
+    selectedTeamKey,
+    lookupLoading,
+    lookupError,
+    isAutofilled,
+    usingCachedMatches,
+    handleTeamChange,
+  };
 }

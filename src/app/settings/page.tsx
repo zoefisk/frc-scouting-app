@@ -3,11 +3,11 @@ import RequireAuth from "@/components/auth/RequireAuth";
 import UserSettingsPage from "@/components/settings/UserSettingsPage";
 
 export default function SettingsPage() {
-    return (
-        <RequireAuth>
-            <PageShell width="md">
-                <UserSettingsPage />
-            </PageShell>
-        </RequireAuth>
-    );
+  return (
+    <RequireAuth>
+      <PageShell width="md">
+        <UserSettingsPage />
+      </PageShell>
+    </RequireAuth>
+  );
 }

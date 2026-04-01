@@ -3,17 +3,29 @@ import { TeamPresence } from "@/components/match-scouting/setup/TeamPresenceFiel
 import { ScoutingPosition } from "@/lib/scouting/types";
 
 type Args = {
-    eventKey: string;
-    matchNumber: string;
-    scoutingPosition: ScoutingPosition;
-    teamKey: string;
-    teamNumber: number | null;
-    teamName: string;
-    robotPosition: RobotPosition;
-    teamPresence: TeamPresence;
+  eventKey: string;
+  matchNumber: string;
+  scoutingPosition: ScoutingPosition | null;
+  teamKey: string;
+  teamNumber: number | null;
+  teamName: string;
+  robotPosition: RobotPosition;
+  teamPresence: TeamPresence;
 };
 
 export function buildScoutingSetupExport({
+  eventKey,
+  matchNumber,
+  scoutingPosition,
+  teamKey,
+  teamNumber,
+  teamName,
+  robotPosition,
+  teamPresence,
+}: Args) {
+  return {
+    v: 1,
+    type: "scouting_setup",
     eventKey,
     matchNumber,
     scoutingPosition,
@@ -22,18 +34,6 @@ export function buildScoutingSetupExport({
     teamName,
     robotPosition,
     teamPresence,
-}: Args) {
-    return {
-        v: 1,
-        type: "scouting_setup",
-        eventKey,
-        matchNumber,
-        scoutingPosition,
-        teamKey,
-        teamNumber,
-        teamName,
-        robotPosition,
-        teamPresence,
-        savedAt: new Date().toISOString(),
-    };
+    savedAt: new Date().toISOString(),
+  };
 }
