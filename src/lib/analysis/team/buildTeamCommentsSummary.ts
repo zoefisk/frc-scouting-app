@@ -1,4 +1,4 @@
-import { MatchScoutingEntryDoc } from "@/lib/firebase/types";
+import { MatchScoutingEntryDoc } from "@/lib/firebase/shared/types";
 
 export type TeamCommentRow = {
     matchNumber: number;

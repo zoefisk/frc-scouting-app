@@ -1,4 +1,4 @@
-import { MatchScoutingEntryDoc } from "@/lib/firebase/types";
+import { MatchScoutingEntryDoc } from "@/lib/firebase/shared/types";
 
 export type TeamRadarMetric = {
     label: string;
@@ -20,9 +20,7 @@ function averageNullable(values: Array<number | null | undefined>): number {
     return average(filtered);
 }
 
-export function buildTeamRadarSummary(
-    entries: MatchScoutingEntryDoc[]
-): TeamRadarSummary {
+export function buildTeamRadarSummary(entries: MatchScoutingEntryDoc[]): TeamRadarSummary {
     const presentEntries = entries.filter((entry) => entry.teamPresence === "present");
 
     const scoringEffectiveness = averageNullable(
@@ -32,7 +30,7 @@ export function buildTeamRadarSummary(
     const scoringAccuracy = averageNullable(
         presentEntries.map((entry) => {
             const raw = entry.teleop?.scoringAccuracy;
-            return typeof raw === "number" ? raw / 20 : null; // 0-100 -> 0-5
+            return typeof raw === "number" ? raw / 20 : null;
         })
     );
 

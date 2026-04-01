@@ -17,9 +17,7 @@ function getNextQualificationMatch(matches: TbaMatch[]): number | null {
         .sort((a, b) => a.match_number - b.match_number);
 
     const nextUnplayed = qualificationMatches.find(
-        (m) =>
-            m.alliances.blue.score === -1 &&
-            m.alliances.red.score === -1
+        (m) => m.alliances.blue.score === -1 && m.alliances.red.score === -1
     );
 
     if (nextUnplayed) return nextUnplayed.match_number;
@@ -54,7 +52,7 @@ export function useDetectedMatchNumber(eventKey: string) {
             }
 
             setDetectedMatch(next);
-        } catch (err) {
+        } catch {
             setError("Could not detect current match");
         } finally {
             setLoading(false);

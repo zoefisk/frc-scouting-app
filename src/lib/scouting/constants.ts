@@ -1,6 +1,6 @@
-import { ScoutingPosition } from "./types";
+import { ScoutingPosition } from "@/lib/scouting/types";
 
-export const HARDCODED_EVENT_KEY = "2026cthar";
+export const DEFAULT_EVENT_KEY = "2026cthar";
 
 export const scoutingOptions: {
     value: Exclude<ScoutingPosition, "">;

@@ -1,6 +1,7 @@
-import { doc, getDoc, setDoc, serverTimestamp } from "firebase/firestore";
-import { db } from "@/lib/firebase/client";
 import type { User } from "firebase/auth";
+import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
+import { db } from "@/lib/firebase/client/app";
+import type { AppUserProfile } from "@/lib/firebase/shared/types";
 
 export async function createUserProfileIfMissing(user: User) {
     const ref = doc(db, "users", user.uid);
@@ -16,4 +17,12 @@ export async function createUserProfileIfMissing(user: User) {
         active: true,
         createdAt: serverTimestamp(),
     });
+}
+
+export async function getUserProfile(uid: string): Promise<AppUserProfile | null> {
+    const ref = doc(db, "users", uid);
+    const snapshot = await getDoc(ref);
+
+    if (!snapshot.exists()) return null;
+    return snapshot.data() as AppUserProfile;
 }

@@ -14,15 +14,15 @@ type Args = {
 };
 
 export function buildScoutingSetupExport({
-                                             eventKey,
-                                             matchNumber,
-                                             scoutingPosition,
-                                             teamKey,
-                                             teamNumber,
-                                             teamName,
-                                             robotPosition,
-                                             teamPresence,
-                                         }: Args) {
+    eventKey,
+    matchNumber,
+    scoutingPosition,
+    teamKey,
+    teamNumber,
+    teamName,
+    robotPosition,
+    teamPresence,
+}: Args) {
     return {
         v: 1,
         type: "scouting_setup",

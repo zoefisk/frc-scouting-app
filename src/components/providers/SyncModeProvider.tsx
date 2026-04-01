@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { getAppSetting, saveAppSetting } from "@/lib/db/indexDb";
+import {getAppSetting, saveAppSetting} from "@/lib/db";
 
 type SyncMode = "online" | "forced_offline";
 

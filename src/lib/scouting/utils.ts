@@ -1,4 +1,4 @@
-import { ScoutingPosition, TbaMatch } from "./types";
+import { ScoutingPosition, TbaMatch } from "@/lib/scouting/types";
 
 export function getTeamNumberFromPosition(
     match: TbaMatch,

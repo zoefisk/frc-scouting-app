@@ -1,3 +1,5 @@
+import { fetchTbaJson } from "@/lib/tba/server/fetchTbaJson";
+
 type TbaTeamSimple = {
     key: string;
     team_number: number;
@@ -19,32 +21,6 @@ export type EventTeamWithRank = {
     nickname: string;
     rank: number | null;
 };
-
-function getTbaHeaders() {
-    const apiKey = process.env.TBA_KEY;
-
-    if (!apiKey) {
-        throw new Error("Missing TBA_API_KEY environment variable.");
-    }
-
-    return {
-        "X-TBA-Auth-Key": apiKey,
-    };
-}
-
-async function fetchTbaJson<T>(path: string): Promise<T> {
-    const res = await fetch(`https://www.thebluealliance.com/api/v3${path}`, {
-        headers: getTbaHeaders(),
-        next: { revalidate: 60 },
-    });
-
-    if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`TBA request failed (${res.status}): ${text}`);
-    }
-
-    return res.json() as Promise<T>;
-}
 
 export async function getEventTeamsWithRanks(
     eventKey: string

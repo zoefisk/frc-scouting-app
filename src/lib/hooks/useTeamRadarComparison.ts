@@ -1,9 +1,9 @@
 "use client";
 
 import React from "react";
-import { TeamRadarSummary } from "@/lib/analysis/buildTeamRadarMetrics";
+import { TeamRadarSummary } from "@/lib/analysis/team/buildTeamRadarMetrics";
 import { TeamOption } from "@/components/analysis/team/TeamRadarComparePicker";
-import { buildTeamRadarSeries } from "@/lib/analysis/buildTeamRadarSeries";
+import { buildTeamRadarSeries } from "@/lib/analysis/team/buildTeamRadarSeries";
 import { TeamRadarSeries } from "@/components/analysis/team/TeamRadarChart";
 
 type BaseTeam = {
@@ -28,15 +28,9 @@ type Args = {
     baseSummary: TeamRadarSummary;
 };
 
-export function useTeamRadarComparison({
-                                           eventKey,
-                                           baseTeam,
-                                           baseSummary,
-                                       }: Args) {
-    const [selectedCompareTeam, setSelectedCompareTeam] =
-        React.useState<TeamOption | null>(null);
-    const [compareSummary, setCompareSummary] =
-        React.useState<CompareApiResponse | null>(null);
+export function useTeamRadarComparison({ eventKey, baseTeam, baseSummary }: Args) {
+    const [selectedCompareTeam, setSelectedCompareTeam] = React.useState<TeamOption | null>(null);
+    const [compareSummary, setCompareSummary] = React.useState<CompareApiResponse | null>(null);
     const [loading, setLoading] = React.useState(false);
     const [error, setError] = React.useState("");
 
@@ -52,9 +46,7 @@ export function useTeamRadarComparison({
             setError("");
 
             try {
-                const res = await fetch(
-                    `/api/analysis/${eventKey}/teams/${selectedCompareTeam.key}/radar`
-                );
+                const res = await fetch(`/api/analysis/${eventKey}/teams/${selectedCompareTeam.key}/radar`);
 
                 if (!res.ok) {
                     throw new Error("Could not load comparison team data.");

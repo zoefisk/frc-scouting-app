@@ -40,7 +40,6 @@ import TeleopDefenseResistanceQuestion from "@/components/match-scouting/teleop/
 import TeleopNotesQuestion from "@/components/match-scouting/teleop/TeleopNotesQuestion";
 import TeleopClimbQuestion from "@/components/match-scouting/teleop/TeleopClimbQuestion";
 
-import { saveMatchScoutingEntry } from "@/lib/firebase/saveMatchScoutingEntry";
 
 import { FinalCommentsData } from "@/components/match-scouting/final/types";
 import FinalOverallPerformanceQuestion from "@/components/match-scouting/final/FinalOverallPerformanceQuestion";
@@ -48,11 +47,11 @@ import FinalDidWellQuestion from "@/components/match-scouting/final/FinalDidWell
 import FinalCanImproveQuestion from "@/components/match-scouting/final/FinalCanImproveQuestion";
 import FinalGeneralCommentsQuestion from "@/components/match-scouting/final/FinalGeneralCommentsQuestion";
 import ScoutingSetupQr from "@/components/match-scouting/actions/ScoutingSetupQr";
-import {getEventMatches, saveSubmission} from "@/lib/db/indexDb";
 import { useToast } from "@/lib/hooks/useToast";
 import {useSyncMode} from "@/components/providers/SyncModeProvider";
 import ScoutingActionBar from "@/components/match-scouting/actions/ScoutingActionBar";
 import {MatchScoutingPayload} from "@/components/match-scouting/types";
+import {getEventMatches} from "@/lib/db";
 
 export default function ScoutingSetupForm() {
     const {

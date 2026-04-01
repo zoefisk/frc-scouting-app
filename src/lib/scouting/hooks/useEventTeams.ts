@@ -1,8 +1,8 @@
 "use client";
 
 import React from "react";
-import { TeamData } from "../types";
-import { getEventTeams, saveEventTeams } from "@/lib/db/indexDb";
+import { TeamData } from "@/lib/scouting/types";
+import { getEventTeams, saveEventTeams } from "@/lib/db/events";
 
 export function useEventTeams(eventKey: string) {
     const [eventTeams, setEventTeams] = React.useState<TeamData[]>([]);

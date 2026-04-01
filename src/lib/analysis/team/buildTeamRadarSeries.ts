@@ -1,4 +1,4 @@
-import { TeamRadarSummary } from "@/lib/analysis/buildTeamRadarMetrics";
+import { TeamRadarSummary } from "@/lib/analysis/team/buildTeamRadarMetrics";
 import { TeamRadarSeries } from "@/components/analysis/team/TeamRadarChart";
 
 type BaseTeam = {

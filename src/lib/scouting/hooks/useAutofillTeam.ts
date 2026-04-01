@@ -1,9 +1,9 @@
 "use client";
 
 import React from "react";
-import { ScoutingPosition, TeamData, TbaMatch } from "../types";
-import { getTeamNumberFromPosition } from "../utils";
-import { getEventMatches, saveEventMatches } from "@/lib/db/indexDb";
+import { ScoutingPosition, TeamData, TbaMatch } from "@/lib/scouting/types";
+import { getTeamNumberFromPosition } from "@/lib/scouting/utils";
+import { getEventMatches, saveEventMatches } from "@/lib/db/events";
 
 type Args = {
     eventKey: string;
@@ -12,12 +12,7 @@ type Args = {
     eventTeams: TeamData[];
 };
 
-export function useAutofillTeam({
-                                    eventKey,
-                                    matchNumber,
-                                    scoutingPosition,
-                                    eventTeams,
-                                }: Args) {
+export function useAutofillTeam({ eventKey, matchNumber, scoutingPosition, eventTeams }: Args) {
     const [selectedTeamKey, setSelectedTeamKey] = React.useState("");
     const [lookupLoading, setLookupLoading] = React.useState(false);
     const [lookupError, setLookupError] = React.useState("");
@@ -37,7 +32,6 @@ export function useAutofillTeam({
             try {
                 let matches: TbaMatch[] | undefined;
 
-                // Try live fetch first when online
                 if (navigator.onLine) {
                     try {
                         const matchesRes = await fetch(`/api/tba/event-matches/${eventKey}`);
@@ -52,7 +46,6 @@ export function useAutofillTeam({
                     }
                 }
 
-                // Fallback to cached matches if live fetch unavailable or offline
                 if (!matches) {
                     const cachedMatches = await getEventMatches<TbaMatch[]>(eventKey);
 
@@ -65,9 +58,7 @@ export function useAutofillTeam({
                 }
 
                 const targetMatch = matches.find(
-                    (match) =>
-                        match.comp_level === "qm" &&
-                        match.match_number === Number(matchNumber)
+                    (match) => match.comp_level === "qm" && match.match_number === Number(matchNumber)
                 );
 
                 if (!targetMatch) {

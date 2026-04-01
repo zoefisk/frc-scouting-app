@@ -1,4 +1,4 @@
-import { MatchScoutingEntryDoc } from "@/lib/firebase/types";
+import { MatchScoutingEntryDoc } from "@/lib/firebase/shared/types";
 
 export type TeamAutoSummary = {
     mobilityYesCount: number;
@@ -12,9 +12,7 @@ function average(values: number[]): number {
     return values.reduce((sum, value) => sum + value, 0) / values.length;
 }
 
-export function buildTeamAutoSummary(
-    entries: MatchScoutingEntryDoc[]
-): TeamAutoSummary {
+export function buildTeamAutoSummary(entries: MatchScoutingEntryDoc[]): TeamAutoSummary {
     const presentEntries = entries.filter((entry) => entry.teamPresence === "present");
 
     const mobilityTotal = presentEntries.filter(

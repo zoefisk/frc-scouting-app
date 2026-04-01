@@ -1,10 +1,10 @@
 "use client";
 
 import React from "react";
-import { getSubmissions, deleteSubmission } from "@/lib/db/indexDb";
-import { saveMatchScoutingEntry } from "@/lib/firebase/saveMatchScoutingEntry";
 import {useSyncMode} from "@/components/providers/SyncModeProvider";
 import {useToast} from "@/lib/hooks/useToast";
+import {deleteSubmission, getSubmissions} from "@/lib/db";
+import {saveMatchScoutingEntry} from "@/lib/firebase/client/entries";
 
 type Props = {
     children: React.ReactNode;

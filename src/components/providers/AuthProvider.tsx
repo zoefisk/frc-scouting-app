@@ -2,9 +2,9 @@
 
 import React from "react";
 import { onAuthStateChanged, type User } from "firebase/auth";
-import { auth } from "@/lib/firebase/client";
+import { auth } from "@/lib/firebase/client/app";
 import { signInWithGoogle, signOutUser } from "@/lib/firebase/client/auth";
-import {createUserProfileIfMissing} from "@/lib/firebase/users/createUserProfileMissing";
+import { createUserProfileIfMissing } from "@/lib/firebase/client/users";
 
 type AuthContextValue = {
     user: User | null;

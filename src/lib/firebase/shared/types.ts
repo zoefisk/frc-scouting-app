@@ -40,3 +40,11 @@ export type MatchScoutingEntryDoc = {
 
     savedAt?: string;
 };
+
+export type AppUserProfile = {
+    uid: string;
+    email: string;
+    displayName: string;
+    role: "scout" | "admin";
+    active: boolean;
+};

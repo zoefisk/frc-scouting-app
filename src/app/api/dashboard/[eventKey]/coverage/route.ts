@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { getEventQualificationMatches } from "@/lib/tba/getEventQualificationMatches";
-import { getAllMatchScoutingEntriesForEvent } from "@/lib/firebase/server/getAllMatchScoutingEntriesForEvent";
-import { buildCoverageWarnings } from "@/lib/analysis/buildCoverageWarnings";
+import {getEventQualificationMatches} from "@/lib/tba/server/eventQualificationMatches";
+import {getAllMatchScoutingEntriesForEvent} from "@/lib/firebase/server/entries";
+import {buildCoverageWarnings} from "@/lib/analysis/dashboard/buildCoverageWarnings";
 
 type RouteProps = {
     params: Promise<{

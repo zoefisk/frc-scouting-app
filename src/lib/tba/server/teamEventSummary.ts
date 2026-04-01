@@ -1,4 +1,4 @@
-import { getTeamEventMatches } from "@/lib/tba/getTeamEventMatches";
+import { getTeamEventMatches } from "@/lib/tba/server/teamEventMatches";
 
 export type TeamEventSummary = {
     wins: number;

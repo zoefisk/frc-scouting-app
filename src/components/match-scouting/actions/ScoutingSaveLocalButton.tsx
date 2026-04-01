@@ -2,9 +2,9 @@
 
 import React from "react";
 import { Button } from "@mui/material";
-import { saveSubmission } from "@/lib/db/indexDb";
 import { useToast } from "@/lib/hooks/useToast";
 import { MatchScoutingPayload } from "@/components/match-scouting/types";
+import {saveSubmission} from "@/lib/db";
 
 type Props = {
     payload: MatchScoutingPayload;

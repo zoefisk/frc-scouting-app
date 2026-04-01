@@ -1,6 +1,6 @@
 import { ScoutingPosition } from "@/lib/scouting/types";
-import {RobotPosition} from "@/components/match-scouting/setup/RobotPositionField";
-import {TeamPresence} from "@/components/match-scouting/setup/TeamPresenceField";
+import { RobotPosition } from "@/components/match-scouting/setup/RobotPositionField";
+import { TeamPresence } from "@/components/match-scouting/setup/TeamPresenceField";
 
 export type ScoutingSetupValues = {
     eventKey: string;
@@ -16,9 +16,7 @@ export type ValidationResult = {
     errors: Record<string, string>;
 };
 
-export function validateScoutingSetup(
-    values: ScoutingSetupValues
-): ValidationResult {
+export function validateScoutingSetup(values: ScoutingSetupValues): ValidationResult {
     const errors: Record<string, string> = {};
 
     if (!values.eventKey) {

@@ -1,3 +1,5 @@
+import { fetchTbaJson } from "@/lib/tba/server/fetchTbaJson";
+
 type TbaAlliance = {
     team_keys: string[];
     score: number;
@@ -29,32 +31,6 @@ export type TeamEventMatchRow = {
     videoUrl: string | null;
 };
 
-function getTbaHeaders() {
-    const apiKey = process.env.TBA_API_KEY ?? process.env.TBA_KEY;
-
-    if (!apiKey) {
-        throw new Error("Missing TBA API key.");
-    }
-
-    return {
-        "X-TBA-Auth-Key": apiKey,
-    };
-}
-
-async function fetchTbaJson<T>(path: string): Promise<T> {
-    const res = await fetch(`https://www.thebluealliance.com/api/v3${path}`, {
-        headers: getTbaHeaders(),
-        next: { revalidate: 60 },
-    });
-
-    if (!res.ok) {
-        const text = await res.text();
-        throw new Error(`TBA request failed (${res.status}): ${text}`);
-    }
-
-    return res.json() as Promise<T>;
-}
-
 function teamKeyToNumber(teamKey: string): number {
     return Number(teamKey.replace("frc", ""));
 }
@@ -63,9 +39,7 @@ export async function getTeamEventMatches(
     eventKey: string,
     teamKey: string
 ): Promise<TeamEventMatchRow[]> {
-    const matches = await fetchTbaJson<TbaMatch[]>(
-        `/team/${teamKey}/event/${eventKey}/matches`
-    );
+    const matches = await fetchTbaJson<TbaMatch[]>(`/team/${teamKey}/event/${eventKey}/matches`);
 
     return matches
         .filter((match) => match.comp_level === "qm")
@@ -80,8 +54,7 @@ export async function getTeamEventMatches(
             let result: "W" | "L" | "T" = "T";
             if (blueScore !== redScore) {
                 const blueWon = blueScore > redScore;
-                result =
-                    (isBlue && blueWon) || (!isBlue && !blueWon) ? "W" : "L";
+                result = (isBlue && blueWon) || (!isBlue && !blueWon) ? "W" : "L";
             }
 
             const youtubeVideo = match.videos?.find((video) => video.type === "youtube");

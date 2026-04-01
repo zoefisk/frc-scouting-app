@@ -1,4 +1,4 @@
-import { MatchScoutingEntryDoc } from "@/lib/firebase/types";
+import { MatchScoutingEntryDoc } from "@/lib/firebase/shared/types";
 
 export type TeamTeleopSummary = {
     averageScoringEffectiveness: number;
@@ -20,9 +20,7 @@ function averageNullable(values: Array<number | null | undefined>): number {
     return average(filtered);
 }
 
-export function buildTeamTeleopSummary(
-    entries: MatchScoutingEntryDoc[]
-): TeamTeleopSummary {
+export function buildTeamTeleopSummary(entries: MatchScoutingEntryDoc[]): TeamTeleopSummary {
     const presentEntries = entries.filter((entry) => entry.teamPresence === "present");
 
     const climbCounts: Record<string, number> = {
