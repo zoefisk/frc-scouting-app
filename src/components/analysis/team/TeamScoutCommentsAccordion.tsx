@@ -11,7 +11,7 @@ import {
   Typography,
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import { TeamCommentRow } from "@/lib/analysis/team/buildTeamCommentsSummary";
+import { TeamCommentRow } from "@/old-lib/analysis/team/buildTeamCommentsSummary";
 
 type Props = {
   comments: TeamCommentRow[];

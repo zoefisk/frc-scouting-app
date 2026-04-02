@@ -2,7 +2,7 @@
 
 import React from "react";
 import { Alert, Chip, Paper, Stack, Typography, Button } from "@mui/material";
-import { MatchCoverageWarning } from "@/lib/analysis/dashboard/buildCoverageWarnings";
+import { MatchCoverageWarning } from "@/old-lib/analysis/dashboard/buildCoverageWarnings";
 
 type Props = {
   warnings: MatchCoverageWarning[];

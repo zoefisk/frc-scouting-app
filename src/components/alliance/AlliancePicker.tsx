@@ -42,8 +42,8 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
-import { getAppSetting, saveAppSetting } from "@/lib/db";
-import { getOfflineEventOptions } from "@/lib/offline/getOfflineEventOptions";
+import { getAppSetting, saveAppSetting } from "@/old-lib/db";
+import { getOfflineEventOptions } from "@/old-lib/offline/getOfflineEventOptions";
 import { useSyncMode } from "@/components/providers/SyncModeProvider";
 
 type EventOption = {

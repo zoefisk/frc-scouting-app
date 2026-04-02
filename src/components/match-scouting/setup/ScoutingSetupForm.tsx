@@ -12,9 +12,9 @@ import {
 } from "@mui/material";
 import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
 
-import { useScoutingSetupForm } from "@/lib/scouting/hooks/useScoutingSetupForm";
-import { useDetectedMatchNumber } from "@/lib/scouting/hooks/useDetectedMatchNumber";
-import { useScoutingDraft } from "@/lib/hooks/useScoutingDraft";
+import { useScoutingSetupForm } from "@/old-lib/scouting/hooks/useScoutingSetupForm";
+import { useDetectedMatchNumber } from "@/old-lib/scouting/hooks/useDetectedMatchNumber";
+import { useScoutingDraft } from "@/old-lib/hooks/useScoutingDraft";
 
 import MatchNumberField from "./MatchNumberField";
 import RobotPositionField, { RobotPosition } from "./RobotPositionField";
@@ -46,11 +46,11 @@ import FinalCanImproveQuestion from "@/components/match-scouting/final/FinalCanI
 import FinalGeneralCommentsQuestion from "@/components/match-scouting/final/FinalGeneralCommentsQuestion";
 import ScoutingActionBar from "@/components/match-scouting/actions/ScoutingActionBar";
 import { MatchScoutingPayload } from "@/components/match-scouting/types";
-import { getEventMatches } from "@/lib/db";
+import { getEventMatches } from "@/old-lib/db";
 import { useSyncMode } from "@/components/providers/SyncModeProvider";
 import ScoutingPositionField from "./ScoutingPositionField";
-import { ScoutingPosition } from "@/lib/scouting/types";
-import { buildScoutingDraftId } from "@/lib/scouting/export/buildScoutingDraftId";
+import { ScoutingPosition } from "@/old-lib/scouting/types";
+import { buildScoutingDraftId } from "@/old-lib/scouting/export/buildScoutingDraftId";
 
 type DraftPayload = {
   draftId: string;

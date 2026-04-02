@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { getEvents } from "@/lib/server/tba/service";
 
 type Params = {
   params: Promise<{
@@ -7,39 +8,15 @@ type Params = {
 };
 
 export async function GET(_: Request, { params }: Params) {
-  const { year } = await params;
-  const apiKey = process.env.TBA_KEY;
-
-  if (!apiKey) {
+  try {
+    const { year } = await params;
+    const data = await getEvents(year);
+    return NextResponse.json(data);
+  } catch (error) {
+    console.error("Failed to fetch events from TBA:", error);
     return NextResponse.json(
-      { error: "Missing TBA_KEY environment variable." },
+      { error: "Failed to fetch events from TBA." },
       { status: 500 }
     );
   }
-
-  const res = await fetch(
-    `https://www.thebluealliance.com/api/v3/events/${year}/simple`,
-    {
-      headers: {
-        "X-TBA-Auth-Key": apiKey,
-      },
-      cache: "no-store",
-    }
-  );
-
-  if (!res.ok) {
-    return NextResponse.json(
-      { error: "Failed to fetch events from TBA." },
-      { status: res.status }
-    );
-  }
-
-  const data = await res.json();
-
-  const mapped = (data ?? []).map((event: { key: string; name: string }) => ({
-    key: event.key,
-    name: event.name,
-  }));
-
-  return NextResponse.json(mapped);
 }
