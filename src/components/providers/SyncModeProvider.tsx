@@ -1,8 +1,8 @@
 "use client";
 
 import React from "react";
-import { getAppSetting, saveAppSetting } from "@/old-lib/db";
-import { useToast } from "@/old-lib/hooks/useToast";
+import { getAppSetting, saveAppSetting } from "../../lib/db";
+import { useToast } from "@/lib/hooks/useToast";
 
 type SyncMode = "online" | "forced_offline";
 

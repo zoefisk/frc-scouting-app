@@ -15,9 +15,9 @@ import {
 
 import { useAuth } from "@/components/providers/AuthProvider";
 import { useSyncMode } from "@/components/providers/SyncModeProvider";
-import { useToast } from "@/old-lib/hooks/useToast";
-import { AppUserProfile } from "@/old-lib/firebase/shared/types";
-import { getUserProfile } from "@/old-lib/firebase/client/users";
+import { useToast } from "@/lib/hooks/useToast";
+import { AppUserProfile } from "@/lib/firebase/shared/types";
+import { getUserProfile } from "@/lib/firebase/client/users";
 
 function SettingRow({
   label,

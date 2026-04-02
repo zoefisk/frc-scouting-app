@@ -3,7 +3,7 @@
 import React from "react";
 import { Box, Typography } from "@mui/material";
 import { RadarChart } from "@mui/x-charts/RadarChart";
-import { TeamRadarSummary } from "@/old-lib/analysis/team/buildTeamRadarMetrics";
+import { TeamRadarSummary } from "@/lib/analysis/team/buildTeamRadarMetrics";
 
 export type TeamRadarSeries = {
   label: string;

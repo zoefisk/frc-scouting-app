@@ -1,6 +1,6 @@
 import React from "react";
 import { Stack, Typography } from "@mui/material";
-import type { ScannedEntry } from "@/old-lib/qr-scanner/types";
+import type { ScannedEntry } from "@/lib/qr-scanner/types";
 import ScannedEntryCard from "@/components/qr-scanner/ScannedEntryCard";
 
 type Props = {

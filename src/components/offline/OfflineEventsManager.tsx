@@ -19,10 +19,10 @@ import {
   removeOfflineEvent,
   saveYearEvents,
   type OfflineEventRecord,
-} from "@/old-lib/db";
+} from "../../lib/db";
 import { useSyncMode } from "@/components/providers/SyncModeProvider";
-import { downloadEventBundle } from "@/old-lib/offline/downloadEventBundle";
-import { useToast } from "@/old-lib/hooks/useToast";
+import { downloadEventBundle } from "@/lib/offline/downloadEventBundle";
+import { useToast } from "@/lib/hooks/useToast";
 
 type EventOption = {
   key: string;

@@ -9,9 +9,9 @@ import {
   deleteScannedEntry,
   getScannedEntries,
   saveScannedEntry,
-} from "@/old-lib/db";
-import { buildScannedEntry } from "@/old-lib/qr-scanner/buildScannedEntry";
-import type { ScannedEntry } from "@/old-lib/qr-scanner/types";
+} from "../../lib/db";
+import { buildScannedEntry } from "@/lib/qr-scanner/buildScannedEntry";
+import type { ScannedEntry } from "@/lib/qr-scanner/types";
 
 import QrScannerControls from "@/components/qr-scanner/QrScannerControls";
 import QrScannerViewport from "@/components/qr-scanner/QrScannerViewport";

@@ -2,9 +2,9 @@
 
 import React from "react";
 import { useSyncMode } from "@/components/providers/SyncModeProvider";
-import { useToast } from "@/old-lib/hooks/useToast";
-import { deleteSubmission, getSubmissions } from "@/old-lib/db";
-import { saveMatchScoutingEntry } from "@/old-lib/firebase/client/entries";
+import { useToast } from "@/lib/hooks/useToast";
+import { deleteSubmission, getSubmissions } from "../../lib/db";
+import { saveMatchScoutingEntry } from "@/lib/firebase/client/entries";
 
 type Props = {
   children: React.ReactNode;

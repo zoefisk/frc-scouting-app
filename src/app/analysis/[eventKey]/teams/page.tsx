@@ -1,7 +1,6 @@
 import { Typography } from "@mui/material";
 import TeamsTable from "@/components/analysis/TeamsTable";
 import PageShell from "@/components/layout/PageShell";
-import { getEventTeamsWithRanks } from "@/old-lib/tba/server/teams";
 
 type Props = {
   params: Promise<{
@@ -11,7 +10,7 @@ type Props = {
 
 export default async function TeamsPage({ params }: Props) {
   const { eventKey } = await params;
-  const teams = await getEventTeamsWithRanks(eventKey);
+  // const teams = await getEventTeamsWithRanks(eventKey);
 
   return (
     <PageShell>
@@ -19,7 +18,7 @@ export default async function TeamsPage({ params }: Props) {
         Teams at {eventKey}
       </Typography>
 
-      <TeamsTable eventKey={eventKey} teams={teams} />
+      {/*<TeamsTable eventKey={eventKey} teams={teams} />*/}
     </PageShell>
   );
 }

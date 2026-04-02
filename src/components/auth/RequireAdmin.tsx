@@ -4,8 +4,8 @@ import React from "react";
 import { CircularProgress, Stack, Typography } from "@mui/material";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/components/providers/AuthProvider";
-import { AppUserProfile } from "@/old-lib/firebase/shared/types";
-import { getUserProfile } from "@/old-lib/firebase/client/users";
+import { AppUserProfile } from "@/lib/firebase/shared/types";
+import { getUserProfile } from "@/lib/firebase/client/users";
 
 export default function RequireAdmin({
   children,

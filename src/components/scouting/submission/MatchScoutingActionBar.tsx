@@ -9,7 +9,6 @@ import ScoutingSetupQr from "@/components/scouting/submission/ScoutingSetupQr";
 import ScoutingSetupCsvButton from "@/components/scouting/submission/ScoutingSetupCSVButton";
 import SaveQuestionnaireLocalButton from "@/components/scouting/submission/SaveQuestionnaireLocalButton";
 import SaveQuestionnaireCloudButton from "@/components/scouting/submission/SaveQuestionnaireCloudButton";
-import ScoutingResetButton from "@/components/match-scouting/actions/ScoutingResetButton";
 import { TeamOption } from "@/lib/server/client/loadEventTeams";
 
 export type ScoutingPosition =
@@ -85,7 +84,7 @@ export default function MatchScoutingActionBar({
         disabled={disabled}
       />
 
-      {onReset && <ScoutingResetButton onReset={onReset} />}
+      {/*{onReset && <ScoutingResetButton onReset={onReset} />}*/}
     </Stack>
   );
 }
