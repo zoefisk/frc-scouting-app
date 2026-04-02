@@ -1,0 +1,528 @@
+<!doctype html>
+<html>
+  <head>
+    <title>DragonScope Scouting</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        padding: 0;
+        background: black;
+        color: white;
+        font-family: Arial, sans-serif;
+        text-align: center;
+      }
+
+      .site-header {
+        background: #ff8601;
+        color: black;
+        text-align: center;
+        padding: 20px;
+        font-size: 26px;
+        font-weight: bold;
+        letter-spacing: 2px;
+        width: 100%;
+      }
+
+      .main-content {
+        padding: 24px 16px;
+        max-width: 600px;
+        margin: 0 auto;
+      }
+
+      .nav-buttons {
+        margin-top: 24px;
+        margin-bottom: 24px;
+      }
+
+      .button-row {
+        display: flex;
+        justify-content: center;
+        gap: 12px;
+        margin-bottom: 12px;
+      }
+
+      .button {
+        background: #ff8601;
+        color: black;
+        padding: 12px 16px;
+        border-radius: 10px;
+        text-decoration: none;
+        font-size: 15px;
+        font-weight: bold;
+        display: inline-block;
+        flex: 1;
+      }
+
+      .button.wide {
+        display: block;
+        width: 100%;
+        padding: 14px 16px;
+        font-size: 17px;
+        border-radius: 10px;
+        text-decoration: none;
+        background: #ff8601;
+        color: black;
+        font-weight: bold;
+      }
+
+      .match-tracker,
+      .rankings-card {
+        background: #1a1a1a;
+        border-radius: 16px;
+        padding: 20px;
+        margin: 24px 0;
+      }
+
+      .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 16px;
+      }
+
+      .card-title {
+        color: #ff8601;
+        font-size: 18px;
+        font-weight: bold;
+      }
+
+      .refresh-status {
+        color: #555;
+        font-size: 12px;
+      }
+
+      .event-select {
+        width: 100%;
+        padding: 12px;
+        border-radius: 10px;
+        border: none;
+        background: #2a2a2a;
+        color: white;
+        font-size: 15px;
+        margin-bottom: 16px;
+        appearance: none;
+        -webkit-appearance: none;
+        background-image: url("data:image/svg+xml;utf8,<svg fill='white' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
+        background-repeat: no-repeat;
+        background-position: right 12px center;
+        background-size: 18px;
+      }
+
+      .match-card {
+        background: #2a2a2a;
+        border-radius: 12px;
+        padding: 14px 16px;
+        margin-bottom: 10px;
+        text-align: left;
+      }
+
+      .match-card.current {
+        border: 2px solid #ff8601;
+      }
+
+      .match-card-label {
+        font-size: 11px;
+        font-weight: bold;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        margin-bottom: 6px;
+      }
+
+      .match-card.previous .match-card-label {
+        color: #888;
+      }
+      .match-card.current .match-card-label {
+        color: #ff8601;
+      }
+
+      .match-card-name {
+        font-size: 18px;
+        font-weight: bold;
+        margin-bottom: 8px;
+      }
+
+      .alliances {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 8px;
+      }
+
+      .alliance {
+        border-radius: 8px;
+        padding: 8px 10px;
+      }
+
+      .alliance.red {
+        background: rgba(220, 50, 50, 0.25);
+        border: 1px solid rgba(220, 50, 50, 0.4);
+      }
+      .alliance.blue {
+        background: rgba(50, 100, 220, 0.25);
+        border: 1px solid rgba(50, 100, 220, 0.4);
+      }
+
+      .alliance-label {
+        font-size: 11px;
+        font-weight: bold;
+        text-transform: uppercase;
+        margin-bottom: 4px;
+      }
+
+      .alliance.red .alliance-label {
+        color: #ff6b6b;
+      }
+      .alliance.blue .alliance-label {
+        color: #6b9fff;
+      }
+
+      .alliance-teams {
+        font-size: 13px;
+        color: #ccc;
+        line-height: 1.6;
+      }
+
+      .alliance-score {
+        font-size: 20px;
+        font-weight: bold;
+        margin-top: 4px;
+      }
+      .alliance.red .alliance-score {
+        color: #ff6b6b;
+      }
+      .alliance.blue .alliance-score {
+        color: #6b9fff;
+      }
+
+      .winner-badge {
+        font-size: 11px;
+        font-weight: bold;
+        background: #ff8601;
+        color: black;
+        border-radius: 4px;
+        padding: 2px 6px;
+        margin-left: 6px;
+        vertical-align: middle;
+      }
+
+      .rankings-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 14px;
+        text-align: left;
+      }
+
+      .rankings-table th {
+        color: #ff8601;
+        font-size: 12px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        padding: 6px 8px;
+        border-bottom: 1px solid #333;
+      }
+
+      .rankings-table td {
+        padding: 8px 8px;
+        border-bottom: 1px solid #222;
+        color: #ccc;
+      }
+
+      .rankings-table tr:last-child td {
+        border-bottom: none;
+      }
+
+      .rankings-table tr.highlight td {
+        color: #ff8601;
+        font-weight: bold;
+      }
+
+      .rank-num {
+        color: #888;
+        font-size: 13px;
+        width: 30px;
+      }
+
+      .team-num {
+        font-weight: bold;
+        color: white;
+      }
+
+      .no-matches,
+      .loading {
+        color: #555;
+        font-size: 14px;
+        padding: 20px 0;
+      }
+
+      footer {
+        text-align: center;
+        color: #555;
+        font-size: 13px;
+        padding: 16px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="site-header">DRAGONSCOPE</div>
+
+    <div class="main-content">
+      <div class="nav-buttons">
+        <!-- Small side-by-side buttons -->
+        <div class="button-row">
+          <a class="button" href="pit.html">Pit Scouting</a>
+          <a class="button" href="match.html">Match Scouting</a>
+        </div>
+        <!-- Wide analytics button below -->
+        <a class="button wide" href="analytics.html">Analytics</a>
+      </div>
+
+      <!-- Match Tracker -->
+      <div class="match-tracker">
+        <div class="card-header">
+          <span class="card-title">Live Match Tracker</span>
+          <span class="refresh-status" id="refreshStatus">Updating...</span>
+        </div>
+
+        <select class="event-select" id="eventSelect">
+          <option value="">Loading events...</option>
+        </select>
+
+        <div id="matchDisplay">
+          <div class="loading">Loading matches...</div>
+        </div>
+      </div>
+
+      <!-- Rankings -->
+      <div class="rankings-card">
+        <div class="card-header">
+          <span class="card-title">Live Rankings</span>
+        </div>
+        <div id="rankingsDisplay">
+          <div class="loading">Loading rankings...</div>
+        </div>
+      </div>
+    </div>
+
+    <footer>Developed by Catie | Team 1991</footer>
+
+    <script>
+      const TBA_KEY =
+        "UYU21Oat985SthPbp2XdG6Jx1mxcCUiZwGevEhrivMZPLtgdHcNzHPl4oDYfGMcL";
+      const EVENTS = [
+        {
+          key: "2026mabil",
+          name: "2026 Minuteman",
+          start: "2026-03-05",
+          end: "2026-03-07",
+        },
+        {
+          key: "2026mawne",
+          name: "2026 Western NE",
+          start: "2026-03-12",
+          end: "2026-03-14",
+        },
+        {
+          key: "2026ctwat",
+          name: "2026 Waterbury",
+          start: "2026-03-19",
+          end: "2026-03-21",
+        },
+        {
+          key: "2026rikin",
+          name: "2026 URI",
+          start: "2026-03-26",
+          end: "2026-03-28",
+        },
+        {
+          key: "2026cthar",
+          name: "2026 Hartford",
+          start: "2026-04-02",
+          end: "2026-04-04",
+        },
+      ];
+
+      function populateEvents() {
+        const select = document.getElementById("eventSelect");
+        const today = new Date().toISOString().split("T")[0];
+        let defaultKey = EVENTS[0].key;
+
+        select.innerHTML = "";
+        EVENTS.forEach((ev) => {
+          const opt = document.createElement("option");
+          opt.value = ev.key;
+          opt.textContent = ev.name;
+          select.appendChild(opt);
+          if (today >= ev.start && today <= ev.end) defaultKey = ev.key;
+        });
+
+        select.value = defaultKey;
+      }
+
+      function tbaFetch(path) {
+        return fetch(`https://www.thebluealliance.com/api/v3${path}`, {
+          headers: { "X-TBA-Auth-Key": TBA_KEY },
+        }).then((r) => r.json());
+      }
+
+      function matchLabel(m) {
+        if (m.comp_level === "qm") return `Qual ${m.match_number}`;
+        if (m.comp_level === "sf")
+          return `Semifinal ${m.set_number}-${m.match_number}`;
+        if (m.comp_level === "f") return `Final ${m.match_number}`;
+        return `Match ${m.match_number}`;
+      }
+
+      function renderMatch(m, type) {
+        if (!m) return "";
+        const red = m.alliances.red;
+        const blue = m.alliances.blue;
+        const redScore = red.score >= 0 ? red.score : "—";
+        const blueScore = blue.score >= 0 ? blue.score : "—";
+        const redWon = m.winning_alliance === "red";
+        const blueWon = m.winning_alliance === "blue";
+        const played = m.actual_time !== null;
+        const labels = { previous: "⏮ Previous Match", current: "▶ Up Next" };
+
+        return `
+        <div class="match-card ${type}">
+          <div class="match-card-label">${labels[type]}</div>
+          <div class="match-card-name">${matchLabel(m)}</div>
+          <div class="alliances">
+            <div class="alliance red">
+              <div class="alliance-label">Red ${redWon ? '<span class="winner-badge">WIN</span>' : ""}</div>
+              <div class="alliance-teams">${red.team_keys.map((t) => t.replace("frc", "")).join("<br>")}</div>
+              ${played ? `<div class="alliance-score">${redScore}</div>` : ""}
+            </div>
+            <div class="alliance blue">
+              <div class="alliance-label">Blue ${blueWon ? '<span class="winner-badge">WIN</span>' : ""}</div>
+              <div class="alliance-teams">${blue.team_keys.map((t) => t.replace("frc", "")).join("<br>")}</div>
+              ${played ? `<div class="alliance-score">${blueScore}</div>` : ""}
+            </div>
+          </div>
+        </div>
+      `;
+      }
+
+      async function loadMatches() {
+        const eventKey = document.getElementById("eventSelect").value;
+        if (!eventKey) return;
+
+        const display = document.getElementById("matchDisplay");
+
+        try {
+          const matches = await tbaFetch(`/event/${eventKey}/matches`);
+
+          if (!matches || matches.length === 0) {
+            display.innerHTML =
+              '<div class="no-matches">🕐 Event not started yet — check back once matches begin!</div>';
+            return;
+          }
+
+          matches.sort(
+            (a, b) =>
+              (a.predicted_time || a.time || 0) -
+              (b.predicted_time || b.time || 0)
+          );
+
+          const played = matches.filter((m) => m.actual_time !== null);
+          const upcoming = matches.filter((m) => m.actual_time === null);
+
+          let html = "";
+          if (upcoming.length > 0) {
+            const prevMatch =
+              played.length > 0 ? played[played.length - 1] : null;
+            html += renderMatch(prevMatch, "previous");
+            html += renderMatch(upcoming[0], "current");
+          } else {
+            const prevMatch =
+              played.length > 1 ? played[played.length - 2] : null;
+            html += renderMatch(prevMatch, "previous");
+            html += renderMatch(played[played.length - 1], "current");
+          }
+
+          display.innerHTML =
+            html ||
+            '<div class="no-matches">No match data available yet.</div>';
+
+          const now = new Date();
+          document.getElementById("refreshStatus").textContent =
+            `Updated ${now.getHours()}:${String(now.getMinutes()).padStart(2, "0")}`;
+        } catch (err) {
+          display.innerHTML =
+            '<div class="no-matches">Could not load match data. Check connection.</div>';
+          console.error(err);
+        }
+      }
+
+      async function loadRankings() {
+        const eventKey = document.getElementById("eventSelect").value;
+        if (!eventKey) return;
+
+        const display = document.getElementById("rankingsDisplay");
+
+        try {
+          const data = await tbaFetch(`/event/${eventKey}/rankings`);
+
+          if (!data || !data.rankings || data.rankings.length === 0) {
+            display.innerHTML =
+              '<div class="no-matches">🕐 Rankings not available yet.</div>';
+            return;
+          }
+
+          const rankings = data.rankings;
+          const highlightTeams = ["frc1991", "frc10063", "frc1071"];
+
+          let rows = rankings
+            .map((r) => {
+              const teamKey = r.team_key;
+              const teamNum = teamKey.replace("frc", "");
+              const isHighlight = highlightTeams.includes(teamKey);
+              return `
+            <tr class="${isHighlight ? "highlight" : ""}">
+              <td class="rank-num">${r.rank}</td>
+              <td class="team-num">${teamNum}</td>
+              <td>${r.record ? `${r.record.wins}-${r.record.losses}-${r.record.ties}` : "—"}</td>
+              <td>${r.sort_orders ? r.sort_orders[0].toFixed(2) : "—"}</td>
+            </tr>
+          `;
+            })
+            .join("");
+
+          display.innerHTML = `
+          <table class="rankings-table">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Team</th>
+                <th>W-L-T</th>
+                <th>RP</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        `;
+        } catch (err) {
+          display.innerHTML =
+            '<div class="no-matches">Could not load rankings. Check connection.</div>';
+          console.error(err);
+        }
+      }
+
+      function loadAll() {
+        loadMatches();
+        loadRankings();
+      }
+
+      populateEvents();
+      loadAll();
+
+      document
+        .getElementById("eventSelect")
+        .addEventListener("change", loadAll);
+      setInterval(loadAll, 60000);
+    </script>
+  </body>
+</html>
