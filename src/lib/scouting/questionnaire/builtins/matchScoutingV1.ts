@@ -1,6 +1,6 @@
 // src/lib/scouting/questionnaires/builtins/matchScoutingV1.ts
 
-import { QuestionnaireDefinition } from "@/lib/scouting/questionnaires/schema";
+import type { QuestionnaireDefinition } from "@/lib/scouting/questionnaire/types";
 
 export const matchScoutingV1: QuestionnaireDefinition = {
   id: "match-scouting",
@@ -63,8 +63,14 @@ export const matchScoutingV1: QuestionnaireDefinition = {
           min: 1,
           max: 5,
           visibleWhen: {
-            fieldId: "teleop_played_defense",
-            equals: true,
+            mode: "all",
+            rules: [
+              {
+                fieldId: "teleop_played_defense",
+                operator: "equals",
+                value: true,
+              },
+            ],
           },
         },
       ],

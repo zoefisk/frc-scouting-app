@@ -1,5 +1,3 @@
-"use client";
-
 import React from "react";
 import {
   Stack,
@@ -9,7 +7,7 @@ import {
 } from "@mui/material";
 
 import FieldLabelWithHelp from "@/components/scouting/common/FieldLabelWithHelp";
-import type { RatingFieldDefinition } from "@/lib/scouting/questionnaires/types";
+import { RatingFieldDefinition } from "@/lib/scouting/questionnaire/types";
 
 type Props = {
   field: RatingFieldDefinition;

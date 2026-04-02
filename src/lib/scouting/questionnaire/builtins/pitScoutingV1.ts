@@ -1,6 +1,6 @@
 // src/lib/scouting/questionnaires/builtins/pitScoutingV1.ts
 
-import { QuestionnaireDefinition } from "@/lib/scouting/questionnaires/schema";
+import { QuestionnaireDefinition } from "@/lib/scouting/questionnaire/types";
 
 export const pitScoutingV1: QuestionnaireDefinition = {
   id: "pit-scouting",

@@ -1,13 +1,11 @@
-"use client";
-
 import React from "react";
 import { Card, CardContent, Stack, Typography } from "@mui/material";
 
 import type {
   QuestionnaireAnswers,
   QuestionnaireSectionDefinition,
-} from "@/lib/scouting/questionnaires/types";
-import { isFieldVisible } from "@/lib/scouting/questionnaires/validators";
+} from "@/lib/scouting/questionnaire/types";
+import { isFieldVisible } from "@/lib/scouting/questionnaire/validators";
 import QuestionRenderer from "./QuestionRenderer";
 
 type Props = {

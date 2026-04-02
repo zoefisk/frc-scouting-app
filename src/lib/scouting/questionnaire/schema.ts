@@ -1,18 +1,56 @@
-// src/lib/scouting/questionnaires/schema.ts
-
 import { z } from "zod";
 
 /* ---------- Shared ---------- */
 
-const optionSchema = z.object({
+export const optionSchema = z.object({
   label: z.string(),
   value: z.string(),
 });
 
-const visibilityRuleSchema = z.object({
+export const visibilityOperatorSchema = z.enum([
+  "equals",
+  "notEquals",
+  "greaterThan",
+  "greaterThanOrEqual",
+  "lessThan",
+  "lessThanOrEqual",
+  "in",
+  "notIn",
+  "isTruthy",
+  "isFalsy",
+]);
+
+const visibilityValueSchema = z.union([
+  z.string(),
+  z.number(),
+  z.boolean(),
+  z.null(),
+]);
+
+export const visibilityRuleSchema = z.object({
   fieldId: z.string(),
-  equals: z.union([z.string(), z.number(), z.boolean(), z.null()]),
+  operator: visibilityOperatorSchema,
+  value: z
+    .union([visibilityValueSchema, z.array(visibilityValueSchema)])
+    .optional(),
 });
+
+type VisibilityConditionGroupShape = {
+  mode: "all" | "any";
+  rules: Array<
+    z.infer<typeof visibilityRuleSchema> | VisibilityConditionGroupShape
+  >;
+};
+
+export const visibilityConditionGroupSchema: z.ZodType<VisibilityConditionGroupShape> =
+  z.lazy(() =>
+    z.object({
+      mode: z.enum(["all", "any"]),
+      rules: z.array(
+        z.union([visibilityRuleSchema, visibilityConditionGroupSchema])
+      ),
+    })
+  );
 
 /* ---------- Base Field ---------- */
 
@@ -21,34 +59,34 @@ const baseFieldSchema = z.object({
   label: z.string(),
   required: z.boolean().optional(),
   helpText: z.string().optional(),
-  visibleWhen: visibilityRuleSchema.optional(),
+  visibleWhen: visibilityConditionGroupSchema.optional(),
 });
 
 /* ---------- Field Types ---------- */
 
-const textFieldSchema = baseFieldSchema.extend({
+export const textFieldSchema = baseFieldSchema.extend({
   type: z.literal("text"),
   multiline: z.boolean().optional(),
   placeholder: z.string().optional(),
 });
 
-const numberFieldSchema = baseFieldSchema.extend({
+export const numberFieldSchema = baseFieldSchema.extend({
   type: z.literal("number"),
   min: z.number().optional(),
   max: z.number().optional(),
   step: z.number().optional(),
 });
 
-const selectFieldSchema = baseFieldSchema.extend({
+export const selectFieldSchema = baseFieldSchema.extend({
   type: z.literal("select"),
   options: z.array(optionSchema),
 });
 
-const booleanFieldSchema = baseFieldSchema.extend({
+export const booleanFieldSchema = baseFieldSchema.extend({
   type: z.literal("boolean"),
 });
 
-const ratingFieldSchema = baseFieldSchema.extend({
+export const ratingFieldSchema = baseFieldSchema.extend({
   type: z.literal("rating"),
   min: z.number(),
   max: z.number(),
@@ -82,7 +120,3 @@ export const questionnaireSchema = z.object({
   description: z.string().optional(),
   sections: z.array(sectionSchema),
 });
-
-/* ---------- Types ---------- */
-
-export type QuestionnaireSchema = z.infer<typeof questionnaireSchema>;

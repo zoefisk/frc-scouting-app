@@ -2,7 +2,7 @@
 
 import { matchScoutingV1 } from "./builtins/matchScoutingV1";
 import { pitScoutingV1 } from "./builtins/pitScoutingV1";
-import { QuestionnaireDefinition } from "@/lib/scouting/questionnaires/schema";
+import { QuestionnaireDefinition } from "@/lib/scouting/questionnaire/types";
 
 export const builtInQuestionnaires: QuestionnaireDefinition[] = [
   matchScoutingV1,

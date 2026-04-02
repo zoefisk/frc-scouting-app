@@ -1,10 +1,8 @@
-"use client";
-
 import React from "react";
 import { TextField } from "@mui/material";
 
 import FieldLabelWithHelp from "@/components/scouting/common/FieldLabelWithHelp";
-import type { TextFieldDefinition } from "@/lib/scouting/questionnaires/types";
+import { TextFieldDefinition } from "@/lib/scouting/questionnaire/types";
 
 type Props = {
   field: TextFieldDefinition;

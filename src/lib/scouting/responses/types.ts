@@ -1,14 +1,34 @@
-import type { z } from "zod";
-import { fieldSchema, questionnaireSchema, sectionSchema } from "./schema";
+// src/lib/scouting/responses/types.ts
 
-export type QuestionnaireFieldDefinition = z.infer<typeof fieldSchema>;
-export type QuestionnaireSectionDefinition = z.infer<typeof sectionSchema>;
-export type QuestionnaireDefinition = z.infer<typeof questionnaireSchema>;
+import { QuestionnaireAnswers } from "@/lib/scouting/questionnaire/types";
 
-export type QuestionnaireAnswers = Record<string, unknown>;
-
-export type QuestionnaireResponse = {
+export type QuestionnaireResponseRecord = {
+  responseId: string;
   questionnaireId: string;
   questionnaireVersion: number;
   answers: QuestionnaireAnswers;
+
+  createdAt: string;
+  updatedAt: string;
+
+  eventKey?: string;
+  matchNumber?: number;
+  teamKey?: string;
+  teamNumber?: number;
+  scoutingPosition?: string;
+  teamPresence?: string;
+};
+
+export type BuildQuestionnaireResponseInput = {
+  responseId: string;
+  questionnaireId: string;
+  questionnaireVersion: number;
+  answers: QuestionnaireAnswers;
+
+  eventKey?: string;
+  matchNumber?: number;
+  teamKey?: string;
+  teamNumber?: number;
+  scoutingPosition?: string;
+  teamPresence?: string;
 };

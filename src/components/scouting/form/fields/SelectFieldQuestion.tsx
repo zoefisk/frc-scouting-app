@@ -1,5 +1,3 @@
-"use client";
-
 import React from "react";
 import {
   FormControl,
@@ -10,7 +8,7 @@ import {
 } from "@mui/material";
 
 import FieldLabelWithHelp from "@/components/scouting/common/FieldLabelWithHelp";
-import type { SelectFieldDefinition } from "@/lib/scouting/questionnaires/types";
+import { SelectFieldDefinition } from "@/lib/scouting/questionnaire/types";
 
 type Props = {
   field: SelectFieldDefinition;

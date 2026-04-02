@@ -1,6 +1,6 @@
 import type { QuestionnaireResponseRecord } from "./types";
 import { validateResponseRecord } from "./validation";
-import { QuestionnaireDefinition } from "@/lib/scouting/questionnaires/schema";
+import { QuestionnaireDefinition } from "@/lib/scouting/questionnaire/types";
 
 type SubmitQuestionnaireResponseInput = Omit<
   QuestionnaireResponseRecord,

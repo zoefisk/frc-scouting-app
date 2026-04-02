@@ -1,8 +1,12 @@
-import {
+// src/lib/scouting/questionnaires/validators.ts
+
+import type {
   QuestionnaireAnswers,
   QuestionnaireDefinition,
   QuestionnaireFieldDefinition,
-} from "@/lib/scouting/responses/types";
+  VisibilityConditionGroup,
+  VisibilityRule,
+} from "@/lib/scouting/questionnaire/types";
 
 function isEmptyValue(value: unknown): boolean {
   return (
@@ -22,24 +26,34 @@ function evaluateSingleRule(
   switch (rule.operator) {
     case "equals":
       return actual === rule.value;
+
     case "notEquals":
       return actual !== rule.value;
+
     case "greaterThan":
       return typeof actual === "number" && actual > Number(rule.value);
+
     case "greaterThanOrEqual":
       return typeof actual === "number" && actual >= Number(rule.value);
+
     case "lessThan":
       return typeof actual === "number" && actual < Number(rule.value);
+
     case "lessThanOrEqual":
       return typeof actual === "number" && actual <= Number(rule.value);
+
     case "in":
       return Array.isArray(rule.value) && rule.value.includes(actual as never);
+
     case "notIn":
       return Array.isArray(rule.value) && !rule.value.includes(actual as never);
+
     case "isTruthy":
       return Boolean(actual);
+
     case "isFalsy":
       return !actual;
+
     default:
       return true;
   }
@@ -53,10 +67,11 @@ export function evaluateVisibility(
     return true;
   }
 
-  const results = condition.rules.map((rule) =>
-    "rules" in rule
-      ? evaluateVisibility(rule, answers)
-      : evaluateSingleRule(rule, answers)
+  const results = condition.rules.map(
+    (rule: VisibilityRule | VisibilityConditionGroup) =>
+      "rules" in rule
+        ? evaluateVisibility(rule, answers)
+        : evaluateSingleRule(rule, answers)
   );
 
   return condition.mode === "all"

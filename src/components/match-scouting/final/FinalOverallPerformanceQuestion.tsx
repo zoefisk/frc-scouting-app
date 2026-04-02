@@ -1,6 +1,6 @@
 import React from "react";
 import { Box, Slider, Typography } from "@mui/material";
-import FieldLabelWithHelp from "../FieldLabelWithHelp";
+import FieldLabelWithHelp from "../../scouting/common/FieldLabelWithHelp";
 
 type Props = {
   value: number;

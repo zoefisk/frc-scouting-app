@@ -1,8 +1,8 @@
-import { validateQuestionnaireAnswers } from "@/lib/scouting/questionnaires/validators";
+import { validateQuestionnaireAnswers } from "@/lib/scouting/questionnaire/validators";
 import {
   QuestionnaireAnswers,
   QuestionnaireDefinition,
-} from "@/lib/scouting/responses/types";
+} from "@/lib/scouting/questionnaire/types";
 
 export function validateResponseRecord(
   definition: QuestionnaireDefinition,
