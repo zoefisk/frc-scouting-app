@@ -13,7 +13,7 @@ import {
   TableRow,
   Typography,
 } from "@mui/material";
-import { MatchCoverageWarning } from "@/old-lib/analysis/dashboard/buildCoverageWarnings";
+import { MatchCoverageWarning } from "@/lib/analysis/dashboard/buildCoverageWarnings";
 
 type Props = {
   warnings: MatchCoverageWarning[];

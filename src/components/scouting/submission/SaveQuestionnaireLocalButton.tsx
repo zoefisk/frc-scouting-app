@@ -1,8 +1,8 @@
 import React from "react";
 import { Button } from "@mui/material";
 
-import { saveSubmission } from "@/old-lib/db";
-import { useToast } from "@/old-lib/hooks/useToast";
+import { saveSubmission } from "../../../lib/db";
+import { useToast } from "@/lib/hooks/useToast";
 import type {
   QuestionnaireAnswers,
   QuestionnaireDefinition,

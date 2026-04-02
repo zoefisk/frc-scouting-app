@@ -1,12 +1,11 @@
-import MatchScoutingPage from "@/components/scouting/MatchScoutingPage";
-import MatchScoutingActionBar from "@/components/scouting/submission/MatchScoutingActionBar";
+import MatchScoutingForm from "@/components/scouting/MatchScoutingForm";
 import { matchScoutingV1 } from "@/lib/scouting/questionnaire/builtins/matchScoutingV1";
 import PageShell from "@/components/layout/PageShell";
 
 export default function HomePage() {
   return (
     <PageShell>
-      <MatchScoutingPage
+      <MatchScoutingForm
         questionnaire={matchScoutingV1}
         defaultEventKey="2026cthar"
       />

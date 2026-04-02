@@ -1,7 +1,7 @@
 import { Paper, Stack, Typography } from "@mui/material";
-import { TeamAutoSummary } from "@/old-lib/analysis/team/buildTeamAutoSummary";
-import { TeamTeleopSummary } from "@/old-lib/analysis/team/buildTeamTeleopSummary";
-import { TeamRadarSummary } from "@/old-lib/analysis/team/buildTeamRadarMetrics";
+import { TeamAutoSummary } from "@/lib/analysis/team/buildTeamAutoSummary";
+import { TeamTeleopSummary } from "@/lib/analysis/team/buildTeamTeleopSummary";
+import { TeamRadarSummary } from "@/lib/analysis/team/buildTeamRadarMetrics";
 
 type Props = {
   autoSummary: TeamAutoSummary;

@@ -3,7 +3,7 @@
 import React from "react";
 import { Button } from "@mui/material";
 import { useSyncMode } from "@/components/providers/SyncModeProvider";
-import { useToast } from "@/old-lib/hooks/useToast";
+import { useToast } from "@/lib/hooks/useToast";
 
 export default function SyncModeToggleButton() {
   const { actualOnline, syncMode, effectiveOnline, toggleSyncMode } =

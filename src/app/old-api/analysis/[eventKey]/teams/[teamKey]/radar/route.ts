@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
-import { getEventTeamsWithRanks } from "@/old-lib/tba/server/teams";
-import { getTeamMatchScoutingEntries } from "@/old-lib/firebase/server/entries";
-import { buildTeamRadarSummary } from "@/old-lib/analysis/team/buildTeamRadarMetrics";
+import { getTeamMatchScoutingEntries } from "@/lib/firebase/server/entries";
+import { buildTeamRadarSummary } from "@/lib/analysis/team/buildTeamRadarMetrics";
+import { getEventTeamsWithRanks } from "@/lib/server/tba/service";
 
 type RouteProps = {
   params: Promise<{

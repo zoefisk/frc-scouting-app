@@ -1,7 +1,7 @@
 import React from "react";
 import { Button } from "@mui/material";
-import { saveSubmission } from "@/old-lib/db/indexDb";
-import { useToast } from "@/old-lib/hooks/useToast";
+import { saveSubmission } from "@/lib/db/indexDb";
+import { useToast } from "@/lib/hooks/useToast";
 import { MatchScoutingPayload } from "@/components/match-scouting/types";
 
 type Props = {

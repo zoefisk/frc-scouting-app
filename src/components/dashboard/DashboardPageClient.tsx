@@ -10,8 +10,8 @@ import MatchCoverageTable from "@/components/dashboard/MatchCoverageTable";
 import DashboardQuickActions from "@/components/dashboard/DashboardQuickActions";
 
 import { useSyncMode } from "@/components/providers/SyncModeProvider";
-import type { MatchCoverageWarning } from "@/old-lib/analysis/dashboard/buildCoverageWarnings";
-import { getAppSetting, getScannedEntries, getSubmissions } from "@/old-lib/db";
+import type { MatchCoverageWarning } from "@/lib/analysis/dashboard/buildCoverageWarnings";
+import { getAppSetting, getScannedEntries, getSubmissions } from "../../lib/db";
 
 const ALLIANCE_PICKER_EVENT_KEY = "alliancePickerEventKey";
 const FALLBACK_EVENT_KEY = "2026cthar";

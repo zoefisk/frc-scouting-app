@@ -1,7 +1,7 @@
 import { MatchScoutingPayload } from "@/components/match-scouting/types";
 import { Button } from "@mui/material";
-import { useToast } from "@/old-lib/hooks/useToast";
-import { saveMatchScoutingEntry } from "@/old-lib/firebase/client/entries";
+import { useToast } from "@/lib/hooks/useToast";
+import { saveMatchScoutingEntry } from "@/lib/firebase/client/entries";
 
 type Props = {
   payload: MatchScoutingPayload;

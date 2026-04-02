@@ -1,8 +1,8 @@
 import React from "react";
 import { Button } from "@mui/material";
 
-import { saveMatchScoutingEntry } from "@/old-lib/firebase/client/entries";
-import { useToast } from "@/old-lib/hooks/useToast";
+import { saveMatchScoutingEntry } from "@/lib/firebase/client/entries";
+import { useToast } from "@/lib/hooks/useToast";
 import type {
   QuestionnaireAnswers,
   QuestionnaireDefinition,
