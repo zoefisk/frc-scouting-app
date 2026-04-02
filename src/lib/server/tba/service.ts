@@ -1,4 +1,4 @@
-import { fetchTbaJson } from "./client";
+import { fetchTbaJson } from "./api";
 import type {
   EventQualificationMatch,
   EventTeamWithRank,

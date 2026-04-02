@@ -10,7 +10,7 @@ import {
   Typography,
   Box,
 } from "@mui/material";
-import FieldLabelWithHelp from "../FieldLabelWithHelp";
+import FieldLabelWithHelp from "../../scouting/common/FieldLabelWithHelp";
 import { scoutingOptions } from "@/old-lib/scouting/constants";
 import { ScoutingPosition } from "@/old-lib/scouting/types";
 

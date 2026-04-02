@@ -24,9 +24,9 @@ export default function Navbar() {
           PEACCEful Scouting App
         </Typography>
 
-        <Stack direction="row" spacing={1} alignItems="center">
-          <SyncModeToggleButton />
-        </Stack>
+        {/*<Stack direction="row" spacing={1} alignItems="center">*/}
+        {/*  <SyncModeToggleButton />*/}
+        {/*</Stack>*/}
 
         {/* Nav Links */}
         <Stack direction="row" spacing={1}>

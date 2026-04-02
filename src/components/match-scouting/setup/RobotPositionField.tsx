@@ -5,7 +5,7 @@ import {
   ToggleButtonGroup,
   Typography,
 } from "@mui/material";
-import FieldLabelWithHelp from "../FieldLabelWithHelp";
+import FieldLabelWithHelp from "../../scouting/common/FieldLabelWithHelp";
 
 export type RobotPosition = "left" | "center" | "right" | null;
 

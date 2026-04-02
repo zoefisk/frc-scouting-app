@@ -1,6 +1,6 @@
 import React from "react";
 import { Box, TextField } from "@mui/material";
-import FieldLabelWithHelp from "../FieldLabelWithHelp";
+import FieldLabelWithHelp from "../../scouting/common/FieldLabelWithHelp";
 
 type Props = {
   value: string;

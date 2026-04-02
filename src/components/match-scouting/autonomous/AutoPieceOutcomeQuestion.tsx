@@ -1,5 +1,5 @@
 import React from "react";
-import FieldLabelWithHelp from "../FieldLabelWithHelp";
+import FieldLabelWithHelp from "../../scouting/common/FieldLabelWithHelp";
 import { AutoGamePieceOutcome } from "./types";
 import {
   Box,
@@ -19,7 +19,6 @@ export default function AutoGamePieceOutcomeQuestion({
   value,
   onChange,
 }: Props) {
-
   return (
     <Box>
       <FieldLabelWithHelp
@@ -31,13 +30,15 @@ export default function AutoGamePieceOutcomeQuestion({
         <InputLabel id="auto-game-piece-label">Outcome</InputLabel>
 
         <Select<string>
-            labelId="auto-game-piece-label"
-            value={value ?? ""}
-            label="Outcome"
-            onChange={(e) => {
-              const nextValue = e.target.value;
-              onChange(nextValue === "" ? null : (nextValue as AutoGamePieceOutcome));
-            }}
+          labelId="auto-game-piece-label"
+          value={value ?? ""}
+          label="Outcome"
+          onChange={(e) => {
+            const nextValue = e.target.value;
+            onChange(
+              nextValue === "" ? null : (nextValue as AutoGamePieceOutcome)
+            );
+          }}
         >
           <MenuItem value="">
             <em>None selected</em>

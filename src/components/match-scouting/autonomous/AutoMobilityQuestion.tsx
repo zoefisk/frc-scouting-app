@@ -6,7 +6,7 @@ import {
   Typography,
 } from "@mui/material";
 import { AutoMobility } from "./types";
-import FieldLabelWithHelp from "@/components/match-scouting/FieldLabelWithHelp";
+import FieldLabelWithHelp from "@/components/scouting/common/FieldLabelWithHelp";
 
 type Props = {
   value: AutoMobility;

@@ -12,7 +12,7 @@ import {
 } from "@mui/material";
 import { scoutingOptions } from "@/old-lib/scouting/constants";
 import { ScoutingPosition } from "@/old-lib/scouting/types";
-import FieldLabelWithHelp from "@/components/match-scouting/FieldLabelWithHelp";
+import FieldLabelWithHelp from "@/components/scouting/common/FieldLabelWithHelp";
 
 type Props = {
   value: ScoutingPosition | null;

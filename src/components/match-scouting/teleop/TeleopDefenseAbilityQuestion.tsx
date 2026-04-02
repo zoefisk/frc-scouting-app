@@ -7,7 +7,7 @@ import {
   Typography,
   Stack,
 } from "@mui/material";
-import FieldLabelWithHelp from "../FieldLabelWithHelp";
+import FieldLabelWithHelp from "../../scouting/common/FieldLabelWithHelp";
 
 type Props = {
   value: number | null;

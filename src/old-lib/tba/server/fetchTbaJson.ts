@@ -1,5 +1,5 @@
 function getTbaHeaders() {
-  const apiKey = process.env.TBA_API_KEY ?? process.env.TBA_KEY;
+  const apiKey = process.env.TBA_KEY;
 
   if (!apiKey) {
     throw new Error("Missing TBA API key.");
