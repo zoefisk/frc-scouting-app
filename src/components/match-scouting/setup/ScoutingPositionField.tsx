@@ -11,8 +11,8 @@ import {
   Box,
 } from "@mui/material";
 import FieldLabelWithHelp from "../FieldLabelWithHelp";
-import { scoutingOptions } from "@/lib/scouting/constants";
-import { ScoutingPosition } from "@/lib/scouting/types";
+import { scoutingOptions } from "@/old-lib/scouting/constants";
+import { ScoutingPosition } from "@/old-lib/scouting/types";
 
 type Props = {
   value: ScoutingPosition | null;

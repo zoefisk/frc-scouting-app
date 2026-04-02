@@ -3,7 +3,7 @@
 import React from "react";
 import { Paper, Stack, Typography, Box } from "@mui/material";
 import Grid from "@mui/material/Grid";
-import { TeamEventSummary } from "@/lib/tba/server/teamEventSummary";
+import { TeamEventSummary } from "@/old-lib/tba/server/teamEventSummary";
 
 type Props = {
   rank: number | null;

@@ -18,7 +18,7 @@ import {
   Typography,
 } from "@mui/material";
 import PlayCircleOutlineIcon from "@mui/icons-material/PlayCircleOutline";
-import { TeamEventMatchRow } from "@/lib/tba/server/teamEventMatches";
+import { TeamEventMatchRow } from "@/old-lib/tba/server/teamEventMatches";
 
 type Props = {
   matches: TeamEventMatchRow[];

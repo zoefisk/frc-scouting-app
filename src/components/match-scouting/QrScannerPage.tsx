@@ -6,7 +6,7 @@ import { Html5Qrcode } from "html5-qrcode";
 import { parseScannedMatchPayload } from "@/components/match-scouting/parseScannedMatchPayload";
 import ScoutingActionBar from "@/components/match-scouting/actions/ScoutingActionBar";
 import { useSyncMode } from "@/components/providers/SyncModeProvider";
-import { getScannedEntries, saveScannedEntry } from "@/lib/db";
+import { getScannedEntries, saveScannedEntry } from "@/old-lib/db";
 
 type ScannedEntry = {
   scanId: string;

@@ -2,7 +2,7 @@ import React from "react";
 import { Box, Paper, Stack, Typography } from "@mui/material";
 import { parseScannedMatchPayload } from "@/components/match-scouting/parseScannedMatchPayload";
 import ScoutingActionBar from "@/components/match-scouting/actions/ScoutingActionBar";
-import type { ScannedEntry } from "@/lib/qr-scanner/types";
+import type { ScannedEntry } from "@/old-lib/qr-scanner/types";
 
 type Props = {
   entry: ScannedEntry;

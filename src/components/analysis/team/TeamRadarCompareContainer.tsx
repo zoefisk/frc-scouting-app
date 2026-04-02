@@ -5,8 +5,8 @@ import TeamRadarCard from "@/components/analysis/team/TeamRadarCard";
 import TeamRadarComparePicker, {
   TeamOption,
 } from "@/components/analysis/team/TeamRadarComparePicker";
-import { useTeamRadarComparison } from "@/lib/hooks/useTeamRadarComparison";
-import { TeamRadarSummary } from "@/lib/analysis/team/buildTeamRadarMetrics";
+import { useTeamRadarComparison } from "@/old-lib/hooks/useTeamRadarComparison";
+import { TeamRadarSummary } from "@/old-lib/analysis/team/buildTeamRadarMetrics";
 
 type Props = {
   eventKey: string;

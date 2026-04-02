@@ -1,9 +1,9 @@
 import React from "react";
 import { Button } from "@mui/material";
-import { deleteInProgressSubmission } from "@/lib/db";
-import { saveMatchScoutingEntry } from "@/lib/firebase/client/entries";
+import { deleteInProgressSubmission } from "@/old-lib/db";
+import { saveMatchScoutingEntry } from "@/old-lib/firebase/client/entries";
 import { MatchScoutingPayload } from "@/components/match-scouting/types";
-import { useToast } from "@/lib/hooks/useToast";
+import { useToast } from "@/old-lib/hooks/useToast";
 
 type Props = {
   payload: MatchScoutingPayload;

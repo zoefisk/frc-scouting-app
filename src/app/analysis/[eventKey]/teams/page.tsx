@@ -1,7 +1,7 @@
 import { Typography } from "@mui/material";
 import TeamsTable from "@/components/analysis/TeamsTable";
 import PageShell from "@/components/layout/PageShell";
-import { getEventTeamsWithRanks } from "@/lib/tba/server/teams";
+import { getEventTeamsWithRanks } from "@/old-lib/tba/server/teams";
 
 type Props = {
   params: Promise<{

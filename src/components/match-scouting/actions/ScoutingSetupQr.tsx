@@ -14,7 +14,7 @@ import QRCode from "react-qr-code";
 
 import { RobotPosition } from "../setup/RobotPositionField";
 import { TeamPresence } from "../setup/TeamPresenceField";
-import { ScoutingPosition } from "@/lib/scouting/types";
+import { ScoutingPosition } from "@/old-lib/scouting/types";
 import { AutonomousData } from "@/components/match-scouting/autonomous/types";
 import { TeleopData } from "@/components/match-scouting/teleop/types";
 import { FinalCommentsData } from "@/components/match-scouting/final/types";
