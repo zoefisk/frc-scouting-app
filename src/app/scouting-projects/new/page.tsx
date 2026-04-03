@@ -1,6 +1,7 @@
 import PageShell from "@/components/layout/PageShell";
 import { Typography } from "@mui/material";
 import React from "react";
+import SeedExampleProjectButton from "@/components/scouting-project/SeedExampleProjectButton";
 
 export default function NewScoutingProjectPage() {
   return (
@@ -12,6 +13,8 @@ export default function NewScoutingProjectPage() {
         Here, you will see settings to create a new scouting project, such as
         selecting which teams to include and which data to track.
       </Typography>
+
+      <SeedExampleProjectButton />
     </PageShell>
   );
 }
