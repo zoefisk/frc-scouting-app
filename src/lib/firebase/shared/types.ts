@@ -47,4 +47,5 @@ export type AppUserProfile = {
   displayName: string;
   role: "scout" | "admin";
   active: boolean;
+  joinedProjectIds?: string[];
 };

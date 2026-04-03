@@ -1,0 +1,38 @@
+import { notFound } from "next/navigation";
+import PageShell from "@/components/layout/PageShell";
+import JoinProjectPageClient from "@/components/scouting-project/JoinProjectPageClient";
+import { getScoutingProjectByInviteLinkTokenServer } from "@/lib/firebase/server/projects";
+
+type Props = {
+  params: Promise<{
+    inviteLinkToken: string;
+  }>;
+};
+
+export default async function JoinProjectPage({ params }: Props) {
+  const { inviteLinkToken } = await params;
+
+  const project =
+    await getScoutingProjectByInviteLinkTokenServer(inviteLinkToken);
+
+  if (!project) {
+    notFound();
+  }
+
+  return (
+    <PageShell width="sm">
+      <JoinProjectPageClient
+        project={{
+          projectId: project.projectId,
+          name: project.name,
+          eventKey: project.eventKey,
+          year: project.year,
+          accessMode: project.accessMode,
+          dataMode: project.dataMode,
+          formMode: project.formMode,
+          inviteLinkToken: project.inviteLinkToken,
+        }}
+      />
+    </PageShell>
+  );
+}

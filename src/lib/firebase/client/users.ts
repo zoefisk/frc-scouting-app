@@ -1,5 +1,12 @@
 import type { User } from "firebase/auth";
-import { doc, getDoc, serverTimestamp, setDoc } from "firebase/firestore";
+import {
+  arrayUnion,
+  doc,
+  getDoc,
+  serverTimestamp,
+  setDoc,
+  updateDoc,
+} from "firebase/firestore";
 import { db } from "@/lib/firebase/client/app";
 import type { AppUserProfile } from "@/lib/firebase/shared/types";
 
@@ -27,4 +34,45 @@ export async function getUserProfile(
 
   if (!snapshot.exists()) return null;
   return snapshot.data() as AppUserProfile;
+}
+
+export async function addJoinedProjectIdToUser(
+  uid: string,
+  projectId: string
+): Promise<void> {
+  const ref = doc(db, "users", uid);
+  const snapshot = await getDoc(ref);
+
+  if (!snapshot.exists()) {
+    await setDoc(
+      ref,
+      {
+        uid,
+        email: "",
+        displayName: "",
+        role: "scout",
+        active: true,
+        joinedProjectIds: [projectId],
+        createdAt: serverTimestamp(),
+      },
+      { merge: true }
+    );
+    return;
+  }
+
+  await updateDoc(ref, {
+    joinedProjectIds: arrayUnion(projectId),
+  });
+}
+
+export async function removeJoinedProjectIdFromUser(
+  uid: string,
+  projectId: string
+): Promise<void> {
+  const { arrayRemove } = await import("firebase/firestore");
+  const ref = doc(db, "users", uid);
+
+  await updateDoc(ref, {
+    joinedProjectIds: arrayRemove(projectId),
+  });
 }

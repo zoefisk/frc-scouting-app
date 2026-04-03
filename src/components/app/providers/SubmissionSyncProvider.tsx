@@ -59,7 +59,7 @@ export default function SubmissionSyncProvider({ children }: Props) {
         }
       }
 
-      console.log("syncedCount:", syncedCount);
+      // console.log("syncedCount:", syncedCount);
 
       if (syncedCount > 0) {
         toast.success(
