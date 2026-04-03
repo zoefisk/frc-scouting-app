@@ -10,7 +10,7 @@ import {
 
 type Props = {
   definition: QuestionnaireDefinition;
-  initialAnswers?: QuestionnaireAnswers;
+  answers: QuestionnaireAnswers;
   submitLabel?: string;
   showSubmitButton?: boolean;
   onSubmit: (answers: QuestionnaireAnswers) => void | Promise<void>;
@@ -19,41 +19,36 @@ type Props = {
 
 export default function QuestionnaireForm({
   definition,
-  initialAnswers = {},
+  answers,
   submitLabel = "Submit",
   showSubmitButton = true,
   onSubmit,
   onAnswersChange,
 }: Props) {
-  const [answers, setAnswers] =
-    React.useState<QuestionnaireAnswers>(initialAnswers);
   const [errors, setErrors] = React.useState<Record<string, string>>({});
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [submitError, setSubmitError] = React.useState("");
 
   const handleChange = React.useCallback(
     (fieldId: string, value: unknown) => {
-      setAnswers((prev) => {
-        const next = {
-          ...prev,
-          [fieldId]: value,
-        };
+      const next = {
+        ...answers,
+        [fieldId]: value,
+      };
 
-        onAnswersChange?.(next);
-        return next;
-      });
+      onAnswersChange?.(next);
 
       setErrors((prev) => {
         if (!prev[fieldId]) {
           return prev;
         }
 
-        const next = { ...prev };
-        delete next[fieldId];
-        return next;
+        const updated = { ...prev };
+        delete updated[fieldId];
+        return updated;
       });
     },
-    [onAnswersChange]
+    [answers, onAnswersChange]
   );
 
   async function handleSubmit(event: React.FormEvent<HTMLFormElement>) {

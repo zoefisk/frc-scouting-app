@@ -32,7 +32,9 @@ import {
   loadEventTeamsForScouting,
   type RawTbaMatch,
 } from "@/lib/scouting/match/setupData";
-import type { TeamOption } from "@/lib/server/client/loadEventTeams";
+import { useToast } from "@/lib/hooks/useToast";
+import { TeamOption } from "@/lib/server/client/loadEventTeams";
+import { useMatchScoutingDraft } from "@/lib/scouting/match/useMatchScoutingDraft";
 import MatchScoutingActionBar from "@/components/scouting/submission/MatchScoutingActionBar";
 
 type TeamPresence = "present" | "absent" | "surrogate";
@@ -58,6 +60,8 @@ export default function MatchScoutingForm({
   title = "Match Scouting",
   description = "Configure the match, complete the questionnaire, then save or submit.",
 }: Props) {
+  const toast = useToast();
+
   const [eventKey, setEventKey] = React.useState(defaultEventKey);
   const [matchNumber, setMatchNumber] = React.useState("");
   const [scoutingPosition, setScoutingPosition] =
@@ -65,7 +69,6 @@ export default function MatchScoutingForm({
   const [teamPresence, setTeamPresence] =
     React.useState<TeamPresence>("present");
 
-  // Kept for the new setup UI even if not yet used in saved payloads.
   const [robotPosition, setRobotPosition] = React.useState<
     "left" | "center" | "right" | null
   >(null);
@@ -84,6 +87,65 @@ export default function MatchScoutingForm({
   const [teamAutoDetected, setTeamAutoDetected] = React.useState(false);
 
   const [answers, setAnswers] = React.useState<QuestionnaireAnswers>({});
+
+  const applyDraft = React.useCallback(
+    (snapshot: {
+      eventKey: string;
+      matchNumber: string;
+      scoutingPosition: ScoutingPosition | null;
+      teamPresence: TeamPresence;
+      selectedTeam: TeamOption | null;
+      robotPosition: "left" | "center" | "right" | null;
+      answers: QuestionnaireAnswers;
+    }) => {
+      setEventKey(snapshot.eventKey || defaultEventKey);
+      setMatchNumber(snapshot.matchNumber);
+      setScoutingPosition(snapshot.scoutingPosition);
+      setTeamPresence(snapshot.teamPresence);
+      setSelectedTeam(snapshot.selectedTeam);
+      setRobotPosition(snapshot.robotPosition);
+      setAnswers(snapshot.answers);
+      setTeamWasManuallyChanged(Boolean(snapshot.selectedTeam));
+      setTeamAutoDetected(false);
+    },
+    [defaultEventKey]
+  );
+
+  const snapshot = React.useMemo(
+    () => ({
+      eventKey: eventKey.trim(),
+      matchNumber,
+      scoutingPosition,
+      teamPresence,
+      selectedTeam,
+      robotPosition,
+      answers,
+    }),
+    [
+      eventKey,
+      matchNumber,
+      scoutingPosition,
+      teamPresence,
+      selectedTeam,
+      robotPosition,
+      answers,
+    ]
+  );
+
+  const { loadedDraft, clearDraft } = useMatchScoutingDraft({
+    questionnaire,
+    snapshot,
+    applyDraft,
+  });
+
+  const hasShownLoadedDraftToastRef = React.useRef(false);
+
+  React.useEffect(() => {
+    if (loadedDraft && !hasShownLoadedDraftToastRef.current) {
+      toast.info("Loaded an in-progress scouting form.");
+      hasShownLoadedDraftToastRef.current = true;
+    }
+  }, [loadedDraft, toast]);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -147,7 +209,7 @@ export default function MatchScoutingForm({
     return () => {
       cancelled = true;
     };
-  }, [eventKey, matchNumber]);
+  }, [eventKey]);
 
   React.useEffect(() => {
     if (teamWasManuallyChanged) {
@@ -239,6 +301,7 @@ export default function MatchScoutingForm({
   );
 
   function handleReset() {
+    clearDraft();
     setEventKey(defaultEventKey);
     setMatchNumber("");
     setScoutingPosition(null);
@@ -344,7 +407,7 @@ export default function MatchScoutingForm({
 
       <QuestionnaireForm
         definition={questionnaire}
-        initialAnswers={answers}
+        answers={answers}
         onAnswersChange={setAnswers}
         onSubmit={async () => {
           // Saving/submission is handled by the action bar below.
@@ -359,6 +422,7 @@ export default function MatchScoutingForm({
         disabled={!canSubmit}
         effectiveOnline={true}
         onReset={handleReset}
+        onSuccess={clearDraft}
       />
     </Stack>
   );
