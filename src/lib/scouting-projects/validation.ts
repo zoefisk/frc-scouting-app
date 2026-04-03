@@ -1,0 +1,76 @@
+import { z } from "zod";
+
+export const projectAccessModeSchema = z.enum(["anonymous", "authenticated"]);
+export const projectDataModeSchema = z.enum(["match", "pit", "both"]);
+export const projectMatchCollectionModeSchema = z.enum(["robot", "alliance"]);
+export const projectFormModeSchema = z.enum(["default", "custom"]);
+
+export const createScoutingProjectInputSchema = z
+  .object({
+    name: z
+      .string()
+      .trim()
+      .min(1, "Project name is required.")
+      .max(100, "Project name must be 100 characters or fewer."),
+
+    eventKey: z
+      .string()
+      .trim()
+      .min(1, "Event key is required.")
+      .max(64, "Event key is too long."),
+
+    year: z
+      .number({
+        error: (issue) =>
+          issue.input === undefined
+            ? "Year is required."
+            : "Year must be a number.",
+      })
+      .int("Year must be a whole number.")
+      .min(1992, "Year is too early.")
+      .max(2100, "Year is too late."),
+
+    teamKeys: z
+      .array(z.string().trim().min(1))
+      .min(1, "Select at least one team.")
+      .max(200, "Too many teams selected."),
+
+    accessMode: projectAccessModeSchema,
+
+    dataMode: projectDataModeSchema,
+
+    matchCollectionMode: projectMatchCollectionModeSchema.nullable(),
+
+    formMode: projectFormModeSchema,
+  })
+  .superRefine((data, ctx) => {
+    const usesMatchData = data.dataMode === "match" || data.dataMode === "both";
+
+    if (usesMatchData && data.matchCollectionMode == null) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["matchCollectionMode"],
+        message:
+          "Match collection mode is required when match scouting is enabled.",
+      });
+    }
+
+    if (!usesMatchData && data.matchCollectionMode != null) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["matchCollectionMode"],
+        message:
+          "Match collection mode must be empty when match scouting is not enabled.",
+      });
+    }
+  });
+
+export type CreateScoutingProjectInput = z.infer<
+  typeof createScoutingProjectInputSchema
+>;
+
+export function validateCreateScoutingProjectInput(
+  input: unknown
+): CreateScoutingProjectInput {
+  return createScoutingProjectInputSchema.parse(input);
+}

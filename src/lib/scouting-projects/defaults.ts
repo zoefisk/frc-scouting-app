@@ -1,0 +1,5 @@
+export const DEFAULT_MATCH_QUESTIONNAIRE_ID = "match-scouting";
+export const DEFAULT_MATCH_QUESTIONNAIRE_VERSION = 1;
+
+export const DEFAULT_PIT_QUESTIONNAIRE_ID = "pit-scouting";
+export const DEFAULT_PIT_QUESTIONNAIRE_VERSION = 1;

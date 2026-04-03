@@ -11,6 +11,7 @@ export default function Navbar() {
 
   const navItems = [
     { label: "Home", href: "/" },
+    { label: "Scouting Projects", href: "/scouting-projects" },
     { label: "Alliance Selector", href: "/alliance-selector" },
     { label: "Analysis", href: "/analysis" },
     { label: "Scan QR", href: "/scan" },
