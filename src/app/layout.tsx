@@ -6,7 +6,7 @@ import ServiceWorkerRegistration from "@/components/pwa/ServiceWorkerRegistratio
 import React from "react";
 import { AppRouterCacheProvider } from "@mui/material-nextjs/v13-appRouter";
 import GridBackground from "@/components/layout/GridBackground";
-import Navbar from "@/components/layout/NavBar";
+import Navbar from "@/components/navigation/NavBar";
 import ToastProvider from "@/components/providers/ToastProvider";
 import SubmissionSyncProvider from "@/components/providers/SubmissionSyncProvider";
 import { SyncModeProvider } from "@/components/providers/SyncModeProvider";
