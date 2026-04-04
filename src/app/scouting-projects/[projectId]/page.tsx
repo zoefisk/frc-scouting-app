@@ -3,6 +3,7 @@ import { Chip, Stack, Typography } from "@mui/material";
 import { notFound } from "next/navigation";
 import { getScoutingProjectServer } from "@/lib/firebase/server/projects";
 import React from "react";
+import ScoutingSchedule from "@/components/scouting-project/dashboard/ScoutingSchedule";
 
 type PageProps = {
   params: Promise<{
@@ -60,6 +61,8 @@ export default async function ScoutingProjectPage({ params }: PageProps) {
           Data mode: {project.dataMode}
         </Typography>
       </Stack>
+
+      <ScoutingSchedule />
     </PageShell>
   );
 }

@@ -29,6 +29,7 @@
     "@mui/material": "^7.3.9",
     "@mui/material-nextjs": "^7.3.9",
     "@mui/x-charts": "^8.28.0",
+    "@mui/x-data-grid": "^8.28.2",
     "firebase": "^12.11.0",
     "firebase-admin": "^13.7.0",
     "html5-qrcode": "^2.3.8",
