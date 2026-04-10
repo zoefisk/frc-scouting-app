@@ -255,7 +255,7 @@
 //   );
 // }
 
-export default function QRScannerPage() {
+export default function QrScannerPage() {
   return (
     <div>
       <h1>QR Scanner</h1>

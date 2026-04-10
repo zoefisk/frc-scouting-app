@@ -1,8 +1,8 @@
 "use client";
 
 import React from "react";
-import { getSubmissions, deleteSubmission } from "@/lib/db/indexDb";
-import { useSyncMode } from "@/components/providers/SyncModeProvider";
+import { deleteSubmission, getSubmissions } from "@/lib/db";
+import { useSyncMode } from "@/components/app/providers/SyncModeProvider";
 import { useToast } from "@/lib/hooks/useToast";
 import { saveMatchScoutingEntry } from "@/lib/firebase/client/entries";
 
@@ -59,7 +59,7 @@ export default function SubmissionSyncProvider({ children }: Props) {
         }
       }
 
-      // console.log("syncedCount:", syncedCount);
+      console.log("syncedCount:", syncedCount);
 
       if (syncedCount > 0) {
         toast.success(

@@ -7,7 +7,8 @@ It keeps file contents mostly unchanged and focuses on making the folder layout 
 
 - `providers` moved under `app/providers`
 - `pwa` moved under `app/pwa`
-- `NavBar` and `SyncModeToggleButton` moved under `navigation`
+- `layout` moved under `app/layout`
+- `Navbar` and `SyncModeToggleButton` moved under `app/navigation`
 - `match-scouting` renamed to `scouting/match`
 - `FieldLabelWithHelp` moved to `scouting/common`
 - `analysis/TeamsTable.tsx` moved to `analysis/teams/TeamsTable.tsx`
@@ -22,12 +23,12 @@ components/
     team/
     teams/
   app/
+    layout/
+    navigation/
     providers/
     pwa/
   auth/
   dashboard/
-  layout/
-  navigation/
   scouting/
     common/
     match/
@@ -46,7 +47,8 @@ This folder is **not drop-in**. You will need to update imports throughout `src/
 Examples:
 
 - `@/components/providers/AuthProvider` -> `@/components/app/providers/AuthProvider`
-- `@/components/layout/NavBar` -> `@/components/navigation/NavBar`
+- `@/components/layout/PageShell` -> `@/components/app/layout/PageShell`
+- `@/components/navigation/Navbar` -> `@/components/app/navigation/Navbar`
 - `@/components/match-scouting/setup/ScoutingSetupForm` -> `@/components/scouting/match/setup/ScoutingSetupForm`
 - `@/components/match-scouting/FieldLabelWithHelp` -> `@/components/scouting/common/FieldLabelWithHelp`
 

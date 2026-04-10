@@ -1,5 +1,5 @@
 import { MatchScoutingEntryDoc } from "@/lib/firebase/shared/types";
-import { EventQualificationMatch } from "@/lib/server/tba/types";
+import { EventQualificationMatch } from "@/lib/scouting/tba/types";
 
 export type MatchCoverageWarning = {
   matchNumber: number;

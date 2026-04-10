@@ -1,4 +1,4 @@
-import PageShell from "@/components/layout/PageShell";
+import PageShell from "@/components/app/layout/PageShell";
 import AlliancePicker from "@/components/alliance/AlliancePicker";
 
 export default function AlliancePickerPage() {

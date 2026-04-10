@@ -1,14 +1,23 @@
-export default function ScoutingProjectPage({
-  params,
-}: {
-  params: { projectId: string };
-}) {
-  const { projectId } = params;
+import { Alert, Stack, Typography } from "@mui/material";
+import PageShell from "@/components/app/layout/PageShell";
 
+export default function ScanPage() {
   return (
-    <div>
-      <h1>Scouting Project: {projectId}</h1>
-      {/*<QrScannerPage />*/}
-    </div>
+    <PageShell width="md">
+      <Stack spacing={2}>
+        <Typography variant="h4" sx={{ fontWeight: 700 }}>
+          Scan QR Codes
+        </Typography>
+
+        <Typography color="text.secondary">
+          The QR scanner flow is not wired into this route yet.
+        </Typography>
+
+        <Alert severity="info">
+          This page is reserved for importing scouting data from QR codes once
+          the scanner workflow is finished.
+        </Alert>
+      </Stack>
+    </PageShell>
   );
 }

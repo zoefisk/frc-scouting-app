@@ -44,7 +44,7 @@ import {
 import { CSS } from "@dnd-kit/utilities";
 import { getAppSetting, saveAppSetting } from "../../lib/db";
 import { getOfflineEventOptions } from "@/lib/offline/getOfflineEventOptions";
-import { useSyncMode } from "@/components/providers/SyncModeProvider";
+import { useSyncMode } from "@/components/app/providers/SyncModeProvider";
 
 type EventOption = {
   key: string;

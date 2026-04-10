@@ -20,7 +20,7 @@ import {
   saveYearEvents,
   type OfflineEventRecord,
 } from "../../lib/db";
-import { useSyncMode } from "@/components/providers/SyncModeProvider";
+import { useSyncMode } from "@/components/app/providers/SyncModeProvider";
 import { downloadEventBundle } from "@/lib/offline/downloadEventBundle";
 import { useToast } from "@/lib/hooks/useToast";
 

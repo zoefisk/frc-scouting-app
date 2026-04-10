@@ -4,7 +4,7 @@ import React from "react";
 import { Button, Paper, Stack, Typography } from "@mui/material";
 import { useRouter } from "next/navigation";
 
-import { useAuth } from "@/components/providers/AuthProvider";
+import { useAuth } from "@/components/app/providers/AuthProvider";
 import { useToast } from "@/lib/hooks/useToast";
 import { saveJoinedScoutingProject } from "@/lib/db/projects";
 import type {

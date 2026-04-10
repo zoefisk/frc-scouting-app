@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { getEvents } from "@/lib/server/tba/service";
+import { getEvents } from "@/lib/scouting/tba/service";
 
 type Params = {
   params: Promise<{

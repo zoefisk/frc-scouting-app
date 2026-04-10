@@ -6,7 +6,7 @@ import {
   saveEventMatches,
   saveEventTeams,
 } from "@/lib/db/events";
-import type { TeamOption } from "@/lib/server/client/loadEventTeams";
+import type { TeamOption } from "@/lib/scouting/tba/loadEventTeams";
 
 export type RawTbaMatch = {
   key: string;

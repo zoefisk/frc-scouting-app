@@ -16,7 +16,7 @@ import type {
   QuestionnaireAnswers,
   QuestionnaireDefinition,
 } from "@/lib/scouting/questionnaire/types";
-import { TeamOption } from "@/lib/server/client/loadEventTeams";
+import { TeamOption } from "@/lib/scouting/tba/loadEventTeams";
 
 type MatchSetupState = {
   eventKey: string;

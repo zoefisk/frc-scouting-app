@@ -33,7 +33,7 @@ import {
   type RawTbaMatch,
 } from "@/lib/scouting/match/setupData";
 import { useToast } from "@/lib/hooks/useToast";
-import { TeamOption } from "@/lib/server/client/loadEventTeams";
+import { TeamOption } from "@/lib/scouting/tba/loadEventTeams";
 import { useMatchScoutingDraft } from "@/lib/scouting/match/useMatchScoutingDraft";
 import MatchScoutingActionBar from "@/components/scouting/submission/MatchScoutingActionBar";
 

@@ -6,7 +6,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
-import type { TeamOption } from "@/lib/server/client/loadEventTeams";
+import type { TeamOption } from "@/lib/scouting/tba/loadEventTeams";
 
 type Props = {
   teams: TeamOption[];

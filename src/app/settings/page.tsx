@@ -1,4 +1,4 @@
-import PageShell from "@/components/layout/PageShell";
+import PageShell from "@/components/app/layout/PageShell";
 import RequireAuth from "@/components/auth/RequireAuth";
 import UserSettingsPage from "@/components/settings/UserSettingsPage";
 

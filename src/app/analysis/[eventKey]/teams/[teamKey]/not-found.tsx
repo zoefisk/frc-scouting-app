@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { Box, Button, Stack, Typography } from "@mui/material";
-import PageShell from "@/components/layout/PageShell";
+import PageShell from "@/components/app/layout/PageShell";
 
 type Props = {
   params?: Promise<{

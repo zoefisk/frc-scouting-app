@@ -2,15 +2,14 @@ import type { Metadata } from "next";
 // if your Next version is different, MUI notes to use the matching v1X-appRouter package path
 // but for current setups, v15-appRouter is the standard documented path
 
-import ServiceWorkerRegistration from "@/components/pwa/ServiceWorkerRegistration";
+import ServiceWorkerRegistration from "@/components/app/pwa/ServiceWorkerRegistration";
 import React from "react";
 import { AppRouterCacheProvider } from "@mui/material-nextjs/v13-appRouter";
-import GridBackground from "@/components/layout/GridBackground";
-import Navbar from "@/components/navigation/NavBar";
-import ToastProvider from "@/components/providers/ToastProvider";
-import SubmissionSyncProvider from "@/components/providers/SubmissionSyncProvider";
-import { SyncModeProvider } from "@/components/providers/SyncModeProvider";
-import { AuthProvider } from "@/components/providers/AuthProvider";
+import Navbar from "@/components/app/navigation/Navbar";
+import ToastProvider from "@/components/app/providers/ToastProvider";
+import SubmissionSyncProvider from "@/components/app/providers/SubmissionSyncProvider";
+import { SyncModeProvider } from "@/components/app/providers/SyncModeProvider";
+import { AuthProvider } from "@/components/app/providers/AuthProvider";
 
 export const metadata: Metadata = {
   title: "FRC Scouting",

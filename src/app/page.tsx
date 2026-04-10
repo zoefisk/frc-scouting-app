@@ -1,6 +1,6 @@
 import MatchScoutingForm from "@/components/scouting/MatchScoutingForm";
 import { matchScoutingV1 } from "@/lib/scouting/questionnaire/builtins/matchScoutingV1";
-import PageShell from "@/components/layout/PageShell";
+import PageShell from "@/components/app/layout/PageShell";
 
 export default function HomePage() {
   return (

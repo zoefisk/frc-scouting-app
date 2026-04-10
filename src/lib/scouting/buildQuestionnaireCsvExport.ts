@@ -3,7 +3,7 @@ import type {
   QuestionnaireDefinition,
   QuestionnaireFieldDefinition,
 } from "@/lib/scouting/questionnaire/types";
-import { TeamOption } from "@/lib/server/client/loadEventTeams";
+import { TeamOption } from "@/lib/scouting/tba/loadEventTeams";
 
 export type MatchSetupState = {
   eventKey: string;

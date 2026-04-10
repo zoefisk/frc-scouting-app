@@ -9,7 +9,7 @@ import CoverageWarningsCard from "@/components/dashboard/CoverageWarningsCard";
 import MatchCoverageTable from "@/components/dashboard/MatchCoverageTable";
 import DashboardQuickActions from "@/components/dashboard/DashboardQuickActions";
 
-import { useSyncMode } from "@/components/providers/SyncModeProvider";
+import { useSyncMode } from "@/components/app/providers/SyncModeProvider";
 import type { MatchCoverageWarning } from "@/lib/analysis/dashboard/buildCoverageWarnings";
 import { getAppSetting, getScannedEntries, getSubmissions } from "../../lib/db";
 

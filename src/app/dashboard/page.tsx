@@ -1,5 +1,5 @@
 import React from "react";
-import PageShell from "@/components/layout/PageShell";
+import PageShell from "@/components/app/layout/PageShell";
 import RequireAuth from "@/components/auth/RequireAuth";
 import DashboardPageClient from "@/components/dashboard/DashboardPageClient";
 

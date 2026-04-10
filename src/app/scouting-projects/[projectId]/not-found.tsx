@@ -1,4 +1,4 @@
-import PageShell from "@/components/layout/PageShell";
+import PageShell from "@/components/app/layout/PageShell";
 import { Box, Button, Stack, Typography } from "@mui/material";
 import Link from "next/link";
 

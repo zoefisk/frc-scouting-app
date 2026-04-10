@@ -13,8 +13,8 @@ import {
   Typography,
 } from "@mui/material";
 
-import { useAuth } from "@/components/providers/AuthProvider";
-import { useSyncMode } from "@/components/providers/SyncModeProvider";
+import { useAuth } from "@/components/app/providers/AuthProvider";
+import { useSyncMode } from "@/components/app/providers/SyncModeProvider";
 import { useToast } from "@/lib/hooks/useToast";
 import { AppUserProfile } from "@/lib/firebase/shared/types";
 import { getUserProfile } from "@/lib/firebase/client/users";

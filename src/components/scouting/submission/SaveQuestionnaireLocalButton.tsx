@@ -7,7 +7,7 @@ import type {
   QuestionnaireAnswers,
   QuestionnaireDefinition,
 } from "@/lib/scouting/questionnaire/types";
-import { TeamOption } from "@/lib/server/client/loadEventTeams";
+import { TeamOption } from "@/lib/scouting/tba/loadEventTeams";
 
 type ScoutingPosition = "blue1" | "blue2" | "blue3" | "red1" | "red2" | "red3";
 

@@ -3,7 +3,7 @@
 import React from "react";
 import { CircularProgress, Stack } from "@mui/material";
 import { useRouter } from "next/navigation";
-import { useAuth } from "@/components/providers/AuthProvider";
+import { useAuth } from "@/components/app/providers/AuthProvider";
 
 export default function RequireAuth({
   children,

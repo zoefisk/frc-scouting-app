@@ -1,6 +1,6 @@
 import { notFound } from "next/navigation";
-import PageShell from "@/components/layout/PageShell";
-import JoinProjectPageClient from "@/components/scouting-project/JoinProjectPageClient";
+import PageShell from "@/components/app/layout/PageShell";
+import JoinProjectPageClient from "@/components/scouting-projects/JoinProjectPageClient";
 import { getScoutingProjectByInviteLinkTokenServer } from "@/lib/firebase/server/projects";
 
 type Props = {
