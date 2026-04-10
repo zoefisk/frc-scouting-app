@@ -5,7 +5,11 @@ import { Button } from "@mui/material";
 import { useSyncMode } from "@/components/app/providers/SyncModeProvider";
 import { useToast } from "@/lib/hooks/useToast";
 
-export default function SyncModeToggleButton() {
+type Props = {
+  compact?: boolean;
+};
+
+export default function SyncModeToggleButton({ compact = false }: Props) {
   const { actualOnline, syncMode, effectiveOnline, toggleSyncMode } =
     useSyncMode();
   const toast = useToast();
@@ -30,9 +34,20 @@ export default function SyncModeToggleButton() {
       color={effectiveOnline ? "success" : "inherit"}
       onClick={handleToggle}
       disabled={disabled}
-      sx={{ textTransform: "none" }}
+      sx={{
+        minWidth: compact ? 0 : undefined,
+        width: compact ? 48 : "100%",
+        px: compact ? 0 : 1.75,
+        textTransform: "none",
+      }}
     >
-      {effectiveOnline ? "Online Sync On" : "Forced Offline"}
+      {compact
+        ? effectiveOnline
+          ? "On"
+          : "Off"
+        : effectiveOnline
+          ? "Online Sync On"
+          : "Forced Offline"}
     </Button>
   );
 }

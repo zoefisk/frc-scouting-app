@@ -3,6 +3,8 @@ import { Box } from "@mui/material";
 
 type PageWidth = "xs" | "sm" | "md" | "lg" | "xl";
 
+const mobileTopBarHeight = 64;
+
 type Props = {
   children: React.ReactNode;
   width?: PageWidth;
@@ -21,17 +23,17 @@ export default function PageShell({ children, width = "md" }: Props) {
     <Box
       sx={{
         minHeight: "100vh",
-        py: { xs: 6, sm: 8, md: 10 },
+        pt: {
+          xs: `calc(${mobileTopBarHeight}px + 24px)`,
+          sm: `calc(${mobileTopBarHeight}px + 32px)`,
+          md: 10,
+        },
+        pb: { xs: 6, sm: 8, md: 10 },
         ml: {
           xs: 0,
-          md: "96px",
-          lg: "104px",
+          md: "var(--app-sidebar-width, 296px)",
         },
-        pr: {
-          xs: 0,
-          md: 3,
-          lg: 4,
-        },
+        px: { xs: 2, sm: 3, md: 4 },
         transition: "margin-left 0.25s ease",
         display: "flex",
         justifyContent: "center",
