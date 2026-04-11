@@ -22,6 +22,7 @@ import FolderIcon from "@mui/icons-material/Folder";
 import GroupsIcon from "@mui/icons-material/Groups";
 import AnalyticsIcon from "@mui/icons-material/Analytics";
 import QrCodeScannerIcon from "@mui/icons-material/QrCodeScanner";
+import EditNoteIcon from "@mui/icons-material/EditNote";
 import SettingsIcon from "@mui/icons-material/Settings";
 import DashboardIcon from "@mui/icons-material/Dashboard";
 import MenuIcon from "@mui/icons-material/Menu";
@@ -54,6 +55,12 @@ const navItems: NavItem[] = [
     label: "Scouting Projects",
     href: "/scouting-projects",
     icon: <FolderIcon />,
+    section: "primary",
+  },
+  {
+    label: "Match Scouting",
+    href: "/match-scouting",
+    icon: <EditNoteIcon />,
     section: "primary",
   },
   {
