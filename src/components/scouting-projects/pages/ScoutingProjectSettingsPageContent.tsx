@@ -9,8 +9,10 @@ import {
   Chip,
   CircularProgress,
   FormControlLabel,
+  MenuItem,
   Paper,
   Stack,
+  TextField,
   Typography,
 } from "@mui/material";
 
@@ -53,23 +55,28 @@ export default function ScoutingProjectSettingsPageContent({ project }: Props) {
   const toast = useToast();
   const memberRole = getProjectMemberRole(project, user?.uid);
   const canManageProject = memberRole === "owner" || memberRole === "admin";
+  const canReassignRoles = memberRole === "owner";
   const [allowMemberInvites, setAllowMemberInvites] = React.useState(
     project.allowMemberInvites
   );
   const [isSavingPermissions, setIsSavingPermissions] = React.useState(false);
+  const [projectMembers, setProjectMembers] = React.useState(project.members);
+  const [updatingMemberUid, setUpdatingMemberUid] = React.useState<
+    string | null
+  >(null);
 
   const visibleMembers = React.useMemo(() => {
     const members =
       project.accessMode === "authenticated"
-        ? project.members
-        : project.members.filter((member) => member.role !== "member");
+        ? projectMembers
+        : projectMembers.filter((member) => member.role !== "member");
 
     return [...members].sort((a, b) => {
       const roleOrder = ROLE_ORDER[a.role] - ROLE_ORDER[b.role];
       if (roleOrder !== 0) return roleOrder;
       return a.uid.localeCompare(b.uid);
     });
-  }, [project.accessMode, project.members]);
+  }, [project.accessMode, projectMembers]);
 
   const [members, setMembers] = React.useState<MemberListItem[]>([]);
   const [loadingMembers, setLoadingMembers] = React.useState(true);
@@ -129,6 +136,10 @@ export default function ScoutingProjectSettingsPageContent({ project }: Props) {
     setAllowMemberInvites(project.allowMemberInvites);
   }, [project.allowMemberInvites]);
 
+  React.useEffect(() => {
+    setProjectMembers(project.members);
+  }, [project.members]);
+
   const handleAllowMemberInvitesChange = async (
     event: React.ChangeEvent<HTMLInputElement>
   ) => {
@@ -149,6 +160,32 @@ export default function ScoutingProjectSettingsPageContent({ project }: Props) {
       toast.error("Could not update invite permissions.");
     } finally {
       setIsSavingPermissions(false);
+    }
+  };
+
+  const handleMemberRoleChange = async (
+    uid: string,
+    nextRole: Extract<ProjectMemberRole, "admin" | "member">
+  ) => {
+    const previousMembers = projectMembers;
+    const nextMembers = previousMembers.map((member) =>
+      member.uid === uid ? { ...member, role: nextRole } : member
+    );
+
+    setProjectMembers(nextMembers);
+    setUpdatingMemberUid(uid);
+
+    try {
+      await updateScoutingProjectClient(project.id, {
+        members: nextMembers,
+      });
+      toast.success("Member role updated.");
+    } catch (error) {
+      console.error("Failed to update member role:", error);
+      setProjectMembers(previousMembers);
+      toast.error("Could not update member role.");
+    } finally {
+      setUpdatingMemberUid(null);
     }
   };
 
@@ -280,11 +317,34 @@ export default function ScoutingProjectSettingsPageContent({ project }: Props) {
                       </Typography>
                     </Stack>
 
-                    <Chip
-                      label={member.role}
-                      color={getRoleChipColor(member.role)}
-                      size="small"
-                    />
+                    {canReassignRoles && member.role !== "owner" ? (
+                      <TextField
+                        select
+                        size="small"
+                        label="Role"
+                        value={member.role}
+                        disabled={updatingMemberUid === member.uid}
+                        onChange={(event) =>
+                          void handleMemberRoleChange(
+                            member.uid,
+                            event.target.value as Extract<
+                              ProjectMemberRole,
+                              "admin" | "member"
+                            >
+                          )
+                        }
+                        sx={{ minWidth: 140 }}
+                      >
+                        <MenuItem value="member">member</MenuItem>
+                        <MenuItem value="admin">admin</MenuItem>
+                      </TextField>
+                    ) : (
+                      <Chip
+                        label={member.role}
+                        color={getRoleChipColor(member.role)}
+                        size="small"
+                      />
+                    )}
                   </Stack>
                 </Paper>
               ))}
