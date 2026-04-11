@@ -1,235 +1,386 @@
+"use client";
+
 import React from "react";
 import Link from "next/link";
-import {
-  Box,
-  Button,
-  Card,
-  CardContent,
-  Chip,
-  Stack,
-  Typography,
-} from "@mui/material";
-import Grid from "@mui/material/Grid";
-import DashboardIcon from "@mui/icons-material/Dashboard";
-import FolderIcon from "@mui/icons-material/Folder";
-import QrCodeScannerIcon from "@mui/icons-material/QrCodeScanner";
-import GroupsIcon from "@mui/icons-material/Groups";
-import AnalyticsIcon from "@mui/icons-material/Analytics";
-import EditNoteIcon from "@mui/icons-material/EditNote";
+import { Box, Button, Stack, Typography } from "@mui/material";
 
-type WorkflowCard = {
+type FeatureCard = {
   title: string;
-  description: string;
   href: string;
-  icon: React.ReactNode;
   eyebrow: string;
+  description: string;
 };
 
-const workflowCards: WorkflowCard[] = [
+const primaryCards: FeatureCard[] = [
   {
     title: "Match Scouting",
-    description:
-      "Open the live match scouting form, configure the setup, and capture match data quickly.",
     href: "/match-scouting",
-    icon: <EditNoteIcon />,
-    eyebrow: "Collect",
+    eyebrow: "Live Entry",
+    description:
+      "Open the match scouting form and record data during play without leaving the main workflow.",
   },
   {
     title: "Scouting Projects",
-    description:
-      "Create and manage event-specific scouting workspaces, members, and project settings.",
     href: "/scouting-projects",
-    icon: <FolderIcon />,
-    eyebrow: "Organize",
+    eyebrow: "Setup",
+    description:
+      "Create and manage event workspaces, collaboration structure, and scouting configuration.",
   },
   {
     title: "Dashboard",
-    description:
-      "Monitor coverage, queue status, and sync health during active scouting sessions.",
     href: "/dashboard",
-    icon: <DashboardIcon />,
-    eyebrow: "Monitor",
-  },
-  {
-    title: "Alliance Selector",
+    eyebrow: "Operations",
     description:
-      "Review teams and compare options when preparing for alliance selection decisions.",
-    href: "/alliance-selector",
-    icon: <GroupsIcon />,
-    eyebrow: "Prepare",
-  },
-  {
-    title: "Analysis",
-    description:
-      "Explore reporting and team-analysis views as the scouting pipeline gets connected.",
-    href: "/analysis",
-    icon: <AnalyticsIcon />,
-    eyebrow: "Review",
-  },
-  {
-    title: "Scan QR",
-    description:
-      "Import scouting data from QR workflows once scanner-based transfer is ready to use.",
-    href: "/scan",
-    icon: <QrCodeScannerIcon />,
-    eyebrow: "Import",
+      "Check sync status, scouting coverage, and event workflow health throughout the weekend.",
   },
 ];
 
-function WorkflowCardItem({
-  title,
-  description,
-  href,
-  icon,
-  eyebrow,
-}: WorkflowCard) {
+const supportCards: FeatureCard[] = [
+  {
+    title: "Alliance Selector",
+    href: "/alliance-selector",
+    eyebrow: "Strategy",
+    description: "Compare teams and review options for alliance conversations.",
+  },
+  {
+    title: "Analysis",
+    href: "/analysis",
+    eyebrow: "Review",
+    description:
+      "Open reporting and team analysis views as those tools come online.",
+  },
+  {
+    title: "Scan QR",
+    href: "/scan",
+    eyebrow: "Transfer",
+    description: "Bring in scouting data from QR-based transfer workflows.",
+  },
+  {
+    title: "Offline Tools",
+    href: "/offline",
+    eyebrow: "Offline",
+    description: "Manage downloaded events and offline-first operation modes.",
+  },
+];
+
+const workflowSteps = [
+  "Set up the event and project structure first.",
+  "Use match scouting as the live collection workflow.",
+  "Check the dashboard when coverage or sync issues come up.",
+  "Move into analysis and alliance tools when strategy starts.",
+];
+
+function SectionLabel({ children }: { children: React.ReactNode }) {
   return (
-    <Card
-      variant="outlined"
+    <Typography
+      variant="overline"
       sx={{
-        height: "100%",
-        borderRadius: 4,
-        borderColor: "rgba(15,23,42,0.12)",
-        background:
-          "linear-gradient(180deg, rgba(255,255,255,0.98) 0%, rgba(248,250,252,0.98) 100%)",
-        boxShadow: "0 20px 50px rgba(15,23,42,0.06)",
+        color: "#64748b",
+        fontWeight: 800,
+        letterSpacing: "0.14em",
       }}
     >
-      <CardContent sx={{ p: 3.25 }}>
-        <Stack spacing={2.5} sx={{ height: "100%" }}>
-          <Stack direction="row" justifyContent="space-between" spacing={2}>
-            <Chip
-              label={eyebrow}
-              size="small"
-              sx={{
-                alignSelf: "flex-start",
-                color: "#1d4ed8",
-                backgroundColor: "rgba(59,130,246,0.12)",
-                fontWeight: 700,
-              }}
-            />
+      {children}
+    </Typography>
+  );
+}
 
-            <Box
+function HomeCard({ card }: { card: FeatureCard }) {
+  return (
+    <Box
+      sx={{
+        minWidth: 0,
+        border: "1px solid rgba(15,23,42,0.09)",
+        borderRadius: 5,
+        background:
+          "linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(248,250,252,0.92) 100%)",
+        boxShadow: "0 16px 38px rgba(15,23,42,0.05)",
+        p: 3,
+        position: "relative",
+        overflow: "hidden",
+        "&::before": {
+          content: '""',
+          position: "absolute",
+          inset: 0,
+          background:
+            "linear-gradient(135deg, rgba(244,114,182,0.04), rgba(251,191,36,0.03), rgba(59,130,246,0.05))",
+          pointerEvents: "none",
+        },
+      }}
+    >
+      <Stack spacing={2} sx={{ position: "relative", zIndex: 1 }}>
+        <SectionLabel>{card.eyebrow}</SectionLabel>
+
+        <Typography
+          variant="h5"
+          sx={{
+            fontWeight: 900,
+            letterSpacing: "-0.03em",
+            lineHeight: 1.05,
+          }}
+        >
+          {card.title}
+        </Typography>
+
+        <Typography
+          sx={{
+            color: "text.secondary",
+            maxWidth: 420,
+          }}
+        >
+          {card.description}
+        </Typography>
+
+        <Box>
+          <Link href={card.href}>
+            <Button
+              variant="text"
               sx={{
-                width: 42,
-                height: 42,
-                borderRadius: 3,
-                display: "grid",
-                placeItems: "center",
-                color: "#0f172a",
-                backgroundColor: "rgba(15,23,42,0.06)",
+                px: 0,
+                color: "#1d4ed8",
+                "&:hover": {
+                  backgroundColor: "transparent",
+                  color: "#1e40af",
+                },
               }}
             >
-              {icon}
-            </Box>
-          </Stack>
+              Open
+            </Button>
+          </Link>
+        </Box>
+      </Stack>
+    </Box>
+  );
+}
 
-          <Box>
-            <Typography variant="h6" sx={{ fontWeight: 800, mb: 1 }}>
-              {title}
-            </Typography>
+function HeroPanel() {
+  return (
+    <Box
+      sx={{
+        position: "relative",
+        overflow: "hidden",
+        border: "1px solid rgba(15,23,42,0.09)",
+        borderRadius: 6,
+        px: { xs: 3, md: 5 },
+        py: { xs: 4, md: 5 },
+        background:
+          "linear-gradient(180deg, rgba(255,255,255,1) 0%, rgba(248,250,252,0.94) 100%)",
+        boxShadow: "0 18px 44px rgba(15,23,42,0.06)",
+        "&::before": {
+          content: '""',
+          position: "absolute",
+          inset: 0,
+          background:
+            "radial-gradient(circle at 12% 18%, rgba(244,114,182,0.12), transparent 22%), radial-gradient(circle at 88% 16%, rgba(251,191,36,0.1), transparent 18%), radial-gradient(circle at 76% 72%, rgba(59,130,246,0.12), transparent 24%)",
+          pointerEvents: "none",
+        },
+      }}
+    >
+      <Stack
+        spacing={3}
+        sx={{
+          position: "relative",
+          zIndex: 1,
+          maxWidth: 760,
+        }}
+      >
+        <SectionLabel>PEACCEful Scouting</SectionLabel>
 
-            <Typography color="text.secondary">{description}</Typography>
-          </Box>
+        <Typography
+          variant="h2"
+          sx={{
+            fontSize: { xs: "2.5rem", md: "3.8rem" },
+            lineHeight: 0.96,
+            letterSpacing: "-0.06em",
+            fontWeight: 900,
+            color: "#0f172a",
+          }}
+        >
+          Run an event from one calm, reliable scouting workspace.
+        </Typography>
 
-          <Box sx={{ mt: "auto" }}>
-            <Link href={href} style={{ alignSelf: "flex-start" }}>
-              <Button variant="text" sx={{ px: 0 }}>
-                Open
-              </Button>
-            </Link>
-          </Box>
+        <Typography
+          sx={{
+            fontSize: { xs: "1rem", md: "1.08rem" },
+            maxWidth: 680,
+            color: "rgba(15,23,42,0.72)",
+          }}
+        >
+          Use this app to handle live match scouting, event setup, operational
+          awareness, and strategy workflows without bouncing between
+          disconnected tools.
+        </Typography>
+
+        <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
+          <Link href="/match-scouting">
+            <Button variant="contained" size="large">
+              Start Match Scouting
+            </Button>
+          </Link>
+
+          <Link href="/scouting-projects">
+            <Button
+              variant="outlined"
+              size="large"
+              sx={{
+                color: "#0f172a",
+                borderColor: "rgba(15,23,42,0.14)",
+              }}
+            >
+              Open Scouting Projects
+            </Button>
+          </Link>
         </Stack>
-      </CardContent>
-    </Card>
+      </Stack>
+    </Box>
+  );
+}
+
+function WorkflowCard() {
+  return (
+    <Box
+      sx={{
+        border: "1px solid rgba(15,23,42,0.09)",
+        borderRadius: 5,
+        background:
+          "linear-gradient(180deg, rgba(255,255,255,0.96) 0%, rgba(248,250,252,0.94) 100%)",
+        boxShadow: "0 16px 38px rgba(15,23,42,0.08)",
+        p: 3,
+        position: "relative",
+        overflow: "hidden",
+        "&::before": {
+          content: '""',
+          position: "absolute",
+          inset: 0,
+          background:
+            "linear-gradient(180deg, rgba(59,130,246,0.02), rgba(168,85,247,0.03))",
+          pointerEvents: "none",
+        },
+      }}
+    >
+      <Stack spacing={2} sx={{ position: "relative", zIndex: 1 }}>
+        <SectionLabel>Recommended Flow</SectionLabel>
+
+        {workflowSteps.map((step, index) => (
+          <Stack
+            key={step}
+            direction="row"
+            spacing={1.25}
+            alignItems="flex-start"
+          >
+            <Box
+              sx={{
+                width: 28,
+                height: 28,
+                borderRadius: 999,
+                display: "grid",
+                placeItems: "center",
+                backgroundColor: "rgba(37,99,235,0.1)",
+                color: "#1d4ed8",
+                fontWeight: 900,
+                fontSize: "0.82rem",
+                flexShrink: 0,
+              }}
+            >
+              {index + 1}
+            </Box>
+
+            <Typography color="text.secondary">{step}</Typography>
+          </Stack>
+        ))}
+      </Stack>
+    </Box>
   );
 }
 
 export default function HomePageContent() {
   return (
     <Stack spacing={5}>
-      <Box
-        sx={{
-          position: "relative",
-          overflow: "hidden",
-          borderRadius: 5,
-          px: { xs: 3, md: 5 },
-          py: { xs: 4, md: 5 },
-          background:
-            "radial-gradient(circle at top left, rgba(96,165,250,0.22), transparent 34%), linear-gradient(135deg, #eff6ff 0%, #f8fafc 58%, #eef2ff 100%)",
-          border: "1px solid rgba(59,130,246,0.14)",
-        }}
-      >
-        <Stack
-          spacing={2.5}
-          sx={{ maxWidth: 760, position: "relative", zIndex: 1 }}
-        >
-          <Chip
-            label="PEACCEful Scouting"
-            sx={{
-              alignSelf: "flex-start",
-              fontWeight: 700,
-              backgroundColor: "rgba(15,23,42,0.08)",
-            }}
-          />
-
-          <Typography
-            variant="h2"
-            sx={{
-              fontSize: { xs: "2.2rem", md: "3.5rem" },
-              lineHeight: 1,
-              fontWeight: 900,
-              letterSpacing: "-0.04em",
-              color: "#0f172a",
-            }}
-          >
-            Run scouting from one clean workspace.
-          </Typography>
-
-          <Typography
-            sx={{
-              maxWidth: 620,
-              color: "rgba(15,23,42,0.74)",
-              fontSize: { xs: "1rem", md: "1.08rem" },
-            }}
-          >
-            Collect match data, manage scouting projects, monitor sync health,
-            and prepare for alliance decisions without bouncing between
-            disconnected tools.
-          </Typography>
-
-          <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
-            <Link href="/match-scouting">
-              <Button variant="contained" size="large">
-                Start Match Scouting
-              </Button>
-            </Link>
-
-            <Link href="/scouting-projects">
-              <Button variant="outlined" size="large">
-                Open Projects
-              </Button>
-            </Link>
-          </Stack>
-        </Stack>
-      </Box>
+      <HeroPanel />
 
       <Box>
-        <Typography variant="h4" sx={{ fontWeight: 800, mb: 1 }}>
-          Main Workflows
+        <Typography
+          variant="h4"
+          sx={{
+            fontWeight: 900,
+            mb: 2.5,
+            textDecoration: "underline",
+            textDecorationColor: "rgba(59,130,246,0.18)",
+            textUnderlineOffset: "0.14em",
+          }}
+        >
+          Primary Workflows
         </Typography>
 
-        <Typography color="text.secondary" sx={{ mb: 3 }}>
-          Jump into the parts of the app you use during a real event weekend.
-        </Typography>
-
-        <Grid container spacing={2.5}>
-          {workflowCards.map((card) => (
-            <Grid key={card.href} size={{ xs: 12, md: 6, xl: 4 }}>
-              <WorkflowCardItem {...card} />
-            </Grid>
+        <Box
+          sx={{
+            display: "grid",
+            gridTemplateColumns: {
+              xs: "1fr",
+              md: "repeat(2, minmax(0, 1fr))",
+              xl: "repeat(3, minmax(0, 1fr))",
+            },
+            gap: 2.5,
+            alignItems: "start",
+          }}
+        >
+          {primaryCards.map((card) => (
+            <HomeCard key={card.href} card={card} />
           ))}
-        </Grid>
+        </Box>
+      </Box>
+
+      <Box
+        sx={{
+          mt: 1,
+        }}
+      >
+        <Typography
+          variant="h4"
+          sx={{
+            fontWeight: 900,
+            mb: 2.5,
+            textDecoration: "underline",
+            textDecorationColor: "rgba(244,114,182,0.14)",
+            textUnderlineOffset: "0.14em",
+          }}
+        >
+          Supporting Tools
+        </Typography>
+
+        <Box
+          sx={{
+            minWidth: 0,
+            display: "grid",
+            gridTemplateColumns: {
+              xs: "1fr",
+              md: "repeat(2, minmax(0, 1fr))",
+            },
+            gap: 2.5,
+            alignItems: "start",
+          }}
+        >
+          {supportCards.map((card) => (
+            <HomeCard key={card.href} card={card} />
+          ))}
+        </Box>
+      </Box>
+
+      <Box sx={{ mt: 1, maxWidth: 420 }}>
+        <Typography
+          variant="h4"
+          sx={{
+            fontWeight: 900,
+            mb: 2.5,
+            textDecoration: "underline",
+            textDecorationColor: "rgba(99,102,241,0.14)",
+            textUnderlineOffset: "0.14em",
+          }}
+        >
+          Event Flow
+        </Typography>
+
+        <WorkflowCard />
       </Box>
     </Stack>
   );
