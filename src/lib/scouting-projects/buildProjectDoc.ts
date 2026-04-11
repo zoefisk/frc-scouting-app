@@ -50,8 +50,6 @@ export function buildScoutingProjectDoc({
 
     activeQuestionnaireIds,
 
-    scoutingSchedule: undefined,
-
     createdByUid,
     memberUids: [createdByUid],
     members: [{ uid: createdByUid, role: "owner" }],

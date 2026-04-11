@@ -321,8 +321,12 @@ export default function ScoutingProjectBuilder() {
       router.push(`/scouting-projects/${data.projectId}`);
     } catch (error) {
       console.error("Failed to create scouting project:", error);
-      setSubmitError("Could not create scouting project.");
-      toast.error("Could not create scouting project.");
+      const message =
+        error instanceof Error
+          ? error.message
+          : "Could not create scouting project.";
+      setSubmitError(message);
+      toast.error(message);
     } finally {
       setIsSubmitting(false);
     }
