@@ -36,6 +36,7 @@ export type RawTbaRankingsResponse = {
 export type RawTbaEvent = {
   key: string;
   name: string;
+  week?: number | null;
   start_date?: string;
   end_date?: string;
 };
@@ -76,4 +77,5 @@ export type EventTeamWithRank = {
 export type SimpleEventOption = {
   key: string;
   name: string;
+  week: number | null;
 };

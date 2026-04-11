@@ -23,10 +23,12 @@ import {
 } from "@/lib/scouting-projects/validation";
 import { getCurrentUserIdToken } from "@/lib/firebase/client/auth";
 import CreateExampleProjectButton from "@/components/scouting-projects/CreateExampleProjectButton";
+import ProjectBuilderEventField from "@/components/scouting-projects/pages/new/ProjectBuilderEventField";
 import ProjectBuilderTeamKeysField from "@/components/scouting-projects/pages/new/ProjectBuilderTeamKeysField";
 import UnsavedChangesGuard from "@/components/app/guards/UnsavedChangesGuard";
 import { loadEventTeamsForScouting } from "@/lib/scouting/match/setupData";
 import type { TeamOption } from "@/lib/scouting/tba/loadEventTeams";
+import type { SimpleEventOption } from "@/lib/scouting/tba/types";
 
 type FormState = {
   name: string;
@@ -78,6 +80,10 @@ export default function ScoutingProjectBuilder() {
   const { user } = useAuth();
 
   const [form, setForm] = React.useState<FormState>(INITIAL_FORM_STATE);
+  const [availableEvents, setAvailableEvents] = React.useState<
+    SimpleEventOption[]
+  >([]);
+  const [eventsLoading, setEventsLoading] = React.useState(false);
   const [availableTeams, setAvailableTeams] = React.useState<TeamOption[]>([]);
   const [selectedTeams, setSelectedTeams] = React.useState<TeamOption[]>([]);
   const [teamsLoading, setTeamsLoading] = React.useState(false);
@@ -92,10 +98,15 @@ export default function ScoutingProjectBuilder() {
   const [submitError, setSubmitError] = React.useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = React.useState(false);
   const [hasSaved, setHasSaved] = React.useState(false);
+  const eventKeyRef = React.useRef(form.eventKey);
 
   const usesMatchData = form.dataMode === "match" || form.dataMode === "both";
   const showUnsavedChangesGuard =
     (isDirty(form) || selectedTeams.length > 0) && !hasSaved;
+
+  React.useEffect(() => {
+    eventKeyRef.current = form.eventKey;
+  }, [form.eventKey]);
 
   const updateForm = React.useCallback(
     <K extends keyof FormState>(field: K, value: FormState[K]) => {
@@ -107,6 +118,66 @@ export default function ScoutingProjectBuilder() {
     },
     []
   );
+
+  React.useEffect(() => {
+    let cancelled = false;
+    const parsedYear = Number(form.year.trim());
+
+    async function loadEvents() {
+      if (!Number.isInteger(parsedYear) || parsedYear <= 0) {
+        setAvailableEvents([]);
+        setForm((current) => ({ ...current, eventKey: "" }));
+        setAvailableTeams([]);
+        setSelectedTeams([]);
+        setEventsLoading(false);
+        return;
+      }
+
+      try {
+        setEventsLoading(true);
+
+        const response = await fetch(`/api/tba/events/${parsedYear}`);
+        const data = (await response.json()) as
+          | SimpleEventOption[]
+          | { error?: string };
+
+        if (!response.ok || !Array.isArray(data)) {
+          throw new Error(
+            "error" in data && data.error
+              ? data.error
+              : "Could not load events from TBA."
+          );
+        }
+
+        if (cancelled) {
+          return;
+        }
+
+        setAvailableEvents(data);
+
+        if (!data.some((event) => event.key === eventKeyRef.current.trim())) {
+          setForm((current) => ({ ...current, eventKey: "" }));
+          setAvailableTeams([]);
+          setSelectedTeams([]);
+        }
+      } catch (error) {
+        console.error("Failed to load events for project builder:", error);
+        if (!cancelled) {
+          setAvailableEvents([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setEventsLoading(false);
+        }
+      }
+    }
+
+    void loadEvents();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [form.year]);
 
   React.useEffect(() => {
     let cancelled = false;
@@ -310,24 +381,29 @@ export default function ScoutingProjectBuilder() {
               />
 
               <TextField
-                fullWidth
-                label="Event Key"
-                value={form.eventKey}
-                onChange={(event) => {
-                  updateForm("eventKey", event.target.value);
-                  setSelectedTeams([]);
-                }}
-                error={Boolean(errors.eventKey)}
-                helperText={errors.eventKey ?? "Example: 2026cthar"}
-              />
-
-              <TextField
                 label="Year"
                 value={form.year}
-                onChange={(event) => updateForm("year", event.target.value)}
+                onChange={(event) => {
+                  updateForm("year", event.target.value);
+                  setSelectedTeams([]);
+                }}
                 error={Boolean(errors.year)}
                 helperText={errors.year}
                 sx={{ minWidth: { md: 160 } }}
+              />
+            </Stack>
+
+            <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
+              <ProjectBuilderEventField
+                events={availableEvents}
+                value={form.eventKey}
+                loading={eventsLoading}
+                disabled={!form.year.trim()}
+                error={errors.eventKey}
+                onChange={(eventKey) => {
+                  updateForm("eventKey", eventKey);
+                  setSelectedTeams([]);
+                }}
               />
             </Stack>
 

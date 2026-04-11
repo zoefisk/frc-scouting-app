@@ -33,11 +33,15 @@ export async function getEvent(eventKey: string): Promise<RawTbaEvent> {
 export async function getEvents(
   year: number | string
 ): Promise<SimpleEventOption[]> {
-  const data = await fetchTbaJson<RawTbaEvent[]>(`/events/${year}/simple`);
+  const data = await fetchTbaJson<RawTbaEvent[]>(`/events/${year}`);
 
   return (data ?? []).map((event) => ({
     key: event.key,
     name: event.name,
+    week:
+      typeof event.week === "number" && Number.isFinite(event.week)
+        ? event.week
+        : null,
   }));
 }
 
