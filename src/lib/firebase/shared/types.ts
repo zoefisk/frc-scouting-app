@@ -1,4 +1,5 @@
 export type MatchScoutingEntryDoc = {
+  projectId?: string | null;
   eventKey: string;
   matchNumber: number;
   teamNumber: number | null;

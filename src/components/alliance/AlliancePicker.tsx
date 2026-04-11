@@ -77,6 +77,10 @@ type AllianceTeam = {
 type Props = {
   myTeamNumber?: number;
   defaultYear?: number;
+  defaultEventKey?: string;
+  lockProjectEvent?: boolean;
+  title?: string;
+  description?: string;
 };
 
 const ALLIANCE_PICKER_YEAR_KEY = "alliancePickerYear";
@@ -244,6 +248,10 @@ function SortableTeamRow({
 export default function AlliancePicker({
   myTeamNumber = 3461,
   defaultYear = 2026,
+  defaultEventKey,
+  lockProjectEvent = false,
+  title = "Alliance Selector",
+  description = "Review ranked teams, reorder your board, and export your shortlist.",
 }: Props) {
   const [year, setYear] = React.useState(String(defaultYear));
   const [events, setEvents] = React.useState<EventOption[]>([]);
@@ -277,6 +285,17 @@ export default function AlliancePicker({
 
   React.useEffect(() => {
     async function loadSavedSettings() {
+      if (lockProjectEvent) {
+        setYear(String(defaultYear));
+        setSelectedEvent(
+          defaultEventKey
+            ? { key: defaultEventKey, name: defaultEventKey }
+            : null
+        );
+        setSettingsLoaded(true);
+        return;
+      }
+
       try {
         const savedYear = await getAppSetting<string>(ALLIANCE_PICKER_YEAR_KEY);
         const savedEventKey = await getAppSetting<string | null>(
@@ -304,10 +323,10 @@ export default function AlliancePicker({
     }
 
     loadSavedSettings();
-  }, [defaultYear]);
+  }, [defaultEventKey, defaultYear, lockProjectEvent]);
 
   React.useEffect(() => {
-    if (!settingsLoaded) return;
+    if (!settingsLoaded || lockProjectEvent) return;
 
     async function persistYear() {
       try {
@@ -318,10 +337,10 @@ export default function AlliancePicker({
     }
 
     persistYear();
-  }, [year, settingsLoaded]);
+  }, [lockProjectEvent, year, settingsLoaded]);
 
   React.useEffect(() => {
-    if (!settingsLoaded) return;
+    if (!settingsLoaded || lockProjectEvent) return;
 
     async function persistEvent() {
       try {
@@ -335,7 +354,7 @@ export default function AlliancePicker({
     }
 
     persistEvent();
-  }, [selectedEvent, settingsLoaded]);
+  }, [lockProjectEvent, selectedEvent, settingsLoaded]);
 
   React.useEffect(() => {
     async function loadEvents() {
@@ -358,6 +377,19 @@ export default function AlliancePicker({
 
     loadEvents();
   }, [year, effectiveOnline]);
+
+  React.useEffect(() => {
+    if (!selectedEvent?.key || events.length === 0) {
+      return;
+    }
+
+    const matchingEvent =
+      events.find((event) => event.key === selectedEvent.key) ?? null;
+
+    if (matchingEvent && matchingEvent.name !== selectedEvent.name) {
+      setSelectedEvent(matchingEvent);
+    }
+  }, [events, selectedEvent]);
 
   React.useEffect(() => {
     async function loadRankingsAndTeams() {
@@ -558,6 +590,13 @@ export default function AlliancePicker({
 
   return (
     <Stack spacing={2}>
+      <Stack spacing={0.75}>
+        <Typography variant="h4" sx={{ fontWeight: 700 }}>
+          {title}
+        </Typography>
+        <Typography color="text.secondary">{description}</Typography>
+      </Stack>
+
       <Stack
         direction={{ xs: "column", lg: "row" }}
         spacing={1.5}
@@ -568,6 +607,7 @@ export default function AlliancePicker({
           value={year}
           onChange={(e) => setYear(e.target.value)}
           size="small"
+          disabled={lockProjectEvent}
           sx={{ width: 120 }}
         />
 
@@ -576,6 +616,7 @@ export default function AlliancePicker({
           value={selectedEvent}
           onChange={(_, newValue) => setSelectedEvent(newValue)}
           loading={loadingEvents}
+          disabled={lockProjectEvent}
           getOptionLabel={(option) => `${option.name} (${option.key})`}
           isOptionEqualToValue={(option, value) => option.key === value.key}
           renderInput={(params) => (

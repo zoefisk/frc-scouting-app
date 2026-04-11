@@ -4,6 +4,7 @@ import { QuestionnaireAnswers } from "@/lib/scouting/questionnaire/types";
 
 export type QuestionnaireResponseRecord = {
   responseId: string;
+  projectId?: string;
   questionnaireId: string;
   questionnaireVersion: number;
   answers: QuestionnaireAnswers;
@@ -21,6 +22,7 @@ export type QuestionnaireResponseRecord = {
 
 export type BuildQuestionnaireResponseInput = {
   responseId: string;
+  projectId?: string;
   questionnaireId: string;
   questionnaireVersion: number;
   answers: QuestionnaireAnswers;

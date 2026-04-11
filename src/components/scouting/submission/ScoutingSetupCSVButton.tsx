@@ -7,24 +7,16 @@ import type {
   QuestionnaireAnswers,
   QuestionnaireDefinition,
 } from "@/lib/scouting/questionnaire/types";
-import { TeamOption } from "@/lib/scouting/tba/loadEventTeams";
 import {
   buildQuestionnaireCsvExport,
   isQuestionnaireSetupComplete,
 } from "@/lib/scouting/buildQuestionnaireCsvExport";
-
-type MatchSetupState = {
-  eventKey: string;
-  matchNumber: string;
-  scoutingPosition: string | null;
-  teamPresence: string;
-  selectedTeam: TeamOption | null;
-};
+import { ScoutingSetupState } from "@/components/scouting/submission/types";
 
 type Props = {
   questionnaire: QuestionnaireDefinition;
   answers: QuestionnaireAnswers;
-  setup: MatchSetupState;
+  setup: ScoutingSetupState;
   disabled?: boolean;
 };
 

@@ -37,6 +37,7 @@ import { TeamOption } from "@/lib/scouting/tba/loadEventTeams";
 import { useMatchScoutingDraft } from "@/lib/scouting/match/useMatchScoutingDraft";
 import MatchScoutingActionBar from "@/components/scouting/submission/MatchScoutingActionBar";
 import UnsavedChangesGuard from "@/components/app/guards/UnsavedChangesGuard";
+import { ScoutingSetupState } from "@/components/scouting/submission/types";
 
 type TeamPresence = "present" | "absent" | "surrogate";
 
@@ -50,6 +51,7 @@ export type MatchSetupState = {
 
 type Props = {
   questionnaire: QuestionnaireDefinition;
+  projectId?: string;
   defaultEventKey?: string;
   title?: string;
   description?: string;
@@ -57,6 +59,7 @@ type Props = {
 
 export default function MatchScoutingForm({
   questionnaire,
+  projectId,
   defaultEventKey = "",
   title = "Match Scouting",
   description = "Configure the match, complete the questionnaire, then save or submit.",
@@ -236,20 +239,29 @@ export default function MatchScoutingForm({
     setTeamAutoDetected(Boolean(suggestedTeam));
   }, [matches, teams, matchNumber, scoutingPosition, teamWasManuallyChanged]);
 
-  const setup = React.useMemo<MatchSetupState>(
+  const setup = React.useMemo<ScoutingSetupState>(
     () => ({
+      kind: "match",
+      projectId,
       eventKey: eventKey.trim(),
       matchNumber,
       scoutingPosition,
       teamPresence,
       selectedTeam,
     }),
-    [eventKey, matchNumber, scoutingPosition, teamPresence, selectedTeam]
+    [
+      eventKey,
+      matchNumber,
+      projectId,
+      scoutingPosition,
+      teamPresence,
+      selectedTeam,
+    ]
   );
 
   const setupIsComplete =
     setup.eventKey !== "" &&
-    setup.matchNumber.trim() !== "" &&
+    (setup.matchNumber ?? "").trim() !== "" &&
     setup.scoutingPosition != null &&
     setup.selectedTeam != null;
 

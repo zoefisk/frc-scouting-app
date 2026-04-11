@@ -8,31 +8,13 @@ import type {
 import ScoutingSetupQr from "@/components/scouting/submission/ScoutingSetupQr";
 import SaveQuestionnaireLocalButton from "@/components/scouting/submission/SaveQuestionnaireLocalButton";
 import SaveQuestionnaireCloudButton from "@/components/scouting/submission/SaveQuestionnaireCloudButton";
-import { TeamOption } from "@/lib/scouting/tba/loadEventTeams";
 import ScoutingSetupCsvButton from "@/components/scouting/submission/ScoutingSetupCSVButton";
-
-export type ScoutingPosition =
-  | "blue1"
-  | "blue2"
-  | "blue3"
-  | "red1"
-  | "red2"
-  | "red3";
-
-export type TeamPresence = "present" | "absent" | "surrogate";
-
-export type MatchSetupState = {
-  eventKey: string;
-  matchNumber: string;
-  scoutingPosition: ScoutingPosition | null;
-  teamPresence: TeamPresence;
-  selectedTeam: TeamOption | null;
-};
+import { ScoutingSetupState } from "@/components/scouting/submission/types";
 
 type Props = {
   questionnaire: QuestionnaireDefinition;
   answers: QuestionnaireAnswers;
-  setup: MatchSetupState;
+  setup: ScoutingSetupState;
   disabled?: boolean;
   effectiveOnline?: boolean;
   onReset?: () => void;

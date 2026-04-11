@@ -3,20 +3,12 @@ import type {
   QuestionnaireDefinition,
   QuestionnaireFieldDefinition,
 } from "@/lib/scouting/questionnaire/types";
-import { TeamOption } from "@/lib/scouting/tba/loadEventTeams";
-
-export type MatchSetupState = {
-  eventKey: string;
-  matchNumber: string;
-  scoutingPosition: string | null;
-  teamPresence: string;
-  selectedTeam: TeamOption | null;
-};
+import { ScoutingSetupState } from "@/components/scouting/submission/types";
 
 type CsvExportArgs = {
   questionnaire: QuestionnaireDefinition;
   answers: QuestionnaireAnswers;
-  setup: MatchSetupState;
+  setup: ScoutingSetupState;
 };
 
 function escapeCsvValue(value: unknown): string {
@@ -33,13 +25,18 @@ function getAllFields(
   return questionnaire.sections.flatMap((section) => section.fields);
 }
 
-export function isQuestionnaireSetupComplete(setup: MatchSetupState): boolean {
-  return Boolean(
-    setup.eventKey &&
-    setup.matchNumber &&
-    setup.scoutingPosition &&
-    setup.selectedTeam
-  );
+export function isQuestionnaireSetupComplete(
+  setup: ScoutingSetupState
+): boolean {
+  if (!setup.eventKey || !setup.selectedTeam) {
+    return false;
+  }
+
+  if (setup.kind === "pit") {
+    return true;
+  }
+
+  return Boolean(setup.matchNumber && setup.scoutingPosition);
 }
 
 export function buildQuestionnaireCsvExport({
@@ -53,13 +50,12 @@ export function buildQuestionnaireCsvExport({
   const fields = getAllFields(questionnaire);
 
   const metadataEntries: Array<[string, unknown]> = [
+    ["kind", setup.kind],
+    ["projectId", setup.projectId ?? ""],
     ["questionnaireId", questionnaire.id],
     ["questionnaireName", questionnaire.name],
     ["questionnaireVersion", questionnaire.version],
     ["eventKey", setup.eventKey],
-    ["matchNumber", setup.matchNumber],
-    ["scoutingPosition", setup.scoutingPosition],
-    ["teamPresence", setup.teamPresence],
     ["teamKey", setup.selectedTeam?.key ?? ""],
     ["teamNumber", setup.selectedTeam?.team_number ?? ""],
     [
@@ -71,6 +67,21 @@ export function buildQuestionnaireCsvExport({
     ],
     ["savedAt", new Date().toISOString()],
   ];
+
+  if (setup.matchNumber) {
+    metadataEntries.splice(5, 0, ["matchNumber", setup.matchNumber]);
+  }
+
+  if (setup.scoutingPosition) {
+    metadataEntries.splice(setup.matchNumber ? 6 : 5, 0, [
+      "scoutingPosition",
+      setup.scoutingPosition,
+    ]);
+  }
+
+  if (setup.teamPresence) {
+    metadataEntries.push(["teamPresence", setup.teamPresence]);
+  }
 
   const answerEntries: Array<[string, unknown]> = fields.map((field) => [
     field.id,
@@ -89,7 +100,7 @@ export function buildQuestionnaireCsvExport({
   const teamLabel = setup.selectedTeam?.team_number
     ? `team-${setup.selectedTeam.team_number}`
     : "team";
-  const matchLabel = setup.matchNumber || "match";
+  const matchLabel = setup.matchNumber || setup.kind;
 
   const fileName = `${questionnaire.id}-${setup.eventKey}-${matchLabel}-${teamLabel}.csv`;
 

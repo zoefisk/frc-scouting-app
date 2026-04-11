@@ -1,30 +1,21 @@
 import React from "react";
 import { Button } from "@mui/material";
 
-import { saveMatchScoutingEntry } from "@/lib/firebase/client/entries";
+import {
+  saveMatchScoutingEntry,
+  savePitScoutingEntry,
+} from "@/lib/firebase/client/entries";
 import { useToast } from "@/lib/hooks/useToast";
 import type {
   QuestionnaireAnswers,
   QuestionnaireDefinition,
 } from "@/lib/scouting/questionnaire/types";
-import { TeamOption } from "@/lib/scouting/tba/loadEventTeams";
-
-type ScoutingPosition = "blue1" | "blue2" | "blue3" | "red1" | "red2" | "red3";
-
-type TeamPresence = "present" | "absent" | "surrogate";
-
-type MatchSetupState = {
-  eventKey: string;
-  matchNumber: string;
-  scoutingPosition: ScoutingPosition | null;
-  teamPresence: TeamPresence;
-  selectedTeam: TeamOption | null;
-};
+import { ScoutingSetupState } from "@/components/scouting/submission/types";
 
 type Props = {
   questionnaire: QuestionnaireDefinition;
   answers: QuestionnaireAnswers;
-  setup: MatchSetupState;
+  setup: ScoutingSetupState;
   disabled?: boolean;
   onReset?: () => void;
   onSuccess?: () => void;
@@ -33,7 +24,7 @@ type Props = {
 function buildGenericQuestionnairePayload(
   questionnaire: QuestionnaireDefinition,
   answers: QuestionnaireAnswers,
-  setup: MatchSetupState,
+  setup: ScoutingSetupState,
   entryId: string
 ) {
   return {
@@ -46,10 +37,12 @@ function buildGenericQuestionnairePayload(
       version: questionnaire.version,
     },
     setup: {
+      kind: setup.kind,
+      projectId: setup.projectId ?? null,
       eventKey: setup.eventKey,
-      matchNumber: Number(setup.matchNumber),
-      scoutingPosition: setup.scoutingPosition,
-      teamPresence: setup.teamPresence,
+      matchNumber: setup.matchNumber ? Number(setup.matchNumber) : null,
+      scoutingPosition: setup.scoutingPosition ?? null,
+      teamPresence: setup.teamPresence ?? null,
       teamKey: setup.selectedTeam?.key ?? null,
       teamNumber: setup.selectedTeam?.team_number ?? null,
       teamName:
@@ -80,7 +73,7 @@ export default function SaveQuestionnaireCloudButton({
     }
 
     const matchNumber = Number(setup.matchNumber);
-    if (!Number.isFinite(matchNumber)) {
+    if (setup.kind === "match" && !Number.isFinite(matchNumber)) {
       toast.warning("Match number must be numeric to save to cloud.");
       return;
     }
@@ -91,17 +84,28 @@ export default function SaveQuestionnaireCloudButton({
           ? crypto.randomUUID()
           : `${Date.now()}-${setup.selectedTeam.key}`;
 
-      await saveMatchScoutingEntry({
-        eventKey: setup.eventKey,
-        matchNumber,
-        entryId,
-        payload: buildGenericQuestionnairePayload(
-          questionnaire,
-          answers,
-          setup,
-          entryId
-        ),
-      });
+      const payload = buildGenericQuestionnairePayload(
+        questionnaire,
+        answers,
+        setup,
+        entryId
+      );
+
+      if (setup.kind === "match") {
+        await saveMatchScoutingEntry({
+          eventKey: setup.eventKey,
+          matchNumber,
+          entryId,
+          payload,
+        });
+      } else {
+        await savePitScoutingEntry({
+          eventKey: setup.eventKey,
+          teamKey: setup.selectedTeam.key,
+          entryId,
+          payload,
+        });
+      }
 
       toast.success("Saved to cloud.");
       onSuccess?.();

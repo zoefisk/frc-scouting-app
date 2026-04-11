@@ -16,20 +16,15 @@ import type {
   QuestionnaireAnswers,
   QuestionnaireDefinition,
 } from "@/lib/scouting/questionnaire/types";
-import { TeamOption } from "@/lib/scouting/tba/loadEventTeams";
-
-type MatchSetupState = {
-  eventKey: string;
-  matchNumber: string;
-  scoutingPosition: string | null;
-  teamPresence: string;
-  selectedTeam: TeamOption | null;
-};
+import {
+  isScoutingSetupComplete,
+  ScoutingSetupState,
+} from "@/components/scouting/submission/types";
 
 type Props = {
   questionnaire: QuestionnaireDefinition;
   answers: QuestionnaireAnswers;
-  setup: MatchSetupState;
+  setup: ScoutingSetupState;
   disabled?: boolean;
 };
 
@@ -65,11 +60,7 @@ export default function ScoutingSetupQr({
 }: Props) {
   const [open, setOpen] = React.useState(false);
 
-  const isIncomplete =
-    !setup.eventKey ||
-    !setup.matchNumber ||
-    !setup.scoutingPosition ||
-    !setup.selectedTeam;
+  const isIncomplete = !isScoutingSetupComplete(setup);
 
   const payload = React.useMemo(() => {
     return {
@@ -83,10 +74,12 @@ export default function ScoutingSetupQr({
       },
 
       setup: {
+        kind: setup.kind,
+        projectId: setup.projectId ?? null,
         eventKey: setup.eventKey,
-        matchNumber: setup.matchNumber,
-        scoutingPosition: setup.scoutingPosition,
-        teamPresence: setup.teamPresence,
+        matchNumber: setup.matchNumber ?? null,
+        scoutingPosition: setup.scoutingPosition ?? null,
+        teamPresence: setup.teamPresence ?? null,
         teamKey: setup.selectedTeam?.key ?? null,
         teamNumber: setup.selectedTeam?.team_number ?? null,
         teamName:
@@ -146,12 +139,21 @@ export default function ScoutingSetupQr({
               <Typography variant="body2">
                 <strong>Event:</strong> {setup.eventKey}
               </Typography>
-              <Typography variant="body2">
-                <strong>Match:</strong> {setup.matchNumber}
-              </Typography>
-              <Typography variant="body2">
-                <strong>Scouting Position:</strong> {setup.scoutingPosition}
-              </Typography>
+              {setup.projectId ? (
+                <Typography variant="body2">
+                  <strong>Project:</strong> {setup.projectId}
+                </Typography>
+              ) : null}
+              {setup.matchNumber ? (
+                <Typography variant="body2">
+                  <strong>Match:</strong> {setup.matchNumber}
+                </Typography>
+              ) : null}
+              {setup.scoutingPosition ? (
+                <Typography variant="body2">
+                  <strong>Scouting Position:</strong> {setup.scoutingPosition}
+                </Typography>
+              ) : null}
               <Typography variant="body2">
                 <strong>Team:</strong>{" "}
                 {setup.selectedTeam
@@ -162,9 +164,11 @@ export default function ScoutingSetupQr({
                     }`
                   : "None selected"}
               </Typography>
-              <Typography variant="body2">
-                <strong>Team Presence:</strong> {setup.teamPresence}
-              </Typography>
+              {setup.teamPresence ? (
+                <Typography variant="body2">
+                  <strong>Team Presence:</strong> {setup.teamPresence}
+                </Typography>
+              ) : null}
               <Typography variant="body2">
                 <strong>QR Size:</strong> {qrValue.length} characters
               </Typography>

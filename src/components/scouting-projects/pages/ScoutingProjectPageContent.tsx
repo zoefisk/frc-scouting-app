@@ -4,6 +4,7 @@ import React from "react";
 import Link from "next/link";
 import {
   Box,
+  Button,
   Card,
   Chip,
   CircularProgress,
@@ -97,12 +98,10 @@ const quickActions = [
 
 function QuickActionCard({
   title,
-  description,
   icon: Icon,
   href,
 }: {
   title: string;
-  description: string;
   icon: React.ElementType;
   href: string;
 }) {
@@ -121,10 +120,10 @@ function QuickActionCard({
         elevation={0}
         sx={{
           width: "100%",
-          height: 132,
+          minHeight: 92,
           border: "1px solid",
           borderColor: "divider",
-          borderRadius: 2.5,
+          borderRadius: 2.25,
           transition: "all 0.18s ease",
           cursor: "pointer",
           "&:hover": {
@@ -137,16 +136,16 @@ function QuickActionCard({
         <Box
           sx={{
             height: "100%",
-            p: 1.5,
+            p: 1.25,
             display: "flex",
           }}
         >
           <Stack spacing={1} sx={{ width: "100%", minWidth: 0 }}>
             <Box
               sx={{
-                width: 34,
-                height: 34,
-                borderRadius: 1.75,
+                width: 30,
+                height: 30,
+                borderRadius: 1.5,
                 display: "flex",
                 alignItems: "center",
                 justifyContent: "center",
@@ -162,30 +161,13 @@ function QuickActionCard({
               variant="subtitle2"
               sx={{
                 fontWeight: 700,
-                lineHeight: 1.2,
+                lineHeight: 1.15,
                 whiteSpace: "normal",
                 overflowWrap: "anywhere",
                 wordBreak: "break-word",
               }}
             >
               {title}
-            </Typography>
-
-            <Typography
-              variant="caption"
-              color="text.secondary"
-              sx={{
-                lineHeight: 1.25,
-                whiteSpace: "normal",
-                overflowWrap: "anywhere",
-                wordBreak: "break-word",
-                display: "-webkit-box",
-                WebkitLineClamp: 2,
-                WebkitBoxOrient: "vertical",
-                overflow: "hidden",
-              }}
-            >
-              {description}
             </Typography>
           </Stack>
         </Box>
@@ -245,12 +227,12 @@ export default function ScoutingProjectPageContent({
       >
         <Stack spacing={3}>
           <Stack
-            direction={{ xs: "column", md: "row" }}
-            spacing={2}
+            direction={{ xs: "column", lg: "row" }}
+            spacing={3}
             justifyContent="space-between"
-            alignItems={{ xs: "flex-start", md: "flex-start" }}
+            alignItems={{ xs: "stretch", lg: "flex-start" }}
           >
-            <Stack spacing={1.5} sx={{ minWidth: 0 }}>
+            <Stack spacing={1.5} sx={{ minWidth: 0, flex: 1 }}>
               <Stack
                 direction="row"
                 spacing={1.25}
@@ -325,62 +307,93 @@ export default function ScoutingProjectPageContent({
                   Event dates: {eventOverview.eventDateLabel}
                 </Typography>
               )}
-            </Stack>
 
-            <Stack direction="row" spacing={1} alignItems="center">
-              {canInviteMembers ? (
-                <CopyLinkMenu
-                  url={`https://frc-scouting-app-jade.vercel.app/join/${project.inviteLinkToken}`} // TODO, add the url as an environment variable
-                />
-              ) : null}
-
-              {canManageProject ? (
-                <Link
-                  href={`/scouting-projects/${project.id}/settings`}
-                  style={{ textDecoration: "none", color: "inherit" }}
+              {(canInviteMembers || canManageProject) && (
+                <Stack
+                  direction="row"
+                  spacing={1}
+                  useFlexGap
+                  flexWrap="wrap"
+                  sx={{ pt: 0.5 }}
                 >
-                  <Box
-                    sx={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: 2,
-                      border: "1px solid",
-                      borderColor: "divider",
-                      backgroundColor: "background.paper",
-                      display: "flex",
-                      alignItems: "center",
-                      justifyContent: "center",
-                      cursor: "pointer",
-                      transition: "all 0.18s ease",
-                      "&:hover": {
-                        borderColor: "primary.main",
-                        backgroundColor: "action.hover",
-                      },
-                    }}
-                  >
-                    <SettingsIcon fontSize="small" />
-                  </Box>
-                </Link>
-              ) : null}
+                  {canInviteMembers ? (
+                    <CopyLinkMenu
+                      url={`https://frc-scouting-app-jade.vercel.app/join/${project.inviteLinkToken}`} // TODO, add the url as an environment variable
+                    />
+                  ) : null}
+
+                  {canManageProject ? (
+                    <Link
+                      href={`/scouting-projects/${project.id}/settings`}
+                      style={{ textDecoration: "none" }}
+                    >
+                      <Button
+                        variant="outlined"
+                        size="small"
+                        startIcon={<SettingsIcon fontSize="small" />}
+                        sx={{ borderRadius: 999 }}
+                      >
+                        Settings
+                      </Button>
+                    </Link>
+                  ) : null}
+                </Stack>
+              )}
             </Stack>
+
+            <Box
+              sx={{
+                width: { xs: "100%", lg: 280 },
+                flexShrink: 0,
+              }}
+            >
+              <Grid container spacing={1.25} alignItems="stretch">
+                {quickActions.map((action) => (
+                  <Grid
+                    key={action.title}
+                    size={{ xs: 6, lg: 6 }}
+                    sx={{ display: "flex" }}
+                  >
+                    <QuickActionCard
+                      title={action.title}
+                      icon={action.icon}
+                      href={`/scouting-projects/${project.id}/${action.hrefSuffix}`}
+                    />
+                  </Grid>
+                ))}
+              </Grid>
+            </Box>
           </Stack>
 
-          <Grid container spacing={1.5} alignItems="stretch">
-            {quickActions.map((action) => (
-              <Grid
-                key={action.title}
-                size={{ xs: 12, sm: 6, md: 4, lg: 3 }}
-                sx={{ display: "flex" }}
-              >
-                <QuickActionCard
-                  title={action.title}
-                  description={action.description}
-                  icon={action.icon}
-                  href={`/scouting-projects/${project.id}/${action.hrefSuffix}`}
-                />
-              </Grid>
-            ))}
-          </Grid>
+          <Box
+            sx={{
+              display: { xs: "none", lg: "block" },
+              height: 1,
+              backgroundColor: "rgba(15,23,42,0.08)",
+            }}
+          />
+
+          <Stack
+            direction={{ xs: "column", sm: "row" }}
+            spacing={1}
+            useFlexGap
+            flexWrap="wrap"
+            alignItems={{ xs: "stretch", sm: "center" }}
+          >
+            <Typography
+              variant="body2"
+              color="text.secondary"
+              sx={{ mr: "auto" }}
+            >
+              Open a workspace tool from the compact launcher on the right.
+            </Typography>
+
+            {canInviteMembers ? (
+              <Typography variant="body2" color="text.secondary">
+                Invite controls are available from the link button above.
+              </Typography>
+            ) : null}
+          </Stack>
         </Stack>
       </Box>
 

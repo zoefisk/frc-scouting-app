@@ -7,24 +7,12 @@ import type {
   QuestionnaireAnswers,
   QuestionnaireDefinition,
 } from "@/lib/scouting/questionnaire/types";
-import { TeamOption } from "@/lib/scouting/tba/loadEventTeams";
-
-type ScoutingPosition = "blue1" | "blue2" | "blue3" | "red1" | "red2" | "red3";
-
-type TeamPresence = "present" | "absent" | "surrogate";
-
-type MatchSetupState = {
-  eventKey: string;
-  matchNumber: string;
-  scoutingPosition: ScoutingPosition | null;
-  teamPresence: TeamPresence;
-  selectedTeam: TeamOption | null;
-};
+import { ScoutingSetupState } from "@/components/scouting/submission/types";
 
 type Props = {
   questionnaire: QuestionnaireDefinition;
   answers: QuestionnaireAnswers;
-  setup: MatchSetupState;
+  setup: ScoutingSetupState;
   disabled?: boolean;
   onReset?: () => void;
   onSuccess?: () => void;
@@ -33,7 +21,7 @@ type Props = {
 function buildGenericQuestionnairePayload(
   questionnaire: QuestionnaireDefinition,
   answers: QuestionnaireAnswers,
-  setup: MatchSetupState,
+  setup: ScoutingSetupState,
   submissionId: string
 ) {
   return {
@@ -46,10 +34,12 @@ function buildGenericQuestionnairePayload(
       version: questionnaire.version,
     },
     setup: {
+      kind: setup.kind,
+      projectId: setup.projectId ?? null,
       eventKey: setup.eventKey,
-      matchNumber: setup.matchNumber,
-      scoutingPosition: setup.scoutingPosition,
-      teamPresence: setup.teamPresence,
+      matchNumber: setup.matchNumber ?? null,
+      scoutingPosition: setup.scoutingPosition ?? null,
+      teamPresence: setup.teamPresence ?? null,
       teamKey: setup.selectedTeam?.key ?? null,
       teamNumber: setup.selectedTeam?.team_number ?? null,
       teamName:
@@ -89,6 +79,7 @@ export default function SaveQuestionnaireLocalButton({
 
       await saveSubmission({
         submissionId,
+        projectId: setup.projectId,
         eventKey: setup.eventKey,
         matchNumber: setup.matchNumber,
         payload,
