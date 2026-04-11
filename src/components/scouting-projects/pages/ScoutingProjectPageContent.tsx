@@ -109,7 +109,7 @@ export default function ScoutingProjectPageContent({
         </Typography>
       </Stack>
 
-      <ScoutingSchedule />
+      <ScoutingSchedule project={project} />
     </Stack>
   );
 }

@@ -7,6 +7,8 @@ export type RawTbaMatch = {
   key: string;
   comp_level: string;
   match_number: number;
+  winning_alliance?: string;
+  actual_time?: number | null;
   alliances: {
     blue: TbaAlliance;
     red: TbaAlliance;

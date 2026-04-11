@@ -140,6 +140,7 @@ export async function updateScoutingProjectServer(
       | "matchCollectionMode"
       | "formMode"
       | "activeQuestionnaireIds"
+      | "scoutingSchedule"
     >
   >
 ): Promise<void> {

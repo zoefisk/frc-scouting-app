@@ -50,6 +50,8 @@ export function buildScoutingProjectDoc({
 
     activeQuestionnaireIds,
 
+    scoutingSchedule: undefined,
+
     createdByUid,
     createdAt: now,
     updatedAt: now,
