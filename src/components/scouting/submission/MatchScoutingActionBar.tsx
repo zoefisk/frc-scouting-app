@@ -6,10 +6,10 @@ import type {
   QuestionnaireDefinition,
 } from "@/lib/scouting/questionnaire/types";
 import ScoutingSetupQr from "@/components/scouting/submission/ScoutingSetupQr";
-import ScoutingSetupCsvButton from "@/components/scouting/submission/ScoutingSetupCsvButton";
 import SaveQuestionnaireLocalButton from "@/components/scouting/submission/SaveQuestionnaireLocalButton";
 import SaveQuestionnaireCloudButton from "@/components/scouting/submission/SaveQuestionnaireCloudButton";
 import { TeamOption } from "@/lib/scouting/tba/loadEventTeams";
+import ScoutingSetupCsvButton from "@/components/scouting/submission/ScoutingSetupCSVButton";
 
 export type ScoutingPosition =
   | "blue1"
