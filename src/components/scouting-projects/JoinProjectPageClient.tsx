@@ -13,6 +13,7 @@ import type {
   ProjectFormMode,
 } from "@/lib/scouting-projects/types";
 import { addJoinedProjectIdToUser } from "@/lib/firebase/client/users";
+import { addScoutingProjectMemberClient } from "@/lib/firebase/client/projects";
 
 type JoinableProjectSummary = {
   projectId: string;
@@ -61,6 +62,10 @@ export default function JoinProjectPageClient({ project }: Props) {
       });
 
       if (user) {
+        await addScoutingProjectMemberClient(project.projectId, {
+          uid: user.uid,
+          role: "member",
+        });
         await addJoinedProjectIdToUser(user.uid, project.projectId);
       }
 

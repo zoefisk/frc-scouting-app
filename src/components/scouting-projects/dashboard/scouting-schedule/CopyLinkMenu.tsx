@@ -13,6 +13,8 @@ import {
 import AddLinkIcon from "@mui/icons-material/AddLink";
 import ContentCopyIcon from "@mui/icons-material/ContentCopy";
 
+// TODO, sometime -- invite members by sending email
+
 export default function CopyLinkMenu({ url }: { url: string }) {
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);

@@ -2,7 +2,10 @@ import "server-only";
 
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { getAdminDb } from "@/lib/firebase/server/admin";
-import { ScoutingProjectDoc } from "@/lib/scouting-projects/types";
+import {
+  ProjectMemberRole,
+  ScoutingProjectDoc,
+} from "@/lib/scouting-projects/types";
 
 const PROJECTS_COLLECTION = "scoutingProjects";
 const db = getAdminDb();
@@ -11,6 +14,29 @@ type CreateScoutingProjectServerInput = Omit<
   ScoutingProjectDoc,
   "createdAt" | "updatedAt"
 >;
+
+function normalizeProjectDoc(
+  data: Record<string, unknown>
+): ScoutingProjectDoc {
+  const normalized = normalizeFirestoreTimestamps(data);
+  const createdByUid = String(normalized.createdByUid ?? "");
+  const existingMembers = Array.isArray(normalized.members)
+    ? normalized.members
+    : [];
+  const fallbackOwner = createdByUid
+    ? [{ uid: createdByUid, role: "owner" as const }]
+    : [];
+  const members = existingMembers.length > 0 ? existingMembers : fallbackOwner;
+  const memberUids = Array.isArray(normalized.memberUids)
+    ? normalized.memberUids
+    : members.map((member) => member.uid);
+
+  return {
+    ...(normalized as ScoutingProjectDoc),
+    members,
+    memberUids,
+  };
+}
 
 function normalizeFirestoreTimestamps<T extends Record<string, unknown>>(
   data: T
@@ -65,9 +91,7 @@ export async function getScoutingProjectServer(
 
   return {
     id: snap.id,
-    ...(normalizeFirestoreTimestamps(
-      snap.data() as Record<string, unknown>
-    ) as ScoutingProjectDoc),
+    ...normalizeProjectDoc(snap.data() as Record<string, unknown>),
   };
 }
 
@@ -85,9 +109,7 @@ export async function getScoutingProjectByInviteCodeServer(
   const docSnap = snap.docs[0];
   return {
     id: docSnap.id,
-    ...(normalizeFirestoreTimestamps(
-      docSnap.data() as Record<string, unknown>
-    ) as ScoutingProjectDoc),
+    ...normalizeProjectDoc(docSnap.data() as Record<string, unknown>),
   };
 }
 
@@ -105,27 +127,38 @@ export async function getScoutingProjectByInviteLinkTokenServer(
   const docSnap = snap.docs[0];
   return {
     id: docSnap.id,
-    ...(normalizeFirestoreTimestamps(
-      docSnap.data() as Record<string, unknown>
-    ) as ScoutingProjectDoc),
+    ...normalizeProjectDoc(docSnap.data() as Record<string, unknown>),
   };
 }
 
 export async function listScoutingProjectsForUserServer(
   uid: string
 ): Promise<Array<ScoutingProjectDoc & { id: string }>> {
-  const snap = await db
-    .collection(PROJECTS_COLLECTION)
-    .where("createdByUid", "==", uid)
-    .orderBy("updatedAt", "desc")
-    .get();
+  const [memberSnap, ownerSnap] = await Promise.all([
+    db
+      .collection(PROJECTS_COLLECTION)
+      .where("memberUids", "array-contains", uid)
+      .orderBy("updatedAt", "desc")
+      .get(),
+    db
+      .collection(PROJECTS_COLLECTION)
+      .where("createdByUid", "==", uid)
+      .orderBy("updatedAt", "desc")
+      .get(),
+  ]);
 
-  return snap.docs.map((docSnap) => ({
-    id: docSnap.id,
-    ...(normalizeFirestoreTimestamps(
-      docSnap.data() as Record<string, unknown>
-    ) as ScoutingProjectDoc),
-  }));
+  const projectMap = new Map<string, ScoutingProjectDoc & { id: string }>();
+
+  for (const docSnap of [...memberSnap.docs, ...ownerSnap.docs]) {
+    projectMap.set(docSnap.id, {
+      id: docSnap.id,
+      ...normalizeProjectDoc(docSnap.data() as Record<string, unknown>),
+    });
+  }
+
+  return [...projectMap.values()].sort((a, b) =>
+    b.updatedAt.localeCompare(a.updatedAt)
+  );
 }
 
 export async function updateScoutingProjectServer(
@@ -139,6 +172,8 @@ export async function updateScoutingProjectServer(
       | "dataMode"
       | "matchCollectionMode"
       | "formMode"
+      | "memberUids"
+      | "members"
       | "activeQuestionnaireIds"
       | "scoutingSchedule"
     >
@@ -157,4 +192,39 @@ export async function deleteScoutingProjectServer(
   projectId: string
 ): Promise<void> {
   await db.collection(PROJECTS_COLLECTION).doc(projectId).delete();
+}
+
+export async function addScoutingProjectMemberServer(
+  projectId: string,
+  member: { uid: string; role: ProjectMemberRole }
+): Promise<void> {
+  const ref = db.collection(PROJECTS_COLLECTION).doc(projectId);
+
+  await db.runTransaction(async (transaction) => {
+    const snap = await transaction.get(ref);
+
+    if (!snap.exists) {
+      throw new Error("Project not found.");
+    }
+
+    const project = snap.data() as ScoutingProjectDoc;
+    const members = project.members ?? [];
+    const existing = members.find((entry) => entry.uid === member.uid);
+
+    const nextMembers = existing
+      ? members.map((entry) =>
+          entry.uid === member.uid ? { ...entry, role: member.role } : entry
+        )
+      : [...members, member];
+
+    const nextMemberUids = Array.from(
+      new Set([...(project.memberUids ?? []), member.uid])
+    ).sort();
+
+    transaction.update(ref, {
+      members: nextMembers,
+      memberUids: nextMemberUids,
+      updatedAt: FieldValue.serverTimestamp(),
+    });
+  });
 }

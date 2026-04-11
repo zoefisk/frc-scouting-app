@@ -20,7 +20,7 @@ export async function createUserProfileIfMissing(user: User) {
     uid: user.uid,
     email: user.email ?? "",
     displayName: user.displayName ?? "",
-    role: "scout",
+    role: "scout", // TODO: delete, this is no longer used
     active: true,
     createdAt: serverTimestamp(),
   });
@@ -72,6 +72,8 @@ export async function removeJoinedProjectIdFromUser(
   const { arrayRemove } = await import("firebase/firestore");
   const ref = doc(db, "users", uid);
 
+  // TODO: also remove this user from scouting project membership docs and
+  // define owner-transfer behavior before allowing an owner account to vanish.
   await updateDoc(ref, {
     joinedProjectIds: arrayRemove(projectId),
   });

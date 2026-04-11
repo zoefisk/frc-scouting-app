@@ -53,6 +53,8 @@ export function buildScoutingProjectDoc({
     scoutingSchedule: undefined,
 
     createdByUid,
+    memberUids: [createdByUid],
+    members: [{ uid: createdByUid, role: "owner" }],
     createdAt: now,
     updatedAt: now,
 

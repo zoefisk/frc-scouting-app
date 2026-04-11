@@ -1,5 +1,6 @@
 import {
   addDoc,
+  arrayUnion,
   collection,
   doc,
   getDoc,
@@ -8,10 +9,14 @@ import {
   query,
   serverTimestamp,
   updateDoc,
+  runTransaction,
   where,
   type DocumentData,
 } from "firebase/firestore";
-import { ScoutingProjectDoc } from "@/lib/scouting-projects/types";
+import {
+  ProjectMemberRole,
+  ScoutingProjectDoc,
+} from "@/lib/scouting-projects/types";
 import { db } from "@/lib/firebase/client/app";
 
 const PROJECTS_COLLECTION = "scoutingProjects";
@@ -20,6 +25,28 @@ type CreateScoutingProjectClientInput = Omit<
   ScoutingProjectDoc,
   "createdAt" | "updatedAt"
 >;
+
+function normalizeProjectDoc(
+  id: string,
+  data: DocumentData
+): ScoutingProjectDoc & { id: string } {
+  const createdByUid = String(data.createdByUid ?? "");
+  const existingMembers = Array.isArray(data.members) ? data.members : [];
+  const fallbackOwner = createdByUid
+    ? [{ uid: createdByUid, role: "owner" as const }]
+    : [];
+  const members = existingMembers.length > 0 ? existingMembers : fallbackOwner;
+  const memberUids = Array.isArray(data.memberUids)
+    ? data.memberUids
+    : members.map((member) => member.uid);
+
+  return {
+    id,
+    ...(data as ScoutingProjectDoc),
+    members,
+    memberUids,
+  };
+}
 
 export async function createScoutingProjectClient(
   input: CreateScoutingProjectClientInput
@@ -44,27 +71,38 @@ export async function getScoutingProjectClient(
     return null;
   }
 
-  return {
-    id: snap.id,
-    ...(snap.data() as ScoutingProjectDoc),
-  };
+  return normalizeProjectDoc(snap.id, snap.data());
 }
 
 export async function listScoutingProjectsForUserClient(
   uid: string
 ): Promise<Array<ScoutingProjectDoc & { id: string }>> {
-  const q = query(
-    collection(db, PROJECTS_COLLECTION),
-    where("createdByUid", "==", uid),
-    orderBy("updatedAt", "desc")
+  const [memberSnap, ownerSnap] = await Promise.all([
+    getDocs(
+      query(
+        collection(db, PROJECTS_COLLECTION),
+        where("memberUids", "array-contains", uid),
+        orderBy("updatedAt", "desc")
+      )
+    ),
+    getDocs(
+      query(
+        collection(db, PROJECTS_COLLECTION),
+        where("createdByUid", "==", uid),
+        orderBy("updatedAt", "desc")
+      )
+    ),
+  ]);
+
+  const projectMap = new Map<string, ScoutingProjectDoc & { id: string }>();
+
+  for (const docSnap of [...memberSnap.docs, ...ownerSnap.docs]) {
+    projectMap.set(docSnap.id, normalizeProjectDoc(docSnap.id, docSnap.data()));
+  }
+
+  return [...projectMap.values()].sort((a, b) =>
+    String(b.updatedAt).localeCompare(String(a.updatedAt))
   );
-
-  const snap = await getDocs(q);
-
-  return snap.docs.map((docSnap) => ({
-    id: docSnap.id,
-    ...(docSnap.data() as ScoutingProjectDoc),
-  }));
 }
 
 export async function updateScoutingProjectClient(
@@ -78,6 +116,8 @@ export async function updateScoutingProjectClient(
       | "dataMode"
       | "matchCollectionMode"
       | "formMode"
+      | "memberUids"
+      | "members"
       | "activeQuestionnaireIds"
       | "scoutingSchedule"
     >
@@ -88,5 +128,36 @@ export async function updateScoutingProjectClient(
   await updateDoc(ref, {
     ...updates,
     updatedAt: serverTimestamp(),
+  });
+}
+
+export async function addScoutingProjectMemberClient(
+  projectId: string,
+  member: { uid: string; role: ProjectMemberRole }
+): Promise<void> {
+  const ref = doc(db, PROJECTS_COLLECTION, projectId);
+
+  await runTransaction(db, async (transaction) => {
+    const snap = await transaction.get(ref);
+
+    if (!snap.exists()) {
+      throw new Error("Project not found.");
+    }
+
+    const project = snap.data() as ScoutingProjectDoc;
+    const members = project.members ?? [];
+    const existing = members.find((entry) => entry.uid === member.uid);
+
+    const nextMembers = existing
+      ? members.map((entry) =>
+          entry.uid === member.uid ? { ...entry, role: member.role } : entry
+        )
+      : [...members, member];
+
+    transaction.update(ref, {
+      members: nextMembers,
+      memberUids: arrayUnion(member.uid),
+      updatedAt: serverTimestamp(),
+    });
   });
 }

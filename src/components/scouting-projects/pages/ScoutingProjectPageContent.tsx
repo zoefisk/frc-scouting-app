@@ -1,6 +1,15 @@
+"use client";
+
 import React from "react";
 import Link from "next/link";
-import { Box, Card, Chip, Stack, Typography } from "@mui/material";
+import {
+  Box,
+  Card,
+  Chip,
+  CircularProgress,
+  Stack,
+  Typography,
+} from "@mui/material";
 import Grid from "@mui/material/Grid";
 import SportsScoreIcon from "@mui/icons-material/SportsScore";
 import ConstructionIcon from "@mui/icons-material/Construction";
@@ -9,12 +18,14 @@ import AnalyticsIcon from "@mui/icons-material/Analytics";
 import CloudOffIcon from "@mui/icons-material/CloudOff";
 import QrCodeScannerIcon from "@mui/icons-material/QrCodeScanner";
 import SettingsIcon from "@mui/icons-material/Settings";
-import AddLinkIcon from "@mui/icons-material/AddLink";
 
 import ScoutingSchedule from "@/components/scouting-projects/dashboard/ScoutingSchedule";
 import type { ScoutingProjectDoc } from "@/lib/scouting-projects/types";
+import { getProjectMemberRole } from "@/lib/scouting-projects/types";
 import type { ProjectEventOverview } from "@/lib/scouting-projects/eventOverview";
 import CopyLinkMenu from "@/components/scouting-projects/dashboard/scouting-schedule/CopyLinkMenu";
+import NoAccess from "@/components/auth/NoAccess";
+import { useAuth } from "@/components/app/providers/AuthProvider";
 
 type Props = {
   project: ScoutingProjectDoc & { id: string };
@@ -187,6 +198,37 @@ export default function ScoutingProjectPageContent({
   project,
   eventOverview,
 }: Props) {
+  const { user, loading } = useAuth();
+  const memberRole = getProjectMemberRole(project, user?.uid);
+  const requiresAuth = project.accessMode === "authenticated";
+  const canAccessProject = !requiresAuth || Boolean(memberRole);
+  const canManageProject = memberRole === "owner" || memberRole === "admin";
+
+  if (requiresAuth && loading) {
+    return (
+      <Stack alignItems="center" sx={{ py: 8 }}>
+        <CircularProgress />
+      </Stack>
+    );
+  }
+
+  if (requiresAuth && !user) {
+    return (
+      <NoAccess
+        title="Sign in to view this project."
+        description="This scouting project is limited to approved members."
+        ctaHref="/login"
+        ctaLabel="Go to Login"
+      />
+    );
+  }
+
+  if (!canAccessProject) {
+    return (
+      <NoAccess note="If you should have access, ask an owner or admin to add your account to this project." />
+    );
+  }
+
   return (
     <Stack spacing={3}>
       <Box
@@ -285,36 +327,37 @@ export default function ScoutingProjectPageContent({
 
             <Stack direction="row" spacing={1} alignItems="center">
               <CopyLinkMenu
-                url={`localhost:3000/join/${project.inviteLinkToken}`}
+                url={`https://frc-scouting-app-jade.vercel.app/join/${project.inviteLinkToken}`} // TODO, add the url as an environment variable
               />
 
-              {/* TODO: only show this button for admins */}
-              <Link
-                href={`/scouting-projects/${project.id}/settings`}
-                style={{ textDecoration: "none", color: "inherit" }}
-              >
-                <Box
-                  sx={{
-                    width: 40,
-                    height: 40,
-                    borderRadius: 2,
-                    border: "1px solid",
-                    borderColor: "divider",
-                    backgroundColor: "background.paper",
-                    display: "flex",
-                    alignItems: "center",
-                    justifyContent: "center",
-                    cursor: "pointer",
-                    transition: "all 0.18s ease",
-                    "&:hover": {
-                      borderColor: "primary.main",
-                      backgroundColor: "action.hover",
-                    },
-                  }}
+              {canManageProject ? (
+                <Link
+                  href={`/scouting-projects/${project.id}/settings`}
+                  style={{ textDecoration: "none", color: "inherit" }}
                 >
-                  <SettingsIcon fontSize="small" />
-                </Box>
-              </Link>
+                  <Box
+                    sx={{
+                      width: 40,
+                      height: 40,
+                      borderRadius: 2,
+                      border: "1px solid",
+                      borderColor: "divider",
+                      backgroundColor: "background.paper",
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      cursor: "pointer",
+                      transition: "all 0.18s ease",
+                      "&:hover": {
+                        borderColor: "primary.main",
+                        backgroundColor: "action.hover",
+                      },
+                    }}
+                  >
+                    <SettingsIcon fontSize="small" />
+                  </Box>
+                </Link>
+              ) : null}
             </Stack>
           </Stack>
 

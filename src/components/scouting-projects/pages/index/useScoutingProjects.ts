@@ -8,6 +8,7 @@ import {
   listScoutingProjectsForUserClient,
 } from "@/lib/firebase/client/projects";
 import { getUserProfile } from "@/lib/firebase/client/users";
+import { getProjectMemberRole } from "@/lib/scouting-projects/types";
 import type { ProjectListItem } from "./types";
 
 function upsertProject(
@@ -66,6 +67,8 @@ export function useScoutingProjects() {
             user.uid
           );
           for (const project of ownedProjects) {
+            const role = getProjectMemberRole(project, user.uid);
+
             upsertProject(projectMap, {
               id: project.id,
               name: project.name,
@@ -73,7 +76,7 @@ export function useScoutingProjects() {
               year: project.year,
               dataMode: project.dataMode,
               accessMode: project.accessMode,
-              source: "owned",
+              source: role === "owner" || role === "admin" ? "owned" : "joined",
             });
           }
 

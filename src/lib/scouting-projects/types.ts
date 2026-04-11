@@ -3,6 +3,12 @@ export type ProjectDataMode = "match" | "pit" | "both";
 export type MatchCollectionMode = "robot" | "alliance";
 export type ProjectFormMode = "default" | "custom";
 export type ScoutingScheduleMode = MatchCollectionMode;
+export type ProjectMemberRole = "owner" | "admin" | "member";
+
+export type ScoutingProjectMember = {
+  uid: string;
+  role: ProjectMemberRole;
+};
 
 export const SCOUTING_SCHEDULE_SLOTS_BY_MODE = {
   robot: ["red1", "red2", "red3", "blue1", "blue2", "blue3"],
@@ -40,6 +46,8 @@ export type ScoutingProjectDoc = {
   formMode: ProjectFormMode;
 
   createdByUid: string;
+  memberUids: string[];
+  members: ScoutingProjectMember[];
   createdAt: string;
   updatedAt: string;
 
@@ -53,3 +61,20 @@ export type ScoutingProjectDoc = {
 
   scoutingSchedule?: ScoutingScheduleDoc;
 };
+
+export function getProjectMemberRole(
+  project: Pick<ScoutingProjectDoc, "createdByUid" | "members">,
+  uid: string | null | undefined
+): ProjectMemberRole | null {
+  if (!uid) {
+    return null;
+  }
+
+  if (project.createdByUid === uid) {
+    return "owner";
+  }
+
+  return (
+    (project.members ?? []).find((member) => member.uid === uid)?.role ?? null
+  );
+}
