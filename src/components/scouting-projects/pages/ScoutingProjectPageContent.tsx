@@ -9,10 +9,12 @@ import AnalyticsIcon from "@mui/icons-material/Analytics";
 import CloudOffIcon from "@mui/icons-material/CloudOff";
 import QrCodeScannerIcon from "@mui/icons-material/QrCodeScanner";
 import SettingsIcon from "@mui/icons-material/Settings";
+import AddLinkIcon from "@mui/icons-material/AddLink";
 
 import ScoutingSchedule from "@/components/scouting-projects/dashboard/ScoutingSchedule";
 import type { ScoutingProjectDoc } from "@/lib/scouting-projects/types";
 import type { ProjectEventOverview } from "@/lib/scouting-projects/eventOverview";
+import CopyLinkMenu from "@/components/scouting-projects/dashboard/scouting-schedule/CopyLinkMenu";
 
 type Props = {
   project: ScoutingProjectDoc & { id: string };
@@ -282,6 +284,10 @@ export default function ScoutingProjectPageContent({
             </Stack>
 
             <Stack direction="row" spacing={1} alignItems="center">
+              <CopyLinkMenu
+                url={`localhost:3000/join/${project.inviteLinkToken}`}
+              />
+
               {/* TODO: only show this button for admins */}
               <Link
                 href={`/scouting-projects/${project.id}/settings`}
