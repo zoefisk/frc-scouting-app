@@ -11,7 +11,7 @@ export default function LoginPageContent() {
 
   React.useEffect(() => {
     if (!loading && user) {
-      router.replace("/dashboard");
+      router.replace("/scouting-projects");
     }
   }, [loading, user, router]);
 

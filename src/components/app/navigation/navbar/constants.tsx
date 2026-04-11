@@ -33,12 +33,6 @@ export type NavItem = {
 export const navItems: NavItem[] = [
   { label: "Home", href: "/", icon: <HomeIcon />, section: "primary" },
   {
-    label: "Dashboard",
-    href: "/dashboard",
-    icon: <DashboardIcon />,
-    section: "primary",
-  },
-  {
     label: "Scouting Projects",
     href: "/scouting-projects",
     icon: <FolderIcon />,
