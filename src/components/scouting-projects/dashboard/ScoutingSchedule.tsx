@@ -63,6 +63,7 @@ import type {
   ScoutingScheduleMode,
   ScoutingScheduleSlot,
 } from "@/lib/scouting-projects/types";
+import { getProjectMemberRole } from "@/lib/scouting-projects/types";
 import type { RawTbaMatch } from "@/lib/scouting/tba/types";
 
 type Props = {
@@ -116,17 +117,6 @@ function getDefaultScheduleMode(
   matchCollectionMode: MatchCollectionMode | null
 ): ScoutingScheduleMode {
   return matchCollectionMode ?? "robot";
-}
-
-function canCurrentUserEditSchedule(
-  uid: string | null,
-  projectId: string
-): boolean {
-  void uid;
-  void projectId;
-  // TODO: Restrict schedule editing to specific project roles once project
-  // permissions are defined in Firebase and the app data model.
-  return true;
 }
 
 function getMatchStatus(match: RawTbaMatch | undefined): {
@@ -255,7 +245,13 @@ export default function ScoutingSchedule({
   const [isSaving, setIsSaving] = React.useState(false);
   const [saveError, setSaveError] = React.useState<string | null>(null);
 
-  const canEdit = canCurrentUserEditSchedule(user?.uid ?? null, project.id);
+  const memberRole = getProjectMemberRole(project, user?.uid);
+  const canEdit = memberRole === "owner" || memberRole === "admin";
+  const hasAnyScheduleSetup =
+    Boolean(savedSchedule) ||
+    Boolean(project.scoutingSchedule) ||
+    Boolean(draftSchedule) ||
+    Boolean(project.scoutingSchedule?.scouterNames?.length);
   const isFilterMenuOpen = Boolean(filterAnchorEl);
 
   React.useEffect(() => {
@@ -678,6 +674,10 @@ export default function ScoutingSchedule({
   );
 
   const summaryMode = effectiveSchedule?.mode ?? workingMode;
+
+  if (!canEdit && !hasAnyScheduleSetup) {
+    return null;
+  }
 
   return (
     <Paper sx={{ p: 2.5, borderRadius: 4 }}>
