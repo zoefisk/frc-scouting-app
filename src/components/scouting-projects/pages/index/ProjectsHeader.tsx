@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Box, Button, Stack, Typography } from "@mui/material";
+import JoinProjectMenu from "@/components/scouting-projects/pages/index/JoinProjectMenu";
 
 export default function ProjectsHeader() {
   return (
@@ -19,9 +20,13 @@ export default function ProjectsHeader() {
         </Typography>
       </Box>
 
-      <Link href="/scouting-projects/new">
-        <Button variant="contained">Create New Scouting Project</Button>
-      </Link>
+      <Stack direction="row" spacing={1} alignItems="center">
+        <Link href="/scouting-projects/new">
+          <Button variant="contained">Create New Project</Button>
+        </Link>
+
+        <JoinProjectMenu />
+      </Stack>
     </Stack>
   );
 }
