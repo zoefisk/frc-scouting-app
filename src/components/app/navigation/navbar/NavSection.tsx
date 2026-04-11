@@ -1,0 +1,117 @@
+import React from "react";
+import {
+  List,
+  ListItemButton,
+  ListItemIcon,
+  ListItemText,
+  Stack,
+  Tooltip,
+  Typography,
+} from "@mui/material";
+import Link from "next/link";
+import type { NavItem } from "./constants";
+
+type Props = {
+  title: string;
+  items: NavItem[];
+  pathname: string;
+  collapsed?: boolean;
+  onNavigate?: () => void;
+};
+
+export default function NavSection({
+  title,
+  items,
+  pathname,
+  collapsed = false,
+  onNavigate,
+}: Props) {
+  const isActiveRoute = (href: string) => {
+    if (href === "/") return pathname === "/";
+    return pathname === href || pathname.startsWith(`${href}/`);
+  };
+
+  return (
+    <Stack spacing={1.25}>
+      {!collapsed && (
+        <Typography
+          variant="overline"
+          sx={{
+            px: 1.5,
+            color: "rgba(226,232,240,0.72)",
+            letterSpacing: "0.18em",
+            fontWeight: 700,
+          }}
+        >
+          {title}
+        </Typography>
+      )}
+
+      <List sx={{ p: 0 }}>
+        {items.map((item) => {
+          const active = isActiveRoute(item.href);
+
+          return (
+            <Tooltip
+              key={item.href}
+              title={collapsed ? item.label : ""}
+              placement="right"
+            >
+              <ListItemButton
+                component={Link}
+                href={item.href}
+                onClick={onNavigate}
+                sx={{
+                  mb: 0.75,
+                  minHeight: 50,
+                  borderRadius: 3,
+                  px: collapsed ? 1 : 1.5,
+                  justifyContent: collapsed ? "center" : "flex-start",
+                  alignItems: "center",
+                  backgroundColor: active
+                    ? "rgba(255,255,255,0.14)"
+                    : "transparent",
+                  border: active
+                    ? "1px solid rgba(255,255,255,0.18)"
+                    : "1px solid transparent",
+                  boxShadow: active
+                    ? "0 14px 30px rgba(15,23,42,0.22)"
+                    : "none",
+                  transition:
+                    "background-color 0.18s ease, border-color 0.18s ease, transform 0.18s ease",
+                  "&:hover": {
+                    backgroundColor: active
+                      ? "rgba(255,255,255,0.18)"
+                      : "rgba(255,255,255,0.08)",
+                    transform: collapsed ? "none" : "translateX(2px)",
+                  },
+                }}
+              >
+                <ListItemIcon
+                  sx={{
+                    minWidth: collapsed ? 0 : 40,
+                    mr: collapsed ? 0 : 1,
+                    justifyContent: "center",
+                    color: active ? "#f8fafc" : "rgba(203,213,225,0.82)",
+                  }}
+                >
+                  {item.icon}
+                </ListItemIcon>
+
+                {!collapsed && (
+                  <ListItemText
+                    primary={item.label}
+                    primaryTypographyProps={{
+                      fontWeight: active ? 700 : 500,
+                      color: active ? "#f8fafc" : "rgba(226,232,240,0.92)",
+                    }}
+                  />
+                )}
+              </ListItemButton>
+            </Tooltip>
+          );
+        })}
+      </List>
+    </Stack>
+  );
+}
