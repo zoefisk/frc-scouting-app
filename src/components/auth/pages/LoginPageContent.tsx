@@ -16,7 +16,11 @@ export default function LoginPageContent() {
   }, [loading, user, router]);
 
   const handleLogin = async () => {
-    await signIn();
+    try {
+      await signIn();
+    } catch (error) {
+      console.error("Login button handler error:", error);
+    }
   };
 
   return (
