@@ -36,6 +36,7 @@ import { useToast } from "@/lib/hooks/useToast";
 import { TeamOption } from "@/lib/scouting/tba/loadEventTeams";
 import { useMatchScoutingDraft } from "@/lib/scouting/match/useMatchScoutingDraft";
 import MatchScoutingActionBar from "@/components/scouting/submission/MatchScoutingActionBar";
+import UnsavedChangesGuard from "@/components/app/guards/UnsavedChangesGuard";
 
 type TeamPresence = "present" | "absent" | "surrogate";
 
@@ -317,8 +318,31 @@ export default function MatchScoutingForm({
     setUsingCachedEventData(false);
   }
 
+  const hasUnsavedProgress = React.useMemo(
+    () =>
+      eventKey.trim() !== defaultEventKey.trim() ||
+      matchNumber.trim() !== "" ||
+      scoutingPosition != null ||
+      teamPresence !== "present" ||
+      robotPosition != null ||
+      selectedTeam != null ||
+      Object.keys(answers).length > 0,
+    [
+      answers,
+      defaultEventKey,
+      eventKey,
+      matchNumber,
+      robotPosition,
+      scoutingPosition,
+      selectedTeam,
+      teamPresence,
+    ]
+  );
+
   return (
     <Stack spacing={3}>
+      <UnsavedChangesGuard when={hasUnsavedProgress} />
+
       <div>
         <Typography variant="h4" sx={{ fontWeight: 700 }}>
           {title}
