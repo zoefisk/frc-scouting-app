@@ -1,4 +1,4 @@
-const CACHE_NAME = "frc-scouting-v5";
+const CACHE_NAME = "frc-scouting-v6";
 
 const APP_SHELL = [
   "/",
@@ -63,31 +63,9 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Next.js static build assets: cache first
-  if (url.pathname.startsWith("/_next/static/")) {
-    event.respondWith(
-      (async () => {
-        const cached = await caches.match(request);
-        if (cached) {
-          return cached;
-        }
-
-        try {
-          const response = await fetch(request);
-          if (response && response.ok) {
-            const clone = response.clone();
-            const cache = await caches.open(CACHE_NAME);
-            await cache.put(request, clone);
-          }
-          return response;
-        } catch {
-          return new Response("Offline asset not cached", {
-            status: 504,
-            headers: { "Content-Type": "text/plain" },
-          });
-        }
-      })()
-    );
+  // Let Next.js build assets come from the network. Cache-first chunk loading
+  // can leave the client with stale module graphs after file moves/renames.
+  if (url.pathname.startsWith("/_next/")) {
     return;
   }
 
