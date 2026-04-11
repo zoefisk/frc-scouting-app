@@ -44,6 +44,7 @@ export function buildScoutingProjectDoc({
     teamKeys,
 
     accessMode: input.accessMode,
+    allowMemberInvites: true,
     dataMode: input.dataMode,
     matchCollectionMode: input.matchCollectionMode,
     formMode: input.formMode,

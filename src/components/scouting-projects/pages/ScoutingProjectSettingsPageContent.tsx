@@ -5,8 +5,10 @@ import Link from "next/link";
 import {
   Alert,
   Box,
+  Checkbox,
   Chip,
   CircularProgress,
+  FormControlLabel,
   Paper,
   Stack,
   Typography,
@@ -14,7 +16,9 @@ import {
 
 import NoAccess from "@/components/auth/NoAccess";
 import { useAuth } from "@/components/app/providers/AuthProvider";
+import { updateScoutingProjectClient } from "@/lib/firebase/client/projects";
 import { getUserProfile } from "@/lib/firebase/client/users";
+import { useToast } from "@/lib/hooks/useToast";
 import {
   getProjectMemberRole,
   type ProjectMemberRole,
@@ -46,8 +50,13 @@ function getRoleChipColor(role: ProjectMemberRole) {
 
 export default function ScoutingProjectSettingsPageContent({ project }: Props) {
   const { user, loading } = useAuth();
+  const toast = useToast();
   const memberRole = getProjectMemberRole(project, user?.uid);
   const canManageProject = memberRole === "owner" || memberRole === "admin";
+  const [allowMemberInvites, setAllowMemberInvites] = React.useState(
+    project.allowMemberInvites
+  );
+  const [isSavingPermissions, setIsSavingPermissions] = React.useState(false);
 
   const visibleMembers = React.useMemo(() => {
     const members =
@@ -116,6 +125,33 @@ export default function ScoutingProjectSettingsPageContent({ project }: Props) {
     };
   }, [visibleMembers]);
 
+  React.useEffect(() => {
+    setAllowMemberInvites(project.allowMemberInvites);
+  }, [project.allowMemberInvites]);
+
+  const handleAllowMemberInvitesChange = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const nextValue = event.target.checked;
+    const previousValue = allowMemberInvites;
+
+    setAllowMemberInvites(nextValue);
+    setIsSavingPermissions(true);
+
+    try {
+      await updateScoutingProjectClient(project.id, {
+        allowMemberInvites: nextValue,
+      });
+      toast.success("Invite permissions updated.");
+    } catch (error) {
+      console.error("Failed to update invite permissions:", error);
+      setAllowMemberInvites(previousValue);
+      toast.error("Could not update invite permissions.");
+    } finally {
+      setIsSavingPermissions(false);
+    }
+  };
+
   if (loading) {
     return (
       <Stack alignItems="center" sx={{ py: 8 }}>
@@ -179,6 +215,22 @@ export default function ScoutingProjectSettingsPageContent({ project }: Props) {
             and what should happen before deleting an owner who is the only
             project owner.
           </Alert>
+
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={allowMemberInvites}
+                onChange={handleAllowMemberInvitesChange}
+                disabled={isSavingPermissions}
+              />
+            }
+            label="Allow regular members to invite other members"
+          />
+
+          <Typography variant="body2" color="text.secondary">
+            When this is off, only owners and admins will see the invite link
+            button on the main project dashboard.
+          </Typography>
         </Stack>
       </Paper>
 

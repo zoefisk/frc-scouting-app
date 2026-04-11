@@ -43,6 +43,10 @@ function normalizeProjectDoc(
   return {
     id,
     ...(data as ScoutingProjectDoc),
+    allowMemberInvites:
+      typeof data.allowMemberInvites === "boolean"
+        ? data.allowMemberInvites
+        : true,
     members,
     memberUids,
   };
@@ -113,6 +117,7 @@ export async function updateScoutingProjectClient(
       | "name"
       | "teamKeys"
       | "accessMode"
+      | "allowMemberInvites"
       | "dataMode"
       | "matchCollectionMode"
       | "formMode"

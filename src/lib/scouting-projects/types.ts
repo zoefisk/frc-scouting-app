@@ -41,6 +41,7 @@ export type ScoutingProjectDoc = {
   teamKeys: string[];
 
   accessMode: ProjectAccessMode;
+  allowMemberInvites: boolean;
   dataMode: ProjectDataMode;
   matchCollectionMode: MatchCollectionMode | null;
   formMode: ProjectFormMode;

@@ -203,6 +203,8 @@ export default function ScoutingProjectPageContent({
   const requiresAuth = project.accessMode === "authenticated";
   const canAccessProject = !requiresAuth || Boolean(memberRole);
   const canManageProject = memberRole === "owner" || memberRole === "admin";
+  const canInviteMembers =
+    canManageProject || (memberRole === "member" && project.allowMemberInvites);
 
   if (requiresAuth && loading) {
     return (
@@ -326,9 +328,11 @@ export default function ScoutingProjectPageContent({
             </Stack>
 
             <Stack direction="row" spacing={1} alignItems="center">
-              <CopyLinkMenu
-                url={`https://frc-scouting-app-jade.vercel.app/join/${project.inviteLinkToken}`} // TODO, add the url as an environment variable
-              />
+              {canInviteMembers ? (
+                <CopyLinkMenu
+                  url={`https://frc-scouting-app-jade.vercel.app/join/${project.inviteLinkToken}`} // TODO, add the url as an environment variable
+                />
+              ) : null}
 
               {canManageProject ? (
                 <Link
