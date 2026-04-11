@@ -36,6 +36,8 @@ export type RawTbaRankingsResponse = {
 export type RawTbaEvent = {
   key: string;
   name: string;
+  start_date?: string;
+  end_date?: string;
 };
 
 export type EventQualificationMatch = {

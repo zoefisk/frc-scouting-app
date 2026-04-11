@@ -26,6 +26,10 @@ export async function getTeam(
   return fetchTbaJson<RawTbaTeam>(`/team/${teamNumberToKey(teamNumber)}`);
 }
 
+export async function getEvent(eventKey: string): Promise<RawTbaEvent> {
+  return fetchTbaJson<RawTbaEvent>(`/event/${eventKey}`);
+}
+
 export async function getEvents(
   year: number | string
 ): Promise<SimpleEventOption[]> {
