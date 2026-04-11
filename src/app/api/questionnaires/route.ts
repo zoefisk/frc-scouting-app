@@ -3,18 +3,14 @@
 import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 
+import { getAuthenticatedUserIdFromRequest } from "@/lib/firebase/server/auth";
 import { validateCreateProjectQuestionnaireInput } from "@/lib/scouting-projects/questionnaires/validation";
 import { buildProjectQuestionnaireDoc } from "@/lib/scouting-projects/questionnaires/buildQuestionnaireDoc";
 import { createProjectQuestionnaireServerWithId } from "@/lib/firebase/server/questionnaires";
 
-// Replace this with your real auth lookup later
-async function getCurrentUserId(): Promise<string | null> {
-  return "temporary-user-id";
-}
-
 export async function POST(request: Request) {
   try {
-    const uid = await getCurrentUserId();
+    const uid = await getAuthenticatedUserIdFromRequest(request);
 
     if (!uid) {
       return NextResponse.json({ error: "Unauthorized." }, { status: 401 });

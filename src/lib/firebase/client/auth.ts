@@ -10,3 +10,13 @@ export async function signInWithGoogle() {
 export async function signOutUser() {
   return signOut(auth);
 }
+
+export async function getCurrentUserIdToken(): Promise<string | null> {
+  const user = auth.currentUser;
+
+  if (!user) {
+    return null;
+  }
+
+  return user.getIdToken();
+}

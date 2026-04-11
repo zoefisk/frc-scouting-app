@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { randomUUID } from "crypto";
 
+import { getAuthenticatedUserIdFromRequest } from "@/lib/firebase/server/auth";
 import { buildScoutingProjectDoc } from "@/lib/scouting-projects/buildProjectDoc";
 import { createScoutingProjectServerWithId } from "@/lib/firebase/server/projects";
 
@@ -9,9 +10,13 @@ import { createProjectQuestionnaireServerWithId } from "@/lib/firebase/server/qu
 
 import { matchScoutingV1 } from "@/lib/scouting/questionnaire/builtins/matchScoutingV1";
 
-export async function POST() {
+export async function POST(request: Request) {
   try {
-    const uid = "dev-user"; // replace later with real auth
+    const uid = await getAuthenticatedUserIdFromRequest(request);
+
+    if (!uid) {
+      return NextResponse.json({ error: "Unauthorized." }, { status: 401 });
+    }
 
     const projectId = randomUUID();
     const questionnaireId = randomUUID();
