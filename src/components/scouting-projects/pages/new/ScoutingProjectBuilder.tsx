@@ -17,6 +17,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useToast } from "@/lib/hooks/useToast";
 import { useAuth } from "@/components/app/providers/AuthProvider";
+import FieldLabelWithHelp from "@/components/common/FieldLabelWithHelp";
 import {
   createScoutingProjectInputSchema,
   type CreateScoutingProjectInput,
@@ -371,26 +372,37 @@ export default function ScoutingProjectBuilder() {
             </Typography>
 
             <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
-              <TextField
-                fullWidth
-                label="Project Name"
-                value={form.name}
-                onChange={(event) => updateForm("name", event.target.value)}
-                error={Boolean(errors.name)}
-                helperText={errors.name}
-              />
+              <Stack spacing={1} sx={{ flex: 1 }}>
+                <FieldLabelWithHelp
+                  label="Project Name"
+                  tooltip="Give this scouting effort a clear name, usually combining the event and the purpose of the project."
+                />
 
-              <TextField
-                label="Year"
-                value={form.year}
-                onChange={(event) => {
-                  updateForm("year", event.target.value);
-                  setSelectedTeams([]);
-                }}
-                error={Boolean(errors.year)}
-                helperText={errors.year}
-                sx={{ minWidth: { md: 160 } }}
-              />
+                <TextField
+                  fullWidth
+                  value={form.name}
+                  onChange={(event) => updateForm("name", event.target.value)}
+                  error={Boolean(errors.name)}
+                  helperText={errors.name}
+                />
+              </Stack>
+
+              <Stack spacing={1} sx={{ minWidth: { md: 160 } }}>
+                <FieldLabelWithHelp
+                  label="Year"
+                  tooltip="Choose the FRC season year for the event list and project data."
+                />
+
+                <TextField
+                  value={form.year}
+                  onChange={(event) => {
+                    updateForm("year", event.target.value);
+                    setSelectedTeams([]);
+                  }}
+                  error={Boolean(errors.year)}
+                  helperText={errors.year}
+                />
+              </Stack>
             </Stack>
 
             <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
@@ -440,24 +452,30 @@ export default function ScoutingProjectBuilder() {
                   spacing={1.5}
                   sx={{ mt: 1.25, maxWidth: 560 }}
                 >
-                  <TextField
-                    label="Add Team by Number"
-                    value={manualTeamNumber}
-                    onChange={(event) =>
-                      setManualTeamNumber(event.target.value)
-                    }
-                    error={Boolean(manualTeamError)}
-                    helperText={
-                      manualTeamError ??
-                      "Fetch one extra team from TBA without loading the full team list."
-                    }
-                    onKeyDown={(event) => {
-                      if (event.key === "Enter") {
-                        event.preventDefault();
-                        void handleAddNonAttendingTeam();
+                  <Stack spacing={1} sx={{ flex: 1 }}>
+                    <FieldLabelWithHelp
+                      label="Add Team by Number"
+                      tooltip="Fetch one extra team directly from The Blue Alliance without loading the full season team list."
+                    />
+
+                    <TextField
+                      value={manualTeamNumber}
+                      onChange={(event) =>
+                        setManualTeamNumber(event.target.value)
                       }
-                    }}
-                  />
+                      error={Boolean(manualTeamError)}
+                      helperText={
+                        manualTeamError ??
+                        "Fetch one extra team from TBA without loading the full team list."
+                      }
+                      onKeyDown={(event) => {
+                        if (event.key === "Enter") {
+                          event.preventDefault();
+                          void handleAddNonAttendingTeam();
+                        }
+                      }}
+                    />
+                  </Stack>
 
                   <Box sx={{ pt: { sm: 0.5 } }}>
                     <Button
@@ -481,77 +499,101 @@ export default function ScoutingProjectBuilder() {
             </Typography>
 
             <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
-              <TextField
-                select
-                fullWidth
-                label="Access Mode"
-                value={form.accessMode}
-                onChange={(event) =>
-                  updateForm(
-                    "accessMode",
-                    event.target.value as FormState["accessMode"]
-                  )
-                }
-              >
-                <MenuItem value="authenticated">Authenticated</MenuItem>
-                <MenuItem value="anonymous">Anonymous</MenuItem>
-              </TextField>
+              <Stack spacing={1} sx={{ flex: 1 }}>
+                <FieldLabelWithHelp
+                  label="Access Mode"
+                  tooltip="Choose whether scouting entries require signed-in users or can be submitted anonymously."
+                />
 
-              <TextField
-                select
-                fullWidth
-                label="Data Mode"
-                value={form.dataMode}
-                onChange={(event) =>
-                  updateForm(
-                    "dataMode",
-                    event.target.value as FormState["dataMode"]
-                  )
-                }
-              >
-                <MenuItem value="match">Match</MenuItem>
-                <MenuItem value="pit">Pit</MenuItem>
-                <MenuItem value="both">Both</MenuItem>
-              </TextField>
+                <TextField
+                  select
+                  fullWidth
+                  value={form.accessMode}
+                  onChange={(event) =>
+                    updateForm(
+                      "accessMode",
+                      event.target.value as FormState["accessMode"]
+                    )
+                  }
+                >
+                  <MenuItem value="authenticated">Authenticated</MenuItem>
+                  <MenuItem value="anonymous">Anonymous</MenuItem>
+                </TextField>
+              </Stack>
 
-              <TextField
-                select
-                fullWidth
-                label="Form Mode"
-                value={form.formMode}
-                onChange={(event) =>
-                  updateForm(
-                    "formMode",
-                    event.target.value as FormState["formMode"]
-                  )
-                }
-              >
-                <MenuItem value="custom">Custom</MenuItem>
-                <MenuItem value="default">Default</MenuItem>
-              </TextField>
+              <Stack spacing={1} sx={{ flex: 1 }}>
+                <FieldLabelWithHelp
+                  label="Data Mode"
+                  tooltip="Decide whether this project collects match data, pit data, or both."
+                />
+
+                <TextField
+                  select
+                  fullWidth
+                  value={form.dataMode}
+                  onChange={(event) =>
+                    updateForm(
+                      "dataMode",
+                      event.target.value as FormState["dataMode"]
+                    )
+                  }
+                >
+                  <MenuItem value="match">Match</MenuItem>
+                  <MenuItem value="pit">Pit</MenuItem>
+                  <MenuItem value="both">Both</MenuItem>
+                </TextField>
+              </Stack>
+
+              <Stack spacing={1} sx={{ flex: 1 }}>
+                <FieldLabelWithHelp
+                  label="Form Mode"
+                  tooltip="Use the default questionnaire setup or start from a custom form configuration."
+                />
+
+                <TextField
+                  select
+                  fullWidth
+                  value={form.formMode}
+                  onChange={(event) =>
+                    updateForm(
+                      "formMode",
+                      event.target.value as FormState["formMode"]
+                    )
+                  }
+                >
+                  <MenuItem value="custom">Custom</MenuItem>
+                  <MenuItem value="default">Default</MenuItem>
+                </TextField>
+              </Stack>
             </Stack>
 
             {usesMatchData && (
-              <TextField
-                select
-                fullWidth
-                label="Match Collection Mode"
-                value={form.matchCollectionMode ?? ""}
-                onChange={(event) =>
-                  updateForm(
-                    "matchCollectionMode",
-                    event.target.value as FormState["matchCollectionMode"]
-                  )
-                }
-                error={Boolean(errors.matchCollectionMode)}
-                helperText={
-                  errors.matchCollectionMode ??
-                  "Choose whether scouts collect one robot or a whole alliance."
-                }
-              >
-                <MenuItem value="robot">Robot</MenuItem>
-                <MenuItem value="alliance">Alliance</MenuItem>
-              </TextField>
+              <Stack spacing={1}>
+                <FieldLabelWithHelp
+                  label="Match Collection Mode"
+                  tooltip="Choose whether each scout tracks one robot or records a full alliance during a match."
+                />
+
+                <TextField
+                  select
+                  fullWidth
+                  value={form.matchCollectionMode ?? ""}
+                  onChange={(event) =>
+                    updateForm(
+                      "matchCollectionMode",
+                      event.target.value as FormState["matchCollectionMode"]
+                    )
+                  }
+                  error={Boolean(errors.matchCollectionMode)}
+                  helperText={
+                    errors.matchCollectionMode ??
+                    "Choose whether scouts collect one robot or a whole alliance."
+                  }
+                >
+                  <MenuItem value="robot">Robot</MenuItem>
+                  <MenuItem value="alliance">Alliance</MenuItem>
+                </TextField>
+              </Stack>
             )}
           </Stack>
 

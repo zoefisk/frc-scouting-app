@@ -9,6 +9,7 @@ import {
   TextField,
   Typography,
 } from "@mui/material";
+import FieldLabelWithHelp from "@/components/common/FieldLabelWithHelp";
 import type { TeamOption } from "@/lib/scouting/tba/loadEventTeams";
 
 type Props = {
@@ -30,6 +31,11 @@ export default function ProjectBuilderTeamKeysField({
 }: Props) {
   return (
     <Stack spacing={1}>
+      <FieldLabelWithHelp
+        label="Participating Teams"
+        tooltip="Pick the teams expected to compete at this event. This list is loaded from The Blue Alliance for the selected event."
+      />
+
       <Autocomplete
         multiple
         options={teams}
@@ -56,7 +62,6 @@ export default function ProjectBuilderTeamKeysField({
         renderInput={(params) => (
           <TextField
             {...params}
-            label="Participating Teams"
             placeholder={
               disabled
                 ? "Enter an event key first"
