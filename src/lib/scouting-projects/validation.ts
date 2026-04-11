@@ -1,5 +1,10 @@
 import { z } from "zod";
 
+export const MIN_SCOUTING_PROJECT_YEAR = 2015;
+export const MIN_SCOUTING_PROJECT_NAME_LENGTH = 5;
+export const MAX_SCOUTING_PROJECT_NAME_LENGTH = 100;
+export const MAX_SCOUTING_PROJECT_YEAR = new Date().getFullYear();
+
 export const projectAccessModeSchema = z.enum(["anonymous", "authenticated"]);
 export const projectDataModeSchema = z.enum(["match", "pit", "both"]);
 export const projectMatchCollectionModeSchema = z.enum(["robot", "alliance"]);
@@ -11,7 +16,14 @@ export const createScoutingProjectInputSchema = z
       .string()
       .trim()
       .min(1, "Project name is required.")
-      .max(100, "Project name must be 100 characters or fewer."),
+      .min(
+        MIN_SCOUTING_PROJECT_NAME_LENGTH,
+        `Project name must be at least ${MIN_SCOUTING_PROJECT_NAME_LENGTH} characters.`
+      )
+      .max(
+        MAX_SCOUTING_PROJECT_NAME_LENGTH,
+        `Project name must be ${MAX_SCOUTING_PROJECT_NAME_LENGTH} characters or fewer.`
+      ),
 
     eventKey: z
       .string()
@@ -27,8 +39,14 @@ export const createScoutingProjectInputSchema = z
             : "Year must be a number.",
       })
       .int("Year must be a whole number.")
-      .min(1992, "Year is too early.")
-      .max(2100, "Year is too late."),
+      .min(
+        MIN_SCOUTING_PROJECT_YEAR,
+        `Year cannot be earlier than ${MIN_SCOUTING_PROJECT_YEAR}.`
+      )
+      .max(
+        MAX_SCOUTING_PROJECT_YEAR,
+        `Year cannot be later than ${MAX_SCOUTING_PROJECT_YEAR}.`
+      ),
 
     teamKeys: z
       .array(z.string().trim().min(1))
@@ -73,4 +91,36 @@ export function validateCreateScoutingProjectInput(
   input: unknown
 ): CreateScoutingProjectInput {
   return createScoutingProjectInputSchema.parse(input);
+}
+
+export type CreateScoutingProjectFieldErrorKey =
+  | keyof CreateScoutingProjectInput
+  | "teamKeys";
+
+export function mapCreateScoutingProjectIssuesToFieldErrors(
+  issues: z.ZodIssue[]
+): Partial<Record<CreateScoutingProjectFieldErrorKey, string>> {
+  const nextErrors: Partial<
+    Record<CreateScoutingProjectFieldErrorKey, string>
+  > = {};
+
+  for (const issue of issues) {
+    const path = issue.path[0];
+
+    if (path === "teamKeys") {
+      nextErrors.teamKeys = issue.message;
+    } else if (
+      path === "name" ||
+      path === "eventKey" ||
+      path === "year" ||
+      path === "accessMode" ||
+      path === "dataMode" ||
+      path === "matchCollectionMode" ||
+      path === "formMode"
+    ) {
+      nextErrors[path] = issue.message;
+    }
+  }
+
+  return nextErrors;
 }

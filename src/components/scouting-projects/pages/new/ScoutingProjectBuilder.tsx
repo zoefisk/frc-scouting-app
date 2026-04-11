@@ -20,6 +20,10 @@ import { useAuth } from "@/components/app/providers/AuthProvider";
 import FieldLabelWithHelp from "@/components/common/FieldLabelWithHelp";
 import {
   createScoutingProjectInputSchema,
+  mapCreateScoutingProjectIssuesToFieldErrors,
+  MAX_SCOUTING_PROJECT_NAME_LENGTH,
+  MAX_SCOUTING_PROJECT_YEAR,
+  MIN_SCOUTING_PROJECT_YEAR,
   type CreateScoutingProjectInput,
 } from "@/lib/scouting-projects/validation";
 import { getCurrentUserIdToken } from "@/lib/firebase/client/auth";
@@ -53,10 +57,7 @@ const INITIAL_FORM_STATE: FormState = {
   formMode: "custom",
 };
 
-function buildInput(
-  form: FormState,
-  selectedTeams: TeamOption[]
-): CreateScoutingProjectInput {
+function buildInput(form: FormState, selectedTeams: TeamOption[]): unknown {
   const usesMatchData = form.dataMode === "match" || form.dataMode === "both";
 
   return {
@@ -287,22 +288,9 @@ export default function ScoutingProjectBuilder() {
       );
 
       if (!parsed.success) {
-        const nextErrors: FieldErrors = {};
-
-        for (const issue of parsed.error.issues) {
-          const path = issue.path[0];
-          if (path === "teamKeys") {
-            nextErrors.teamKeys = issue.message;
-          } else if (path === "year") {
-            nextErrors.year = issue.message;
-          } else if (path === "matchCollectionMode") {
-            nextErrors.matchCollectionMode = issue.message;
-          } else if (typeof path === "string" && path in form) {
-            nextErrors[path as keyof FormState] = issue.message;
-          }
-        }
-
-        setErrors(nextErrors);
+        setErrors(
+          mapCreateScoutingProjectIssuesToFieldErrors(parsed.error.issues)
+        );
         return;
       }
 
@@ -383,7 +371,11 @@ export default function ScoutingProjectBuilder() {
                   value={form.name}
                   onChange={(event) => updateForm("name", event.target.value)}
                   error={Boolean(errors.name)}
-                  helperText={errors.name}
+                  helperText={
+                    errors.name ??
+                    `${form.name.trim().length}/${MAX_SCOUTING_PROJECT_NAME_LENGTH}`
+                  }
+                  inputProps={{ maxLength: MAX_SCOUTING_PROJECT_NAME_LENGTH }}
                 />
               </Stack>
 
@@ -394,13 +386,22 @@ export default function ScoutingProjectBuilder() {
                 />
 
                 <TextField
+                  type="number"
                   value={form.year}
                   onChange={(event) => {
                     updateForm("year", event.target.value);
                     setSelectedTeams([]);
                   }}
                   error={Boolean(errors.year)}
-                  helperText={errors.year}
+                  helperText={
+                    errors.year ??
+                    `${MIN_SCOUTING_PROJECT_YEAR}-${MAX_SCOUTING_PROJECT_YEAR}`
+                  }
+                  inputProps={{
+                    min: MIN_SCOUTING_PROJECT_YEAR,
+                    max: MAX_SCOUTING_PROJECT_YEAR,
+                    step: 1,
+                  }}
                 />
               </Stack>
             </Stack>
