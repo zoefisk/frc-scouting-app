@@ -1701,3 +1701,5 @@ export default function ScoutingSchedule({
     </Stack>
   );
 }
+
+// TODO -- implement column groups and make them collapsible (only want to see red, only want to see blue, etc.)

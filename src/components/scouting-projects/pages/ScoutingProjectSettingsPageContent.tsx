@@ -582,3 +582,5 @@ export default function ScoutingProjectSettingsPageContent({
     </Stack>
   );
 }
+
+// TODO -- add section to download CSVs for all match scouting, all pit scouting, all alliance selection, etc, all at once.
