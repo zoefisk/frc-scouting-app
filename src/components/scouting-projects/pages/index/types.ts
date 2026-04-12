@@ -11,4 +11,5 @@ export type ProjectListItem = {
   dataMode: ScoutingProjectDoc["dataMode"];
   accessMode: ProjectAccessMode;
   source: "owned" | "joined" | "device";
+  pinned: boolean;
 };

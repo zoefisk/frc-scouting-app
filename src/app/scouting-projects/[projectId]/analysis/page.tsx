@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { Alert, Button, Stack, Typography } from "@mui/material";
+import { Alert, Button, Chip, Stack, Typography } from "@mui/material";
 
 import PageShell from "@/components/app/layout/PageShell";
 import ProjectAccessGuard from "@/components/scouting-projects/ProjectAccessGuard";
@@ -21,7 +21,7 @@ export default async function ProjectAnalysisPage({ params }: Props) {
   }
 
   return (
-    <PageShell width="md">
+    <PageShell width="lg">
       <ProjectAccessGuard project={project}>
         <Stack spacing={2.5}>
           <Typography variant="h4" sx={{ fontWeight: 700 }}>
@@ -33,18 +33,7 @@ export default async function ProjectAnalysisPage({ params }: Props) {
             project and its event.
           </Typography>
 
-          <Alert severity="info">
-            Project-aware analysis routing is in place. The detailed reporting
-            pipeline still needs to switch from event-only queries to
-            project-filtered queries using the saved `projectId` on responses.
-          </Alert>
-
-          <Link
-            href={`/analysis/${project.eventKey}/teams`}
-            style={{ textDecoration: "none" }}
-          >
-            <Button variant="contained">Open Event Team Analysis</Button>
-          </Link>
+          <Chip label={project.eventKey} />
         </Stack>
       </ProjectAccessGuard>
     </PageShell>

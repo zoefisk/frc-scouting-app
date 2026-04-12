@@ -2,7 +2,12 @@
 
 import React from "react";
 import { useAuth } from "@/components/app/providers/AuthProvider";
-import { getJoinedScoutingProjects } from "@/lib/db/projects";
+import {
+  getJoinedScoutingProjects,
+  getPinnedScoutingProjectIds,
+  pinScoutingProject,
+  unpinScoutingProject,
+} from "@/lib/db/projects";
 import {
   getScoutingProjectClient,
   listScoutingProjectsForUserClient,
@@ -39,35 +44,58 @@ export function useScoutingProjects() {
   const [isLoadingProjects, setIsLoadingProjects] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
 
-  React.useEffect(() => {
-    let cancelled = false;
+  const loadProjects = React.useCallback(async () => {
+    try {
+      setIsLoadingProjects(true);
+      setError(null);
 
-    async function loadProjects() {
-      try {
-        setIsLoadingProjects(true);
-        setError(null);
+      const projectMap = new Map<string, ProjectListItem>();
+      const pinnedProjectIds = await getPinnedScoutingProjectIds();
+      const pinnedProjectIdSet = new Set(pinnedProjectIds);
 
-        const projectMap = new Map<string, ProjectListItem>();
+      const joinedOnDevice = await getJoinedScoutingProjects();
+      for (const project of joinedOnDevice) {
+        upsertProject(projectMap, {
+          id: project.projectId,
+          name: project.name,
+          eventKey: project.eventKey,
+          year: project.year,
+          dataMode: project.dataMode,
+          accessMode: project.accessMode,
+          source: "device",
+          pinned: pinnedProjectIdSet.has(project.projectId),
+        });
+      }
 
-        const joinedOnDevice = await getJoinedScoutingProjects();
-        for (const project of joinedOnDevice) {
+      if (user) {
+        const ownedProjects = await listScoutingProjectsForUserClient(user.uid);
+        for (const project of ownedProjects) {
+          const role = getProjectMemberRole(project, user.uid);
+
           upsertProject(projectMap, {
-            id: project.projectId,
+            id: project.id,
             name: project.name,
             eventKey: project.eventKey,
             year: project.year,
             dataMode: project.dataMode,
             accessMode: project.accessMode,
-            source: "device",
+            source: role === "owner" || role === "admin" ? "owned" : "joined",
+            pinned: pinnedProjectIdSet.has(project.id),
           });
         }
 
-        if (user) {
-          const ownedProjects = await listScoutingProjectsForUserClient(
-            user.uid
+        const profile = await getUserProfile(user.uid);
+        const joinedIds = (profile?.joinedProjectIds ?? []).filter(
+          (projectId) => !projectMap.has(projectId)
+        );
+
+        if (joinedIds.length > 0) {
+          const joinedProjects = await Promise.all(
+            joinedIds.map((projectId) => getScoutingProjectClient(projectId))
           );
-          for (const project of ownedProjects) {
-            const role = getProjectMemberRole(project, user.uid);
+
+          for (const project of joinedProjects) {
+            if (!project) continue;
 
             upsertProject(projectMap, {
               id: project.id,
@@ -76,67 +104,63 @@ export function useScoutingProjects() {
               year: project.year,
               dataMode: project.dataMode,
               accessMode: project.accessMode,
-              source: role === "owner" || role === "admin" ? "owned" : "joined",
+              source: "joined",
+              pinned: pinnedProjectIdSet.has(project.id),
             });
           }
-
-          const profile = await getUserProfile(user.uid);
-          const joinedIds = (profile?.joinedProjectIds ?? []).filter(
-            (projectId) => !projectMap.has(projectId)
-          );
-
-          if (joinedIds.length > 0) {
-            const joinedProjects = await Promise.all(
-              joinedIds.map((projectId) => getScoutingProjectClient(projectId))
-            );
-
-            for (const project of joinedProjects) {
-              if (!project) continue;
-
-              upsertProject(projectMap, {
-                id: project.id,
-                name: project.name,
-                eventKey: project.eventKey,
-                year: project.year,
-                dataMode: project.dataMode,
-                accessMode: project.accessMode,
-                source: "joined",
-              });
-            }
-          }
-        }
-
-        const nextProjects = [...projectMap.values()].sort((a, b) => {
-          if (a.year !== b.year) return b.year - a.year;
-          return a.name.localeCompare(b.name);
-        });
-
-        if (!cancelled) {
-          setProjects(nextProjects);
-        }
-      } catch (err) {
-        console.error("Failed to load scouting projects:", err);
-        if (!cancelled) {
-          setError("Could not load your scouting projects.");
-        }
-      } finally {
-        if (!cancelled) {
-          setIsLoadingProjects(false);
         }
       }
+
+      const nextProjects = [...projectMap.values()].sort((a, b) => {
+        if (a.pinned !== b.pinned) {
+          return a.pinned ? -1 : 1;
+        }
+        if (a.year !== b.year) return b.year - a.year;
+        return a.name.localeCompare(b.name);
+      });
+
+      setProjects(nextProjects);
+    } catch (err) {
+      console.error("Failed to load scouting projects:", err);
+      setError("Could not load your scouting projects.");
+    } finally {
+      setIsLoadingProjects(false);
     }
+  }, [user]);
+
+  React.useEffect(() => {
+    let cancelled = false;
 
     if (loading) return;
-    void loadProjects();
+    void (async () => {
+      await loadProjects();
+      if (cancelled) {
+        return;
+      }
+    })();
 
     return () => {
       cancelled = true;
     };
-  }, [user, loading]);
+  }, [user, loading, loadProjects]);
+
+  const togglePinned = React.useCallback(
+    async (projectId: string, pinned: boolean) => {
+      if (pinned) {
+        await unpinScoutingProject(projectId);
+      } else {
+        await pinScoutingProject(projectId);
+      }
+
+      await loadProjects();
+    },
+    [loadProjects]
+  );
 
   return {
     projects,
     error,
     isLoading: loading || isLoadingProjects,
+    togglePinned,
   };
 }

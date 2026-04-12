@@ -1,6 +1,7 @@
 import React from "react";
 import { Box, Divider, Stack, Typography } from "@mui/material";
 import SyncModeToggleButton from "@/components/app/navigation/SyncModeToggleButton";
+import { useScoutingProjects } from "@/components/scouting-projects/pages/index/useScoutingProjects";
 import type { NavItem } from "./constants";
 import { rainbowSidebarBackground } from "./constants";
 import NavSection from "./NavSection";
@@ -22,6 +23,14 @@ export default function NavbarDrawerContent({
   header,
   onNavigate,
 }: Props) {
+  const { projects } = useScoutingProjects();
+  const pinnedProjects = React.useMemo(
+    () => projects.filter((project) => project.pinned).slice(0, 8),
+    [projects]
+  );
+  const [scoutingProjectsExpanded, setScoutingProjectsExpanded] =
+    React.useState(false);
+
   return (
     <Box
       sx={{
@@ -61,6 +70,11 @@ export default function NavbarDrawerContent({
           pathname={pathname}
           collapsed={collapsed}
           onNavigate={onNavigate}
+          pinnedProjects={pinnedProjects}
+          scoutingProjectsExpanded={scoutingProjectsExpanded}
+          onToggleScoutingProjectsExpanded={() =>
+            setScoutingProjectsExpanded((prev) => !prev)
+          }
         />
 
         <NavSection

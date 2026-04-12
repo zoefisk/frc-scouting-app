@@ -4,8 +4,10 @@ import ProjectCard from "./ProjectCard";
 
 export default function ProjectsGrid({
   projects,
+  onTogglePinned,
 }: {
   projects: ProjectListItem[];
+  onTogglePinned: (projectId: string, pinned: boolean) => Promise<void>;
 }) {
   return (
     <Box
@@ -19,7 +21,11 @@ export default function ProjectsGrid({
       }}
     >
       {projects.map((project) => (
-        <ProjectCard key={project.id} project={project} />
+        <ProjectCard
+          key={project.id}
+          project={project}
+          onTogglePinned={onTogglePinned}
+        />
       ))}
     </Box>
   );

@@ -7,7 +7,7 @@ import ProjectsHeader from "@/components/scouting-projects/pages/index/ProjectsH
 import { useScoutingProjects } from "@/components/scouting-projects/pages/index/useScoutingProjects";
 
 export default function ScoutingProjectsIndexPage() {
-  const { projects, error, isLoading } = useScoutingProjects();
+  const { projects, error, isLoading, togglePinned } = useScoutingProjects();
 
   return (
     <Stack spacing={3}>
@@ -22,7 +22,7 @@ export default function ScoutingProjectsIndexPage() {
       ) : projects.length === 0 ? (
         <ProjectsEmptyState />
       ) : (
-        <ProjectsGrid projects={projects} />
+        <ProjectsGrid projects={projects} onTogglePinned={togglePinned} />
       )}
     </Stack>
   );

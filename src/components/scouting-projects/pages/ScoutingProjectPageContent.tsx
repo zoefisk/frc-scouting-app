@@ -33,6 +33,13 @@ type Props = {
   eventOverview: ProjectEventOverview | null;
 };
 
+type QuickAction = {
+  title: string;
+  description: string;
+  icon: React.ElementType;
+  hrefSuffix: string;
+};
+
 function getStatusChipStyles(tone: ProjectEventOverview["statusTone"]) {
   if (tone === "success") {
     return {
@@ -57,7 +64,7 @@ function getStatusChipStyles(tone: ProjectEventOverview["statusTone"]) {
   };
 }
 
-const quickActions = [
+const quickActions: QuickAction[] = [
   {
     title: "Match Scouting",
     description: "Scout qualification and playoff matches.",
@@ -187,6 +194,31 @@ export default function ScoutingProjectPageContent({
   const canManageProject = memberRole === "owner" || memberRole === "admin";
   const canInviteMembers =
     canManageProject || (memberRole === "member" && project.allowMemberInvites);
+
+  const renderedQuickActions = quickActions
+    .filter((action) => {
+      if (project.dataMode === "match" && action.title === "Pit Scouting") {
+        return false;
+      }
+
+      if (project.dataMode === "pit" && action.title === "Match Scouting") {
+        return false;
+      }
+
+      return true;
+    })
+    .map((action) => {
+      const isSingleDataModeWideCard =
+        (project.dataMode === "match" && action.title === "Match Scouting") ||
+        (project.dataMode === "pit" && action.title === "Pit Scouting");
+
+      return {
+        ...action,
+        gridSize: isSingleDataModeWideCard
+          ? { xs: 12, lg: 12 }
+          : { xs: 6, lg: 6 },
+      };
+    });
 
   if (requiresAuth && loading) {
     return (
@@ -348,10 +380,10 @@ export default function ScoutingProjectPageContent({
               }}
             >
               <Grid container spacing={1.25} alignItems="stretch">
-                {quickActions.map((action) => (
+                {renderedQuickActions.map((action) => (
                   <Grid
                     key={action.title}
-                    size={{ xs: 6, lg: 6 }}
+                    size={action.gridSize}
                     sx={{ display: "flex" }}
                   >
                     <QuickActionCard
