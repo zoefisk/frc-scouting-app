@@ -1,9 +1,14 @@
 import { notFound } from "next/navigation";
 
 import PageShell from "@/components/app/layout/PageShell";
+import NoAccess from "@/components/auth/NoAccess";
 import PitScoutingForm from "@/components/scouting/PitScoutingForm";
 import ProjectAccessGuard from "@/components/scouting-projects/ProjectAccessGuard";
 import { getScoutingProjectServer } from "@/lib/firebase/server/projects";
+import {
+  getMissingProjectQuestionnaireMessage,
+  projectHasConfiguredQuestionnaire,
+} from "@/lib/scouting-projects/questionnaires/availability";
 import { resolveProjectQuestionnaireServer } from "@/lib/scouting-projects/questionnaires/resolveProjectQuestionnaireServer";
 
 type Props = {
@@ -18,6 +23,20 @@ export default async function ProjectPitScoutingPage({ params }: Props) {
 
   if (!project) {
     notFound();
+  }
+
+  if (!projectHasConfiguredQuestionnaire(project, "pit")) {
+    return (
+      <PageShell width="md">
+        <ProjectAccessGuard project={project}>
+          <NoAccess
+            title="Pit scouting is not ready yet."
+            description="This project uses a custom form, but its pit scouting questionnaire has not been created yet."
+            note={getMissingProjectQuestionnaireMessage("pit")}
+          />
+        </ProjectAccessGuard>
+      </PageShell>
+    );
   }
 
   const questionnaire = await resolveProjectQuestionnaireServer(

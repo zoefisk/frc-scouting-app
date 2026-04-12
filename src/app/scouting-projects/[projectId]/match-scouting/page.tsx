@@ -1,9 +1,14 @@
 import { notFound } from "next/navigation";
 
 import PageShell from "@/components/app/layout/PageShell";
+import NoAccess from "@/components/auth/NoAccess";
 import MatchScoutingPageContent from "@/components/scouting/pages/MatchScoutingPageContent";
 import ProjectAccessGuard from "@/components/scouting-projects/ProjectAccessGuard";
 import { getScoutingProjectServer } from "@/lib/firebase/server/projects";
+import {
+  getMissingProjectQuestionnaireMessage,
+  projectHasConfiguredQuestionnaire,
+} from "@/lib/scouting-projects/questionnaires/availability";
 import { resolveProjectQuestionnaireServer } from "@/lib/scouting-projects/questionnaires/resolveProjectQuestionnaireServer";
 
 type Props = {
@@ -26,6 +31,20 @@ export default async function ProjectMatchScoutingPage({
 
   if (!project) {
     notFound();
+  }
+
+  if (!projectHasConfiguredQuestionnaire(project, "match")) {
+    return (
+      <PageShell width="md">
+        <ProjectAccessGuard project={project}>
+          <NoAccess
+            title="Match scouting is not ready yet."
+            description="This project uses a custom form, but its match scouting questionnaire has not been created yet."
+            note={getMissingProjectQuestionnaireMessage("match")}
+          />
+        </ProjectAccessGuard>
+      </PageShell>
+    );
   }
 
   const questionnaire = await resolveProjectQuestionnaireServer(

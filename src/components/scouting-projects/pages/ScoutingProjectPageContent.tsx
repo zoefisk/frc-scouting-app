@@ -27,6 +27,10 @@ import type { ProjectEventOverview } from "@/lib/scouting-projects/eventOverview
 import CopyLinkMenu from "@/components/scouting-projects/dashboard/scouting-schedule/CopyLinkMenu";
 import NoAccess from "@/components/auth/NoAccess";
 import { useAuth } from "@/components/app/providers/AuthProvider";
+import {
+  getMissingProjectQuestionnaireMessage,
+  projectHasConfiguredQuestionnaire,
+} from "@/lib/scouting-projects/questionnaires/availability";
 
 type Props = {
   project: ScoutingProjectDoc & { id: string };
@@ -123,11 +127,99 @@ function QuickActionCard({
   title,
   icon: Icon,
   href,
+  disabled = false,
+  disabledReason,
 }: {
   title: string;
   icon: React.ElementType;
   href: string;
+  disabled?: boolean;
+  disabledReason?: string;
 }) {
+  const card = (
+    <Card
+      elevation={0}
+      sx={{
+        width: "100%",
+        minHeight: 92,
+        border: "1px solid",
+        borderColor: "divider",
+        borderRadius: 2.25,
+        transition: "all 0.18s ease",
+        cursor: disabled ? "not-allowed" : "pointer",
+        opacity: disabled ? 0.48 : 1,
+        backgroundColor: disabled ? "rgba(15,23,42,0.02)" : "background.paper",
+        "&:hover": disabled
+          ? undefined
+          : {
+              borderColor: "primary.main",
+              transform: "translateY(-2px)",
+              boxShadow: 3,
+            },
+      }}
+    >
+      <Box
+        sx={{
+          height: "100%",
+          p: 1.25,
+          display: "flex",
+        }}
+      >
+        <Stack spacing={1} sx={{ width: "100%", minWidth: 0 }}>
+          <Box
+            sx={{
+              width: 30,
+              height: 30,
+              borderRadius: 1.5,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              backgroundColor: disabled ? "grey.400" : "primary.main",
+              color: "primary.contrastText",
+              flexShrink: 0,
+            }}
+          >
+            <Icon sx={{ fontSize: 18 }} />
+          </Box>
+
+          <Typography
+            variant="subtitle2"
+            sx={{
+              fontWeight: 700,
+              lineHeight: 1.15,
+              whiteSpace: "normal",
+              overflowWrap: "anywhere",
+              wordBreak: "break-word",
+            }}
+          >
+            {title}
+          </Typography>
+
+          {disabledReason ? (
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ lineHeight: 1.2 }}
+            >
+              Questionnaire not created yet
+            </Typography>
+          ) : null}
+        </Stack>
+      </Box>
+    </Card>
+  );
+
+  if (disabled) {
+    return (
+      <Card
+        elevation={0}
+        sx={{ width: "100%", bgcolor: "transparent", boxShadow: "none" }}
+      >
+        {card}
+      </Card>
+    );
+  }
+
   return (
     <Link
       href={href}
@@ -139,62 +231,7 @@ function QuickActionCard({
         height: "100%",
       }}
     >
-      <Card
-        elevation={0}
-        sx={{
-          width: "100%",
-          minHeight: 92,
-          border: "1px solid",
-          borderColor: "divider",
-          borderRadius: 2.25,
-          transition: "all 0.18s ease",
-          cursor: "pointer",
-          "&:hover": {
-            borderColor: "primary.main",
-            transform: "translateY(-2px)",
-            boxShadow: 3,
-          },
-        }}
-      >
-        <Box
-          sx={{
-            height: "100%",
-            p: 1.25,
-            display: "flex",
-          }}
-        >
-          <Stack spacing={1} sx={{ width: "100%", minWidth: 0 }}>
-            <Box
-              sx={{
-                width: 30,
-                height: 30,
-                borderRadius: 1.5,
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                backgroundColor: "primary.main",
-                color: "primary.contrastText",
-                flexShrink: 0,
-              }}
-            >
-              <Icon sx={{ fontSize: 18 }} />
-            </Box>
-
-            <Typography
-              variant="subtitle2"
-              sx={{
-                fontWeight: 700,
-                lineHeight: 1.15,
-                whiteSpace: "normal",
-                overflowWrap: "anywhere",
-                wordBreak: "break-word",
-              }}
-            >
-              {title}
-            </Typography>
-          </Stack>
-        </Box>
-      </Card>
+      {card}
     </Link>
   );
 }
@@ -224,12 +261,27 @@ export default function ScoutingProjectPageContent({
       return true;
     })
     .map((action) => {
+      const questionnaireKind =
+        action.title === "Match Scouting"
+          ? "match"
+          : action.title === "Pit Scouting"
+            ? "pit"
+            : null;
+      const isDisabled =
+        questionnaireKind != null &&
+        !projectHasConfiguredQuestionnaire(project, questionnaireKind);
+
       const isSingleDataModeWideCard =
         (project.dataMode === "match" && action.title === "Match Scouting") ||
         (project.dataMode === "pit" && action.title === "Pit Scouting");
 
       return {
         ...action,
+        disabled: isDisabled,
+        disabledReason:
+          questionnaireKind != null && isDisabled
+            ? getMissingProjectQuestionnaireMessage(questionnaireKind)
+            : undefined,
         gridSize: isSingleDataModeWideCard
           ? { xs: 12, lg: 12 }
           : { xs: 6, lg: 6 },
@@ -425,6 +477,8 @@ export default function ScoutingProjectPageContent({
                       title={action.title}
                       icon={action.icon}
                       href={`/scouting-projects/${project.id}/${action.hrefSuffix}`}
+                      disabled={action.disabled}
+                      disabledReason={action.disabledReason}
                     />
                   </Grid>
                 ))}

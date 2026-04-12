@@ -28,6 +28,14 @@ export function slotHasRecordedData(
   return false;
 }
 
+export function countRecordedScheduleSlots(
+  slots: ScoutingScheduleSlot[],
+  positionsWithData: string[]
+): number {
+  return slots.filter((slot) => slotHasRecordedData(slot, positionsWithData))
+    .length;
+}
+
 export function hasNextQualificationMatchStarted(
   matchNumber: number,
   qualificationMatches: RawTbaMatch[],
