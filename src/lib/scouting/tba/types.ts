@@ -31,10 +31,20 @@ export type RawTbaTeam = {
 export type RawTbaRankingRow = {
   team_key: string;
   rank: number;
+  record?: {
+    wins?: number;
+    losses?: number;
+    ties?: number;
+  };
+  sort_orders?: number[];
 };
 
 export type RawTbaRankingsResponse = {
   rankings?: RawTbaRankingRow[];
+  sort_order_info?: Array<{
+    name?: string;
+    precision?: number;
+  }>;
 };
 
 export type RawTbaEvent = {
