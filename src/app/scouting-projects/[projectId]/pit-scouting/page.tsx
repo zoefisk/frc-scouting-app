@@ -15,10 +15,17 @@ type Props = {
   params: Promise<{
     projectId: string;
   }>;
+  searchParams?: Promise<{
+    team?: string;
+  }>;
 };
 
-export default async function ProjectPitScoutingPage({ params }: Props) {
+export default async function ProjectPitScoutingPage({
+  params,
+  searchParams,
+}: Props) {
   const { projectId } = await params;
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const project = await getScoutingProjectServer(projectId);
 
   if (!project) {
@@ -54,6 +61,7 @@ export default async function ProjectPitScoutingPage({ params }: Props) {
           projectId={project.id}
           questionnaire={questionnaire}
           defaultEventKey={project.eventKey}
+          defaultTeamKey={resolvedSearchParams?.team}
           title={`${project.name} Pit Scouting`}
           description="Pit scouting entries saved from this page stay associated with this scouting project."
         />

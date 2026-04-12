@@ -3,6 +3,9 @@ export type TeamOption = {
   team_number: number;
   nickname?: string;
   name?: string;
+  city?: string;
+  state_prov?: string;
+  country?: string;
 };
 
 export async function loadEventTeams(eventKey: string): Promise<TeamOption[]> {

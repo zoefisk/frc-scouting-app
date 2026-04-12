@@ -27,6 +27,7 @@ type Props = {
   questionnaire: QuestionnaireDefinition;
   projectId?: string;
   defaultEventKey?: string;
+  defaultTeamKey?: string;
   title?: string;
   description?: string;
 };
@@ -35,6 +36,7 @@ export default function PitScoutingForm({
   questionnaire,
   projectId,
   defaultEventKey = "",
+  defaultTeamKey,
   title = "Pit Scouting",
   description = "Choose a team, complete the questionnaire, then save or submit.",
 }: Props) {
@@ -88,6 +90,19 @@ export default function PitScoutingForm({
       cancelled = true;
     };
   }, [eventKey]);
+
+  React.useEffect(() => {
+    if (!defaultTeamKey || teams.length === 0) {
+      return;
+    }
+
+    const suggestedTeam =
+      teams.find((team) => team.key === defaultTeamKey) ?? null;
+
+    if (suggestedTeam) {
+      setSelectedTeam(suggestedTeam);
+    }
+  }, [defaultTeamKey, teams]);
 
   const setup = React.useMemo<ScoutingSetupState>(
     () => ({

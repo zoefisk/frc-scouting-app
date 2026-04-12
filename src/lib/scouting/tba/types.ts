@@ -26,6 +26,9 @@ export type RawTbaTeam = {
   team_number: number;
   nickname?: string;
   name?: string;
+  city?: string;
+  state_prov?: string;
+  country?: string;
 };
 
 export type RawTbaRankingRow = {

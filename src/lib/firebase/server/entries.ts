@@ -194,6 +194,31 @@ export async function projectHasPitScoutingData(
   });
 }
 
+export async function getProjectPitCoverageSummary(
+  projectId: string,
+  eventKey: string
+): Promise<Record<string, boolean>> {
+  const entries = await listPitEntryDocsForEvent(eventKey);
+  const coverage: Record<string, boolean> = {};
+
+  for (const entry of entries) {
+    const setup = entry.setup;
+
+    if (setup?.kind !== "pit" || setup.projectId !== projectId) {
+      continue;
+    }
+
+    const teamKey = setup.teamKey ?? entry.teamKey ?? entry.selectedTeamKey;
+    if (!teamKey) {
+      continue;
+    }
+
+    coverage[teamKey] = true;
+  }
+
+  return coverage;
+}
+
 export async function getProjectTeamMatchQuestionnaireEntries(
   projectId: string,
   eventKey: string,
