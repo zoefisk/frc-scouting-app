@@ -25,9 +25,7 @@ export default function Navbar() {
   }, []);
 
   React.useEffect(() => {
-    const nextWidth = collapsed
-      ? `${collapsedSidebarWidth}px`
-      : `${desktopSidebarWidth}px`;
+    const nextWidth = `${collapsedSidebarWidth}px`;
 
     document.documentElement.style.setProperty(
       "--app-sidebar-width",
@@ -86,13 +84,17 @@ export default function Navbar() {
         variant="permanent"
         sx={{
           display: { xs: "none", md: "block" },
-          width: collapsed ? collapsedSidebarWidth : desktopSidebarWidth,
+          width: collapsedSidebarWidth,
           flexShrink: 0,
+          pointerEvents: "none",
           "& .MuiDrawer-paper": {
             width: collapsed ? collapsedSidebarWidth : desktopSidebarWidth,
             transition: "width 0.22s ease",
             borderRight: "none",
             boxShadow: "inset -1px 0 0 rgba(148,163,184,0.12)",
+            overflowX: "hidden",
+            pointerEvents: "auto",
+            zIndex: (theme) => theme.zIndex.drawer,
           },
         }}
       >

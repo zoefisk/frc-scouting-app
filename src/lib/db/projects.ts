@@ -10,6 +10,8 @@ import type {
 
 const JOINED_SCOUTING_PROJECTS_KEY = "joinedScoutingProjects";
 const PINNED_SCOUTING_PROJECT_IDS_KEY = "pinnedScoutingProjectIds";
+export const PINNED_SCOUTING_PROJECTS_CHANGED_EVENT =
+  "scouting-projects:pinned-changed";
 
 export type JoinedScoutingProjectRecord = {
   projectId: string;
@@ -94,6 +96,25 @@ export async function getPinnedScoutingProjectIds(): Promise<string[]> {
   );
 }
 
+function haveSamePinnedIds(current: string[], next: string[]): boolean {
+  return (
+    current.length === next.length &&
+    current.every((projectId, index) => projectId === next[index])
+  );
+}
+
+function emitPinnedProjectsChanged(nextPinnedIds: string[]) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.dispatchEvent(
+    new CustomEvent(PINNED_SCOUTING_PROJECTS_CHANGED_EVENT, {
+      detail: { pinnedProjectIds: nextPinnedIds },
+    })
+  );
+}
+
 export async function pinScoutingProject(projectId: string): Promise<void> {
   const existing = await getPinnedScoutingProjectIds();
 
@@ -101,16 +122,22 @@ export async function pinScoutingProject(projectId: string): Promise<void> {
     return;
   }
 
-  await saveAppSetting(PINNED_SCOUTING_PROJECT_IDS_KEY, [
-    projectId,
-    ...existing,
-  ]);
+  const nextPinnedIds = [projectId, ...existing];
+
+  await saveAppSetting(PINNED_SCOUTING_PROJECT_IDS_KEY, nextPinnedIds);
+
+  if (!haveSamePinnedIds(existing, nextPinnedIds)) {
+    emitPinnedProjectsChanged(nextPinnedIds);
+  }
 }
 
 export async function unpinScoutingProject(projectId: string): Promise<void> {
   const existing = await getPinnedScoutingProjectIds();
-  await saveAppSetting(
-    PINNED_SCOUTING_PROJECT_IDS_KEY,
-    existing.filter((id) => id !== projectId)
-  );
+  const nextPinnedIds = existing.filter((id) => id !== projectId);
+
+  await saveAppSetting(PINNED_SCOUTING_PROJECT_IDS_KEY, nextPinnedIds);
+
+  if (!haveSamePinnedIds(existing, nextPinnedIds)) {
+    emitPinnedProjectsChanged(nextPinnedIds);
+  }
 }

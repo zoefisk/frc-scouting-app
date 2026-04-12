@@ -5,6 +5,7 @@ import { useAuth } from "@/components/app/providers/AuthProvider";
 import {
   getJoinedScoutingProjects,
   getPinnedScoutingProjectIds,
+  PINNED_SCOUTING_PROJECTS_CHANGED_EVENT,
   pinScoutingProject,
   unpinScoutingProject,
 } from "@/lib/db/projects";
@@ -147,6 +148,24 @@ export function useScoutingProjects() {
     };
   }, [user, loading, loadProjects]);
 
+  React.useEffect(() => {
+    function handlePinnedProjectsChanged() {
+      void loadProjects();
+    }
+
+    window.addEventListener(
+      PINNED_SCOUTING_PROJECTS_CHANGED_EVENT,
+      handlePinnedProjectsChanged as EventListener
+    );
+
+    return () => {
+      window.removeEventListener(
+        PINNED_SCOUTING_PROJECTS_CHANGED_EVENT,
+        handlePinnedProjectsChanged as EventListener
+      );
+    };
+  }, [loadProjects]);
+
   const togglePinned = React.useCallback(
     async (projectId: string, pinned: boolean) => {
       if (pinned) {
@@ -154,10 +173,8 @@ export function useScoutingProjects() {
       } else {
         await pinScoutingProject(projectId);
       }
-
-      await loadProjects();
     },
-    [loadProjects]
+    []
   );
 
   return {
