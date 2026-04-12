@@ -6,6 +6,38 @@ import type { MatchScoutingEntryDoc } from "@/lib/firebase/shared/types";
 import { getAdminDb } from "@/lib/firebase/server/admin";
 import { ProjectMatchCoverageByMatch } from "@/lib/scouting-projects/matchCoverage";
 
+export type QuestionnaireEntryDoc = {
+  entryId?: string | null;
+  submissionId?: string | null;
+  projectId?: string | null;
+  eventKey?: string | null;
+  matchNumber?: number | null;
+  scoutingPosition?: string | null;
+  teamPresence?: string | null;
+  teamKey?: string | null;
+  teamNumber?: number | null;
+  teamName?: string | null;
+  selectedTeamKey?: string | null;
+  questionnaire?: {
+    id?: string | null;
+    name?: string | null;
+    version?: number | null;
+  };
+  answers?: Record<string, unknown>;
+  savedAt?: string | null;
+  setup?: {
+    kind?: string | null;
+    projectId?: string | null;
+    eventKey?: string | null;
+    matchNumber?: number | null;
+    scoutingPosition?: string | null;
+    teamPresence?: string | null;
+    teamKey?: string | null;
+    teamNumber?: number | null;
+    teamName?: string | null;
+  };
+};
+
 async function listMatchEntryDocsForEvent(
   eventKey: string
 ): Promise<MatchScoutingEntryDoc[]> {
@@ -55,7 +87,7 @@ type RawEntryWithSetup = {
 
 async function listPitEntryDocsForEvent(
   eventKey: string
-): Promise<RawEntryWithSetup[]> {
+): Promise<QuestionnaireEntryDoc[]> {
   const pitRefs = await getAdminDb()
     .collection("events")
     .doc(eventKey)
@@ -68,7 +100,7 @@ async function listPitEntryDocsForEvent(
 
   return entrySnapshots.flatMap((snapshot) =>
     snapshot.docs.map((doc: QueryDocumentSnapshot) => {
-      return doc.data() as RawEntryWithSetup;
+      return doc.data() as QuestionnaireEntryDoc;
     })
   );
 }
@@ -160,6 +192,53 @@ export async function projectHasPitScoutingData(
     const setup = entry.setup;
     return setup?.kind === "pit" && setup.projectId === projectId;
   });
+}
+
+export async function getProjectTeamMatchQuestionnaireEntries(
+  projectId: string,
+  eventKey: string,
+  teamKey: string
+): Promise<QuestionnaireEntryDoc[]> {
+  const entries = await getAllMatchScoutingEntriesForEvent(eventKey);
+
+  return (entries as QuestionnaireEntryDoc[])
+    .filter((entry) => {
+      const setup = entry.setup;
+      return (
+        setup?.kind === "match" &&
+        setup.projectId === projectId &&
+        setup.teamKey === teamKey
+      );
+    })
+    .sort((a, b) => {
+      const matchDiff = (a.matchNumber ?? 0) - (b.matchNumber ?? 0);
+      if (matchDiff !== 0) {
+        return matchDiff;
+      }
+
+      return String(a.savedAt ?? "").localeCompare(String(b.savedAt ?? ""));
+    });
+}
+
+export async function getProjectTeamPitQuestionnaireEntries(
+  projectId: string,
+  eventKey: string,
+  teamKey: string
+): Promise<QuestionnaireEntryDoc[]> {
+  const entries = await listPitEntryDocsForEvent(eventKey);
+
+  return entries
+    .filter((entry) => {
+      const setup = entry.setup;
+      return (
+        setup?.kind === "pit" &&
+        setup.projectId === projectId &&
+        setup.teamKey === teamKey
+      );
+    })
+    .sort((a, b) =>
+      String(b.savedAt ?? "").localeCompare(String(a.savedAt ?? ""))
+    );
 }
 
 export async function deleteProjectMatchScoutingEntries(

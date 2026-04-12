@@ -1,9 +1,15 @@
 import { notFound } from "next/navigation";
-import { Alert, Stack, Typography } from "@mui/material";
+import { Alert, Stack } from "@mui/material";
 
 import PageShell from "@/components/app/layout/PageShell";
+import ProjectAnalysisBreadcrumbs from "@/components/scouting-projects/analysis/ProjectAnalysisBreadcrumbs";
+import ProjectTeamInfoCards from "@/components/scouting-projects/analysis/ProjectTeamInfoCards";
+import ProjectTeamMatchPerformanceChart from "@/components/scouting-projects/analysis/ProjectTeamMatchPerformanceChart";
+import ProjectTeamRadarPanel from "@/components/scouting-projects/analysis/ProjectTeamRadarPanel";
+import ProjectTeamRawDataAccordion from "@/components/scouting-projects/analysis/ProjectTeamRawDataAccordion";
 import ProjectAccessGuard from "@/components/scouting-projects/ProjectAccessGuard";
 import { getScoutingProjectServer } from "@/lib/firebase/server/projects";
+import { buildProjectTeamAnalysisOverview } from "@/lib/scouting-projects/analysis/buildProjectTeamAnalysisOverview";
 
 type Props = {
   params: Promise<{
@@ -20,22 +26,63 @@ export default async function ProjectTeamAnalysisPage({ params }: Props) {
     notFound();
   }
 
-  return (
-    <PageShell width="md">
-      <ProjectAccessGuard project={project}>
-        <Stack spacing={2}>
-          <Typography variant="h4" sx={{ fontWeight: 700 }}>
-            Team Analysis
-          </Typography>
+  const overview = await buildProjectTeamAnalysisOverview(project, teamKey);
 
-          <Typography color="text.secondary">
-            Team-level analysis for {teamKey} in {project.name} will live here.
-          </Typography>
+  return (
+    <PageShell width="xl">
+      <ProjectAccessGuard project={project}>
+        <Stack spacing={2.25}>
+          <ProjectAnalysisBreadcrumbs
+            projectId={project.id}
+            projectName={project.name}
+            teamLabel={`Team ${overview.teamDisplayName}`}
+          />
+
+          <ProjectTeamInfoCards
+            teamDisplayName={overview.teamDisplayName}
+            teamLongName={overview.teamLongName}
+            eventName={overview.eventName}
+            generalInfo={overview.generalInfo}
+            eventInfo={overview.eventInfo}
+          />
 
           <Alert severity="info">
-            This route is reserved for project-scoped team summaries and match
-            history once the deeper analysis pipeline is ready.
+            The radar profile is still using placeholder values for now. The
+            charts and raw response sections are already structured so we can
+            swap in real project-derived metrics next.
           </Alert>
+
+          <Stack
+            direction={{ xs: "column", xl: "row" }}
+            spacing={1.5}
+            alignItems="stretch"
+          >
+            <Stack flex={1.1} minWidth={0}>
+              <ProjectTeamRadarPanel
+                series={overview.radarSeries}
+                sampleSize={overview.radarSampleSize}
+              />
+            </Stack>
+            <Stack flex={1.4} minWidth={0}>
+              <ProjectTeamMatchPerformanceChart
+                projectId={project.id}
+                points={overview.performancePoints}
+              />
+            </Stack>
+          </Stack>
+
+          <Stack spacing={1.25}>
+            {overview.matchRawTable ? (
+              <ProjectTeamRawDataAccordion
+                table={overview.matchRawTable}
+                defaultExpanded
+              />
+            ) : null}
+
+            {overview.pitRawTable ? (
+              <ProjectTeamRawDataAccordion table={overview.pitRawTable} />
+            ) : null}
+          </Stack>
         </Stack>
       </ProjectAccessGuard>
     </PageShell>

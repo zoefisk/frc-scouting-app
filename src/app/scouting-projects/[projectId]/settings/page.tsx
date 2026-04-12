@@ -40,3 +40,5 @@ export default async function ScoutingProjectSettingsPage({
     </PageShell>
   );
 }
+
+// todo : import and export JSON data for creating questionnaires
