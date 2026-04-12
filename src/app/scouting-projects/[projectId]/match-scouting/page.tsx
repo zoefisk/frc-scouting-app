@@ -10,10 +10,18 @@ type Props = {
   params: Promise<{
     projectId: string;
   }>;
+  searchParams?: Promise<{
+    match?: string;
+    position?: string;
+  }>;
 };
 
-export default async function ProjectMatchScoutingPage({ params }: Props) {
+export default async function ProjectMatchScoutingPage({
+  params,
+  searchParams,
+}: Props) {
   const { projectId } = await params;
+  const resolvedSearchParams = searchParams ? await searchParams : undefined;
   const project = await getScoutingProjectServer(projectId);
 
   if (!project) {
@@ -35,6 +43,18 @@ export default async function ProjectMatchScoutingPage({ params }: Props) {
           projectId={project.id}
           questionnaire={questionnaire}
           defaultEventKey={project.eventKey}
+          defaultMatchNumber={resolvedSearchParams?.match}
+          lockEvent
+          defaultScoutingPosition={
+            resolvedSearchParams?.position === "blue1" ||
+            resolvedSearchParams?.position === "blue2" ||
+            resolvedSearchParams?.position === "blue3" ||
+            resolvedSearchParams?.position === "red1" ||
+            resolvedSearchParams?.position === "red2" ||
+            resolvedSearchParams?.position === "red3"
+              ? resolvedSearchParams.position
+              : undefined
+          }
           title={`${project.name} Match Scouting`}
           description="Match scouting entries saved from this page stay associated with this scouting project."
         />

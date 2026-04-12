@@ -4,7 +4,10 @@ import React from "react";
 import { deleteSubmission, getSubmissions } from "@/lib/db";
 import { useSyncMode } from "@/components/app/providers/SyncModeProvider";
 import { useToast } from "@/lib/hooks/useToast";
-import { saveMatchScoutingEntry } from "@/lib/firebase/client/entries";
+import {
+  saveMatchScoutingEntry,
+  savePitScoutingEntry,
+} from "@/lib/firebase/client/entries";
 
 type Props = {
   children: React.ReactNode;
@@ -13,7 +16,7 @@ type Props = {
 type PendingSubmission = {
   submissionId: string;
   eventKey: string;
-  matchNumber: string | number;
+  matchNumber?: string | number;
   payload: Record<string, unknown>;
 };
 
@@ -38,12 +41,30 @@ export default function SubmissionSyncProvider({ children }: Props) {
 
       for (const submission of pending) {
         try {
-          await saveMatchScoutingEntry({
-            eventKey: submission.eventKey,
-            matchNumber: Number(submission.matchNumber),
-            entryId: submission.submissionId,
-            payload: submission.payload,
-          });
+          const setup = submission.payload.setup as
+            | {
+                kind?: string;
+                eventKey?: string;
+                matchNumber?: string | number | null;
+                teamKey?: string | null;
+              }
+            | undefined;
+
+          if (setup?.kind === "pit" && setup.teamKey) {
+            await savePitScoutingEntry({
+              eventKey: submission.eventKey,
+              teamKey: setup.teamKey,
+              entryId: submission.submissionId,
+              payload: submission.payload,
+            });
+          } else {
+            await saveMatchScoutingEntry({
+              eventKey: submission.eventKey,
+              matchNumber: Number(submission.matchNumber ?? setup?.matchNumber),
+              entryId: submission.submissionId,
+              payload: submission.payload,
+            });
+          }
 
           // TODO: Before deleting locally, check Firebase in case this same
           // scouting entry was already uploaded another way (for example by QR import

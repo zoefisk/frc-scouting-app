@@ -9,6 +9,8 @@ export type RawTbaMatch = {
   match_number: number;
   winning_alliance?: string;
   actual_time?: number | null;
+  predicted_time?: number | null;
+  time?: number | null;
   alliances: {
     blue: TbaAlliance;
     red: TbaAlliance;

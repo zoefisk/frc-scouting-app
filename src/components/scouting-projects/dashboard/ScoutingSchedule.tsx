@@ -1,12 +1,16 @@
 "use client";
 
 import * as React from "react";
+import Link from "next/link";
 import EditOutlinedIcon from "@mui/icons-material/EditOutlined";
 import SaveOutlinedIcon from "@mui/icons-material/SaveOutlined";
 import RestartAltOutlinedIcon from "@mui/icons-material/RestartAltOutlined";
 import CloseOutlinedIcon from "@mui/icons-material/CloseOutlined";
 import DownloadOutlinedIcon from "@mui/icons-material/DownloadOutlined";
 import FilterListOutlinedIcon from "@mui/icons-material/FilterListOutlined";
+import OpenInNewIcon from "@mui/icons-material/OpenInNew";
+import WarningAmberOutlinedIcon from "@mui/icons-material/WarningAmberOutlined";
+import AnalyticsOutlinedIcon from "@mui/icons-material/AnalyticsOutlined";
 import {
   Alert,
   Autocomplete,
@@ -64,6 +68,11 @@ import type {
   ScoutingScheduleSlot,
 } from "@/lib/scouting-projects/types";
 import { getProjectMemberRole } from "@/lib/scouting-projects/types";
+import {
+  hasNextQualificationMatchStarted,
+  ProjectMatchCoverageByMatch,
+  slotHasRecordedData,
+} from "@/lib/scouting-projects/matchCoverage";
 import type { RawTbaMatch } from "@/lib/scouting/tba/types";
 
 type Props = {
@@ -81,6 +90,7 @@ type DisplayRow = {
   statusLabel: string;
   statusTone: "neutral" | "success";
   collectionLabel: string;
+  hasAnyRecordedData: boolean;
 } & Partial<Record<ScoutingScheduleSlot, string | null>>;
 
 const ROBOT_SLOT_LABELS: Array<{
@@ -137,7 +147,8 @@ function getMatchStatus(match: RawTbaMatch | undefined): {
 
 function buildDisplayRows(
   schedule: ScoutingScheduleDoc | null,
-  qualificationMatches: RawTbaMatch[]
+  qualificationMatches: RawTbaMatch[],
+  coverageByMatch: ProjectMatchCoverageByMatch
 ): DisplayRow[] {
   if (!schedule) {
     return [];
@@ -151,7 +162,9 @@ function buildDisplayRows(
     .sort((a, b) => a.matchNumber - b.matchNumber)
     .map((entry, index) => {
       const matchStatus = getMatchStatus(matchByNumber.get(entry.matchNumber));
-      const collectionStatus = getScoutingDataCollectionStatusForMatch(entry);
+      const collectedData =
+        coverageByMatch[entry.matchNumber]?.hasAnyData ??
+        getScoutingDataCollectionStatusForMatch(entry);
 
       return {
         id: `match-${entry.matchNumber}`,
@@ -161,11 +174,12 @@ function buildDisplayRows(
         statusLabel: matchStatus.label,
         statusTone: matchStatus.tone,
         collectionLabel:
-          collectionStatus == null
+          collectedData == null
             ? "TODO"
-            : collectionStatus
+            : collectedData
               ? "Collected"
               : "Missing",
+        hasAnyRecordedData: Boolean(collectedData),
         ...entry.assignments,
       };
     });
@@ -184,9 +198,12 @@ function downloadTextFile(filename: string, content: string) {
 }
 
 function getAssignmentColumns(
+  projectId: string,
   mode: ScoutingScheduleMode,
   scouterOptions: string[],
-  editable: boolean
+  editable: boolean,
+  coverageByMatch: ProjectMatchCoverageByMatch,
+  qualificationMatches: RawTbaMatch[]
 ): GridColDef<DisplayRow>[] {
   const slotConfigs =
     mode === "robot" ? ROBOT_SLOT_LABELS : ALLIANCE_SLOT_LABELS;
@@ -205,6 +222,76 @@ function getAssignmentColumns(
       config.tone === "red"
         ? `schedule-cell-red${"dividerRight" in config && config.dividerRight ? " schedule-divider-right" : ""}`
         : "schedule-cell-blue",
+    renderCell: (params: GridRenderCellParams<DisplayRow>) => {
+      const assignedName =
+        typeof params.value === "string"
+          ? params.value
+          : String(params.value ?? "");
+      const matchCoverage = coverageByMatch[params.row.matchNumber];
+      const hasSlotData = matchCoverage
+        ? slotHasRecordedData(config.slot, matchCoverage.positionsWithData)
+        : false;
+      const showMissingWarning =
+        Boolean(assignedName) &&
+        !hasSlotData &&
+        hasNextQualificationMatchStarted(
+          params.row.matchNumber,
+          qualificationMatches
+        );
+      const prefillParams = new URLSearchParams({
+        match: String(params.row.matchNumber),
+      });
+
+      if (config.slot !== "redAlliance" && config.slot !== "blueAlliance") {
+        prefillParams.set("position", config.slot);
+      }
+
+      return (
+        <Stack
+          direction="row"
+          spacing={0.5}
+          alignItems="center"
+          sx={{ minWidth: 0, width: "100%" }}
+        >
+          <Typography
+            variant="body2"
+            sx={{
+              fontWeight: 600,
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              whiteSpace: "nowrap",
+            }}
+          >
+            {assignedName || "Unassigned"}
+          </Typography>
+
+          {assignedName && !editable && !params.row.hasAnyRecordedData ? (
+            <Link
+              href={`/scouting-projects/${projectId}/match-scouting?${prefillParams.toString()}`}
+              style={{ display: "inline-flex", color: "inherit" }}
+            >
+              <Tooltip
+                arrow
+                title="Open match scouting with this match preloaded"
+              >
+                <OpenInNewIcon sx={{ fontSize: 16, color: "text.secondary" }} />
+              </Tooltip>
+            </Link>
+          ) : null}
+
+          {assignedName && showMissingWarning ? (
+            <Tooltip
+              arrow
+              title="No recorded match data yet, and the next qualification match has already started."
+            >
+              <WarningAmberOutlinedIcon
+                sx={{ fontSize: 16, color: "warning.main" }}
+              />
+            </Tooltip>
+          ) : null}
+        </Stack>
+      );
+    },
   }));
 }
 
@@ -244,6 +331,9 @@ export default function ScoutingSchedule({
   const [isEditMode, setIsEditMode] = React.useState(!project.scoutingSchedule);
   const [isSaving, setIsSaving] = React.useState(false);
   const [saveError, setSaveError] = React.useState<string | null>(null);
+  const [coverageByMatch, setCoverageByMatch] =
+    React.useState<ProjectMatchCoverageByMatch>({});
+  const [isLoadingCoverage, setIsLoadingCoverage] = React.useState(false);
 
   const memberRole = getProjectMemberRole(project, user?.uid);
   const canEdit = memberRole === "owner" || memberRole === "admin";
@@ -316,6 +406,54 @@ export default function ScoutingSchedule({
     setIsEditMode(!nextSavedSchedule);
   }, [project.scoutingSchedule, project.matchCollectionMode]);
 
+  React.useEffect(() => {
+    let cancelled = false;
+
+    async function loadCoverage() {
+      try {
+        setIsLoadingCoverage(true);
+
+        const response = await fetch(
+          `/api/scouting-projects/${project.id}/match-coverage`
+        );
+        const data = (await response.json()) as {
+          coverage?: ProjectMatchCoverageByMatch;
+          error?: string;
+        };
+
+        if (!response.ok || !data.coverage) {
+          throw new Error(
+            data.error ?? "Could not load project match coverage."
+          );
+        }
+
+        if (!cancelled) {
+          setCoverageByMatch(data.coverage);
+        }
+      } catch (error) {
+        console.error("Failed to load project match coverage:", error);
+        if (!cancelled) {
+          setCoverageByMatch({});
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingCoverage(false);
+        }
+      }
+    }
+
+    if (project.dataMode === "pit") {
+      setCoverageByMatch({});
+      return;
+    }
+
+    void loadCoverage();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [project.dataMode, project.id]);
+
   const matchNumbers = React.useMemo(
     () => qualificationMatches.map((match) => match.match_number),
     [qualificationMatches]
@@ -328,8 +466,13 @@ export default function ScoutingSchedule({
 
   const effectiveSchedule = isEditMode ? draftSchedule : savedSchedule;
   const displayRows = React.useMemo(
-    () => buildDisplayRows(effectiveSchedule, qualificationMatches),
-    [effectiveSchedule, qualificationMatches]
+    () =>
+      buildDisplayRows(
+        effectiveSchedule,
+        qualificationMatches,
+        coverageByMatch
+      ),
+    [coverageByMatch, effectiveSchedule, qualificationMatches]
   );
   const filteredDisplayRows = React.useMemo(() => {
     if (selectedScouterFilters.length === 0) {
@@ -563,20 +706,16 @@ export default function ScoutingSchedule({
     }
 
     const slots = getScheduleSlotsForMode(effectiveSchedule.mode);
-    const header = [
-      "matchNumber",
-      "matchStatus",
-      ...slots,
-      "dataCollectionStatus",
-    ];
-    const rows = buildDisplayRows(effectiveSchedule, qualificationMatches).map(
-      (row) => [
-        row.matchNumber,
-        row.statusLabel,
-        ...slots.map((slot) => row[slot] ?? ""),
-        row.collectionLabel,
-      ]
-    );
+    const header = ["matchNumber", "matchStatus", ...slots];
+    const rows = buildDisplayRows(
+      effectiveSchedule,
+      qualificationMatches,
+      coverageByMatch
+    ).map((row) => [
+      row.matchNumber,
+      row.statusLabel,
+      ...slots.map((slot) => row[slot] ?? ""),
+    ]);
 
     const csv = [header, ...rows]
       .map((line) =>
@@ -587,7 +726,12 @@ export default function ScoutingSchedule({
       .join("\n");
 
     downloadTextFile(`${project.eventKey}-scouting-schedule.csv`, csv);
-  }, [effectiveSchedule, project.eventKey, qualificationMatches]);
+  }, [
+    coverageByMatch,
+    effectiveSchedule,
+    project.eventKey,
+    qualificationMatches,
+  ]);
 
   const handleOpenFilterMenu = React.useCallback(
     (event: React.MouseEvent<HTMLElement>) => {
@@ -632,30 +776,62 @@ export default function ScoutingSchedule({
         ),
       },
       ...getAssignmentColumns(
+        project.id,
         effectiveSchedule?.mode ?? workingMode,
         normalizedWorkingScouterNames,
-        isEditMode && canEdit
+        isEditMode && canEdit,
+        coverageByMatch,
+        qualificationMatches
       ),
       {
         field: "collectionLabel",
         headerName: "Data",
-        minWidth: 110,
+        minWidth: 150,
         sortable: false,
         filterable: false,
-        renderCell: (params: GridRenderCellParams<DisplayRow>) => (
-          <Chip
-            label={params.row.collectionLabel}
-            size="small"
-            variant="outlined"
-          />
-        ),
+        renderCell: (params: GridRenderCellParams<DisplayRow>) => {
+          if (!params.row.hasAnyRecordedData) {
+            return (
+              <Typography
+                variant="body2"
+                color="text.secondary"
+                sx={{ fontWeight: 500 }}
+              >
+                No data
+              </Typography>
+            );
+          }
+
+          return (
+            <Stack direction="row" spacing={0.75} alignItems="center">
+              <Chip
+                label={params.row.collectionLabel}
+                size="small"
+                variant="outlined"
+              />
+              <Link
+                href={`/scouting-projects/${project.id}/analysis/matches/${params.row.matchNumber}`}
+                style={{ display: "inline-flex", color: "inherit" }}
+              >
+                <Tooltip arrow title="Open match analysis">
+                  <AnalyticsOutlinedIcon
+                    sx={{ fontSize: 16, color: "success.main" }}
+                  />
+                </Tooltip>
+              </Link>
+            </Stack>
+          );
+        },
       },
     ],
     [
       canEdit,
+      coverageByMatch,
       effectiveSchedule?.mode,
       isEditMode,
       normalizedWorkingScouterNames,
+      project.id,
+      qualificationMatches,
       workingMode,
     ]
   );
@@ -674,6 +850,10 @@ export default function ScoutingSchedule({
   );
 
   const summaryMode = effectiveSchedule?.mode ?? workingMode;
+
+  if (project.dataMode === "pit") {
+    return null;
+  }
 
   if (!canEdit && !hasAnyScheduleSetup) {
     return null;
@@ -833,6 +1013,10 @@ export default function ScoutingSchedule({
         </Stack>
 
         {matchesError ? <Alert severity="warning">{matchesError}</Alert> : null}
+
+        {isLoadingCoverage ? (
+          <Alert severity="info">Checking submitted match data...</Alert>
+        ) : null}
 
         {saveError ? <Alert severity="error">{saveError}</Alert> : null}
 

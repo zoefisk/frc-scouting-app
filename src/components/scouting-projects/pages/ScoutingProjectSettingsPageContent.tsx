@@ -5,6 +5,7 @@ import Link from "next/link";
 import {
   Alert,
   Box,
+  Button,
   Checkbox,
   Chip,
   CircularProgress,
@@ -29,6 +30,8 @@ import {
 
 type Props = {
   project: ScoutingProjectDoc & { id: string };
+  hasMatchScoutingData?: boolean;
+  hasPitScoutingData?: boolean;
 };
 
 type MemberListItem = {
@@ -50,7 +53,11 @@ function getRoleChipColor(role: ProjectMemberRole) {
   return "default";
 }
 
-export default function ScoutingProjectSettingsPageContent({ project }: Props) {
+export default function ScoutingProjectSettingsPageContent({
+  project,
+  hasMatchScoutingData = false,
+  hasPitScoutingData = false,
+}: Props) {
   const { user, loading } = useAuth();
   const toast = useToast();
   const memberRole = getProjectMemberRole(project, user?.uid);
@@ -270,6 +277,63 @@ export default function ScoutingProjectSettingsPageContent({ project }: Props) {
           </Typography>
         </Stack>
       </Paper>
+
+      {canReassignRoles ? (
+        <Paper sx={{ p: 3 }}>
+          <Stack spacing={2}>
+            <Typography variant="h6" sx={{ fontWeight: 600 }}>
+              Questionnaire Builders
+            </Typography>
+
+            <Typography color="text.secondary">
+              Create and edit the custom match and pit scouting forms tied to
+              this project.
+            </Typography>
+
+            {hasMatchScoutingData || hasPitScoutingData ? (
+              <Alert severity="warning">
+                Questionnaire builders are locked once a project already has
+                saved scouting data for that form type.
+              </Alert>
+            ) : null}
+
+            <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
+              <Link
+                href={`/scouting-projects/${project.id}/settings/match-scouting-builder`}
+                style={{ textDecoration: "none" }}
+              >
+                <Button variant="contained" disabled={hasMatchScoutingData}>
+                  Match Scouting Builder
+                </Button>
+              </Link>
+
+              <Link
+                href={`/scouting-projects/${project.id}/settings/pit-scouting-builder`}
+                style={{ textDecoration: "none" }}
+              >
+                <Button variant="outlined" disabled={hasPitScoutingData}>
+                  Pit Scouting Builder
+                </Button>
+              </Link>
+            </Stack>
+
+            <Stack spacing={0.5}>
+              <Typography variant="body2" color="text.secondary">
+                Match scouting builder:{" "}
+                {hasMatchScoutingData
+                  ? "Unavailable because this project already has match scouting data."
+                  : "Available"}
+              </Typography>
+              <Typography variant="body2" color="text.secondary">
+                Pit scouting builder:{" "}
+                {hasPitScoutingData
+                  ? "Unavailable because this project already has pit scouting data."
+                  : "Available"}
+              </Typography>
+            </Stack>
+          </Stack>
+        </Paper>
+      ) : null}
 
       <Paper sx={{ p: 3 }}>
         <Stack spacing={2}>

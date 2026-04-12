@@ -27,10 +27,25 @@ function buildGenericQuestionnairePayload(
   setup: ScoutingSetupState,
   entryId: string
 ) {
+  const numericMatchNumber = setup.matchNumber
+    ? Number(setup.matchNumber)
+    : null;
+  const selectedTeam = setup.selectedTeam;
+
   return {
     v: 1,
     type: "questionnaire_response",
     entryId,
+    projectId: setup.projectId ?? null,
+    eventKey: setup.eventKey,
+    matchNumber: numericMatchNumber,
+    scoutingPosition: setup.scoutingPosition ?? null,
+    teamPresence: setup.teamPresence ?? null,
+    teamKey: selectedTeam?.key ?? null,
+    teamNumber: selectedTeam?.team_number ?? null,
+    teamName:
+      selectedTeam?.nickname ?? selectedTeam?.name ?? selectedTeam?.key ?? "",
+    selectedTeamKey: selectedTeam?.key ?? null,
     questionnaire: {
       id: questionnaire.id,
       name: questionnaire.name,
@@ -40,16 +55,13 @@ function buildGenericQuestionnairePayload(
       kind: setup.kind,
       projectId: setup.projectId ?? null,
       eventKey: setup.eventKey,
-      matchNumber: setup.matchNumber ? Number(setup.matchNumber) : null,
+      matchNumber: numericMatchNumber,
       scoutingPosition: setup.scoutingPosition ?? null,
       teamPresence: setup.teamPresence ?? null,
-      teamKey: setup.selectedTeam?.key ?? null,
-      teamNumber: setup.selectedTeam?.team_number ?? null,
+      teamKey: selectedTeam?.key ?? null,
+      teamNumber: selectedTeam?.team_number ?? null,
       teamName:
-        setup.selectedTeam?.nickname ??
-        setup.selectedTeam?.name ??
-        setup.selectedTeam?.key ??
-        "",
+        selectedTeam?.nickname ?? selectedTeam?.name ?? selectedTeam?.key ?? "",
     },
     answers,
     savedAt: new Date().toISOString(),

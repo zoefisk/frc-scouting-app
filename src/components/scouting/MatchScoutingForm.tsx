@@ -53,6 +53,9 @@ type Props = {
   questionnaire: QuestionnaireDefinition;
   projectId?: string;
   defaultEventKey?: string;
+  defaultMatchNumber?: string;
+  defaultScoutingPosition?: ScoutingPosition | null;
+  lockEvent?: boolean;
   title?: string;
   description?: string;
 };
@@ -61,15 +64,18 @@ export default function MatchScoutingForm({
   questionnaire,
   projectId,
   defaultEventKey = "",
+  defaultMatchNumber = "",
+  defaultScoutingPosition = null,
+  lockEvent = false,
   title = "Match Scouting",
   description = "Configure the match, complete the questionnaire, then save or submit.",
 }: Props) {
   const toast = useToast();
 
   const [eventKey, setEventKey] = React.useState(defaultEventKey);
-  const [matchNumber, setMatchNumber] = React.useState("");
+  const [matchNumber, setMatchNumber] = React.useState(defaultMatchNumber);
   const [scoutingPosition, setScoutingPosition] =
-    React.useState<ScoutingPosition | null>(null);
+    React.useState<ScoutingPosition | null>(defaultScoutingPosition);
   const [teamPresence, setTeamPresence] =
     React.useState<TeamPresence>("present");
 
@@ -102,9 +108,11 @@ export default function MatchScoutingForm({
       robotPosition: "left" | "center" | "right" | null;
       answers: QuestionnaireAnswers;
     }) => {
-      setEventKey(snapshot.eventKey || defaultEventKey);
-      setMatchNumber(snapshot.matchNumber);
-      setScoutingPosition(snapshot.scoutingPosition);
+      setEventKey(
+        lockEvent ? defaultEventKey : snapshot.eventKey || defaultEventKey
+      );
+      setMatchNumber(snapshot.matchNumber || defaultMatchNumber);
+      setScoutingPosition(snapshot.scoutingPosition ?? defaultScoutingPosition);
       setTeamPresence(snapshot.teamPresence);
       setSelectedTeam(snapshot.selectedTeam);
       setRobotPosition(snapshot.robotPosition);
@@ -112,7 +120,7 @@ export default function MatchScoutingForm({
       setTeamWasManuallyChanged(Boolean(snapshot.selectedTeam));
       setTeamAutoDetected(false);
     },
-    [defaultEventKey]
+    [defaultEventKey, defaultMatchNumber, defaultScoutingPosition, lockEvent]
   );
 
   const snapshot = React.useMemo(
@@ -288,13 +296,19 @@ export default function MatchScoutingForm({
     setTeamAutoDetected(false);
   }, []);
 
-  const handleEventChange = React.useCallback((value: string) => {
-    setEventKey(value);
-    setSelectedTeam(null);
-    setMatchNumber("");
-    setTeamWasManuallyChanged(false);
-    setTeamAutoDetected(false);
-  }, []);
+  const handleEventChange = React.useCallback(
+    (value: string) => {
+      if (lockEvent) {
+        return;
+      }
+      setEventKey(value);
+      setSelectedTeam(null);
+      setMatchNumber("");
+      setTeamWasManuallyChanged(false);
+      setTeamAutoDetected(false);
+    },
+    [lockEvent]
+  );
 
   const handleMatchNumberChange = React.useCallback((value: string) => {
     setMatchNumber(value);
@@ -316,8 +330,8 @@ export default function MatchScoutingForm({
   function handleReset() {
     clearDraft();
     setEventKey(defaultEventKey);
-    setMatchNumber("");
-    setScoutingPosition(null);
+    setMatchNumber(defaultMatchNumber);
+    setScoutingPosition(defaultScoutingPosition);
     setRobotPosition(null);
     setTeamPresence("present");
     setTeams([]);
@@ -333,8 +347,8 @@ export default function MatchScoutingForm({
   const hasUnsavedProgress = React.useMemo(
     () =>
       eventKey.trim() !== defaultEventKey.trim() ||
-      matchNumber.trim() !== "" ||
-      scoutingPosition != null ||
+      matchNumber.trim() !== defaultMatchNumber.trim() ||
+      scoutingPosition !== defaultScoutingPosition ||
       teamPresence !== "present" ||
       robotPosition != null ||
       selectedTeam != null ||
@@ -342,6 +356,8 @@ export default function MatchScoutingForm({
     [
       answers,
       defaultEventKey,
+      defaultMatchNumber,
+      defaultScoutingPosition,
       eventKey,
       matchNumber,
       robotPosition,
@@ -371,7 +387,11 @@ export default function MatchScoutingForm({
             </Typography>
 
             <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
-              <EventField value={eventKey} onChange={handleEventChange} />
+              <EventField
+                value={eventKey}
+                onChange={handleEventChange}
+                disabled={lockEvent}
+              />
               <MatchNumberField
                 value={matchNumber}
                 onChange={handleMatchNumberChange}

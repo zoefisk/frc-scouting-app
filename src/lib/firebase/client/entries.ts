@@ -15,17 +15,19 @@ export async function saveMatchScoutingEntry({
   payload,
 }: SaveMatchScoutingEntryArgs) {
   const matchKey = `qm${matchNumber}`;
-
-  const entriesRef = collection(
-    db,
-    "events",
-    eventKey,
-    "matches",
-    matchKey,
-    "entries"
-  );
+  const matchRef = doc(db, "events", eventKey, "matches", matchKey);
+  const entriesRef = collection(matchRef, "entries");
   const entryRef = doc(entriesRef, entryId);
 
+  await setDoc(
+    matchRef,
+    {
+      key: `${eventKey}_${matchKey}`,
+      comp_level: "qm",
+      match_number: matchNumber,
+    },
+    { merge: true }
+  );
   await setDoc(entryRef, payload);
 }
 
@@ -42,15 +44,16 @@ export async function savePitScoutingEntry({
   entryId,
   payload,
 }: SavePitScoutingEntryArgs) {
-  const entriesRef = collection(
-    db,
-    "events",
-    eventKey,
-    "pitEntries",
-    teamKey,
-    "entries"
-  );
+  const teamRef = doc(db, "events", eventKey, "pitEntries", teamKey);
+  const entriesRef = collection(teamRef, "entries");
   const entryRef = doc(entriesRef, entryId);
 
+  await setDoc(
+    teamRef,
+    {
+      teamKey,
+    },
+    { merge: true }
+  );
   await setDoc(entryRef, payload);
 }
