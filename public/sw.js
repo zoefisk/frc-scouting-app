@@ -1,14 +1,25 @@
-const CACHE_NAME = "frc-scouting-v6";
+const CACHE_NAME = "frc-scouting-v9";
 
 const APP_SHELL = [
   "/",
   "/offline",
+  "/scouting-projects",
+  "/scouting-projects/new",
   "/favicon.ico",
   "/manifest.webmanifest",
   "/scan",
   "/alliance-selector",
   "/settings",
 ];
+
+function isAppShellPath(pathname) {
+  return APP_SHELL.includes(pathname);
+}
+
+async function matchCachedPath(pathname) {
+  const cache = await caches.open(CACHE_NAME);
+  return cache.match(pathname);
+}
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -63,8 +74,39 @@ self.addEventListener("fetch", (event) => {
     return;
   }
 
-  // Let Next.js build assets come from the network. Cache-first chunk loading
-  // can leave the client with stale module graphs after file moves/renames.
+  // Cache hashed Next.js static assets so already-visited pages can boot after
+  // an offline refresh. These filenames are content-hashed, which makes them
+  // safe to cache until the next SW version clears them.
+  if (url.pathname.startsWith("/_next/static/")) {
+    event.respondWith(
+      (async () => {
+        const cached = await caches.match(request);
+        if (cached) {
+          return cached;
+        }
+
+        try {
+          const response = await fetch(request);
+
+          if (response && response.ok) {
+            const clone = response.clone();
+            const cache = await caches.open(CACHE_NAME);
+            await cache.put(request, clone);
+          }
+
+          return response;
+        } catch {
+          return new Response("Offline asset unavailable", {
+            status: 504,
+            headers: { "Content-Type": "text/plain" },
+          });
+        }
+      })()
+    );
+    return;
+  }
+
+  // Skip other Next.js internals.
   if (url.pathname.startsWith("/_next/")) {
     return;
   }
@@ -84,17 +126,21 @@ self.addEventListener("fetch", (event) => {
 
           return response;
         } catch {
-          const cachedPage = await caches.match(request);
+          const cachedPage =
+            (await caches.match(request)) ??
+            (isAppShellPath(url.pathname)
+              ? await matchCachedPath(url.pathname)
+              : null);
           if (cachedPage) {
             return cachedPage;
           }
 
-          const offlinePage = await caches.match("/offline");
+          const offlinePage = await matchCachedPath("/offline");
           if (offlinePage) {
             return offlinePage;
           }
 
-          const homePage = await caches.match("/");
+          const homePage = await matchCachedPath("/");
           if (homePage) {
             return homePage;
           }
@@ -129,7 +175,7 @@ self.addEventListener("fetch", (event) => {
         return response;
       } catch {
         if (request.destination === "image") {
-          const favicon = await caches.match("/favicon.ico");
+          const favicon = await matchCachedPath("/favicon.ico");
           if (favicon) {
             return favicon;
           }

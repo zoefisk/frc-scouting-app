@@ -10,19 +10,31 @@ export default function DashboardQuickActions() {
         </Typography>
 
         <Stack direction={{ xs: "column", sm: "row" }} spacing={2}>
-          <Link href="/" style={{ textDecoration: "none" }}>
+          <Link href="/" prefetch={false} style={{ textDecoration: "none" }}>
             <Button variant="contained">Open Match Scouting</Button>
           </Link>
 
-          <Link href="/scan" style={{ textDecoration: "none" }}>
+          <Link
+            href="/scan"
+            prefetch={false}
+            style={{ textDecoration: "none" }}
+          >
             <Button variant="outlined">Open QR Scanner</Button>
           </Link>
 
-          <Link href="/offline" style={{ textDecoration: "none" }}>
+          <Link
+            href="/offline"
+            prefetch={false}
+            style={{ textDecoration: "none" }}
+          >
             <Button variant="outlined">Open Offline Queue</Button>
           </Link>
 
-          <Link href="/alliance-selector" style={{ textDecoration: "none" }}>
+          <Link
+            href="/alliance-selector"
+            prefetch={false}
+            style={{ textDecoration: "none" }}
+          >
             <Button variant="outlined">Open Alliance Picker</Button>
           </Link>
         </Stack>

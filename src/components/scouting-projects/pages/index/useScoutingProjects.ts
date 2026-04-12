@@ -9,6 +9,7 @@ import {
   pinScoutingProject,
   unpinScoutingProject,
 } from "@/lib/db/projects";
+import { getOfflineProjectBundleRecords } from "@/lib/db/offlineProjects";
 import {
   getScoutingProjectClient,
   listScoutingProjectsForUserClient,
@@ -54,7 +55,11 @@ export function useScoutingProjects() {
       const pinnedProjectIds = await getPinnedScoutingProjectIds();
       const pinnedProjectIdSet = new Set(pinnedProjectIds);
 
-      const joinedOnDevice = await getJoinedScoutingProjects();
+      const [joinedOnDevice, offlineProjectBundles] = await Promise.all([
+        getJoinedScoutingProjects(),
+        getOfflineProjectBundleRecords(),
+      ]);
+
       for (const project of joinedOnDevice) {
         upsertProject(projectMap, {
           id: project.projectId,
@@ -69,36 +74,33 @@ export function useScoutingProjects() {
         });
       }
 
+      for (const bundle of offlineProjectBundles) {
+        upsertProject(projectMap, {
+          id: bundle.projectId,
+          name: bundle.projectName,
+          eventKey: bundle.eventKey,
+          year: bundle.year,
+          status: bundle.status === "inactive" ? "inactive" : "active",
+          dataMode:
+            bundle.dataMode === "pit"
+              ? "pit"
+              : bundle.dataMode === "both"
+                ? "both"
+                : "match",
+          accessMode:
+            bundle.accessMode === "anonymous" ? "anonymous" : "authenticated",
+          source: "device",
+          pinned: pinnedProjectIdSet.has(bundle.projectId),
+        });
+      }
+
       if (user) {
-        const ownedProjects = await listScoutingProjectsForUserClient(user.uid);
-        for (const project of ownedProjects) {
-          const role = getProjectMemberRole(project, user.uid);
-
-          upsertProject(projectMap, {
-            id: project.id,
-            name: project.name,
-            eventKey: project.eventKey,
-            year: project.year,
-            status: project.status,
-            dataMode: project.dataMode,
-            accessMode: project.accessMode,
-            source: role === "owner" || role === "admin" ? "owned" : "joined",
-            pinned: pinnedProjectIdSet.has(project.id),
-          });
-        }
-
-        const profile = await getUserProfile(user.uid);
-        const joinedIds = (profile?.joinedProjectIds ?? []).filter(
-          (projectId) => !projectMap.has(projectId)
-        );
-
-        if (joinedIds.length > 0) {
-          const joinedProjects = await Promise.all(
-            joinedIds.map((projectId) => getScoutingProjectClient(projectId))
+        try {
+          const ownedProjects = await listScoutingProjectsForUserClient(
+            user.uid
           );
-
-          for (const project of joinedProjects) {
-            if (!project) continue;
+          for (const project of ownedProjects) {
+            const role = getProjectMemberRole(project, user.uid);
 
             upsertProject(projectMap, {
               id: project.id,
@@ -108,10 +110,49 @@ export function useScoutingProjects() {
               status: project.status,
               dataMode: project.dataMode,
               accessMode: project.accessMode,
-              source: "joined",
+              source: role === "owner" || role === "admin" ? "owned" : "joined",
               pinned: pinnedProjectIdSet.has(project.id),
             });
           }
+        } catch (err) {
+          console.warn(
+            "Using local scouting project cache because owned projects could not be loaded:",
+            err
+          );
+        }
+
+        try {
+          const profile = await getUserProfile(user.uid);
+          const joinedIds = (profile?.joinedProjectIds ?? []).filter(
+            (projectId) => !projectMap.has(projectId)
+          );
+
+          if (joinedIds.length > 0) {
+            const joinedProjects = await Promise.all(
+              joinedIds.map((projectId) => getScoutingProjectClient(projectId))
+            );
+
+            for (const project of joinedProjects) {
+              if (!project) continue;
+
+              upsertProject(projectMap, {
+                id: project.id,
+                name: project.name,
+                eventKey: project.eventKey,
+                year: project.year,
+                status: project.status,
+                dataMode: project.dataMode,
+                accessMode: project.accessMode,
+                source: "joined",
+                pinned: pinnedProjectIdSet.has(project.id),
+              });
+            }
+          }
+        } catch (err) {
+          console.warn(
+            "Using local scouting project cache because joined projects could not be loaded:",
+            err
+          );
         }
       }
 

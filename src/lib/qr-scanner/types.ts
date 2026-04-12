@@ -3,4 +3,5 @@ export type ScannedEntry = {
   rawText: string;
   parsedData: Record<string, unknown> | null;
   scannedAt: string;
+  fallbackProjectId?: string | null;
 };

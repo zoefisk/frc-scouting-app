@@ -19,6 +19,7 @@ import { useRouter } from "next/navigation";
 
 import NoAccess from "@/components/auth/NoAccess";
 import { useAuth } from "@/components/app/providers/AuthProvider";
+import { useSyncMode } from "@/components/app/providers/SyncModeProvider";
 import { getCurrentUserIdToken } from "@/lib/firebase/client/auth";
 import { useToast } from "@/lib/hooks/useToast";
 import { questionnaireSchema } from "@/lib/scouting/questionnaire/schema";
@@ -53,6 +54,7 @@ export default function ProjectQuestionnaireBuilderPageContent({
   const { user, loading } = useAuth();
   const toast = useToast();
   const router = useRouter();
+  const { effectiveOnline } = useSyncMode();
   const memberRole = getProjectMemberRole(project, user?.uid);
   const canManage = memberRole === "owner";
 
@@ -79,6 +81,11 @@ export default function ProjectQuestionnaireBuilderPageContent({
   }, [editableQuestionnaire]);
 
   const handleCreateTemplate = async (template: BuilderTemplate) => {
+    if (!effectiveOnline) {
+      toast.warning("Questionnaire changes are unavailable while offline.");
+      return;
+    }
+
     try {
       setIsCreating(template);
       const idToken = await getCurrentUserIdToken();
@@ -125,6 +132,12 @@ export default function ProjectQuestionnaireBuilderPageContent({
 
   const handleSave = async () => {
     if (!editableQuestionnaire) {
+      return;
+    }
+
+    if (!effectiveOnline) {
+      setSaveError("Go online before editing project questionnaires.");
+      toast.warning("Questionnaire changes are unavailable while offline.");
       return;
     }
 
@@ -209,6 +222,17 @@ export default function ProjectQuestionnaireBuilderPageContent({
     );
   }
 
+  if (!effectiveOnline) {
+    return (
+      <NoAccess
+        title="Go online to edit questionnaires."
+        description="Creating and editing scouting project questionnaires is unavailable while offline."
+        ctaHref={`/scouting-projects/${project.id}/settings`}
+        ctaLabel="Back to Settings"
+      />
+    );
+  }
+
   return (
     <Stack spacing={3}>
       <Stack spacing={1}>
@@ -253,7 +277,7 @@ export default function ProjectQuestionnaireBuilderPageContent({
                 <Button
                   variant="contained"
                   onClick={() => void handleCreateTemplate("default")}
-                  disabled={isCreating !== null}
+                  disabled={!effectiveOnline || isCreating !== null}
                 >
                   {isCreating === "default"
                     ? "Creating..."
@@ -277,7 +301,7 @@ export default function ProjectQuestionnaireBuilderPageContent({
                 <Button
                   variant="outlined"
                   onClick={() => void handleCreateTemplate("scratch")}
-                  disabled={isCreating !== null}
+                  disabled={!effectiveOnline || isCreating !== null}
                 >
                   {isCreating === "scratch"
                     ? "Creating..."
@@ -301,6 +325,7 @@ export default function ProjectQuestionnaireBuilderPageContent({
                 label="Questionnaire Name"
                 value={name}
                 onChange={(event) => setName(event.target.value)}
+                disabled={!effectiveOnline || isSaving}
                 fullWidth
               />
 
@@ -308,6 +333,7 @@ export default function ProjectQuestionnaireBuilderPageContent({
                 label="Questionnaire Definition (JSON)"
                 value={definitionText}
                 onChange={(event) => setDefinitionText(event.target.value)}
+                disabled={!effectiveOnline || isSaving}
                 multiline
                 minRows={20}
                 fullWidth
@@ -325,7 +351,7 @@ export default function ProjectQuestionnaireBuilderPageContent({
                 <Button
                   variant="contained"
                   onClick={() => void handleSave()}
-                  disabled={isSaving}
+                  disabled={!effectiveOnline || isSaving}
                 >
                   {isSaving ? "Saving..." : "Save Questionnaire"}
                 </Button>

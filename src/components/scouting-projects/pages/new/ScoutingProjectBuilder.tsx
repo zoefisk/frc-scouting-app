@@ -34,6 +34,7 @@ import UnsavedChangesGuard from "@/components/app/guards/UnsavedChangesGuard";
 import { loadEventTeamsForScouting } from "@/lib/scouting/match/setupData";
 import type { TeamOption } from "@/lib/scouting/tba/loadEventTeams";
 import type { SimpleEventOption } from "@/lib/scouting/tba/types";
+import { useSyncMode } from "@/components/app/providers/SyncModeProvider";
 
 type FormState = {
   name: string;
@@ -80,6 +81,7 @@ export default function ScoutingProjectBuilder() {
   const router = useRouter();
   const toast = useToast();
   const { user } = useAuth();
+  const { effectiveOnline } = useSyncMode();
 
   const [form, setForm] = React.useState<FormState>(INITIAL_FORM_STATE);
   const [availableEvents, setAvailableEvents] = React.useState<
@@ -279,6 +281,12 @@ export default function ScoutingProjectBuilder() {
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
 
+    if (!effectiveOnline) {
+      setSubmitError("Go online before creating a scouting project.");
+      toast.warning("Scouting projects cannot be created while offline.");
+      return;
+    }
+
     try {
       setIsSubmitting(true);
       setSubmitError(null);
@@ -346,6 +354,12 @@ export default function ScoutingProjectBuilder() {
           create the project workspace your team will use.
         </Typography>
       </Box>
+
+      {!effectiveOnline ? (
+        <Alert severity="warning">
+          Creating scouting projects is unavailable while offline.
+        </Alert>
+      ) : null}
 
       <Box
         component="form"
@@ -614,7 +628,11 @@ export default function ScoutingProjectBuilder() {
               <Button variant="text">Cancel</Button>
             </Link>
 
-            <Button type="submit" variant="contained" disabled={isSubmitting}>
+            <Button
+              type="submit"
+              variant="contained"
+              disabled={!effectiveOnline || isSubmitting}
+            >
               {isSubmitting ? "Creating..." : "Create Scouting Project"}
             </Button>
           </Stack>

@@ -26,6 +26,7 @@ import { useSyncMode } from "@/components/app/providers/SyncModeProvider";
 import { useToast } from "@/lib/hooks/useToast";
 import { buildScannedEntry } from "@/lib/qr-scanner/buildScannedEntry";
 import {
+  SCANNED_ENTRIES_CHANGED_EVENT,
   deleteScannedEntry,
   getScannedEntries,
   saveScannedEntry,
@@ -214,7 +215,7 @@ export default function ScanImportPageContent({
             try {
               const payload = await normalizeImportedQuestionnaireText(
                 entry.rawText,
-                defaultProjectId
+                entry.fallbackProjectId ?? defaultProjectId
               );
               return { entry, payload, error: null, duplicateKey: null };
             } catch (error) {
@@ -276,6 +277,24 @@ export default function ScanImportPageContent({
     void loadQueue();
   }, [loadQueue]);
 
+  React.useEffect(() => {
+    function handleScannedEntriesChanged() {
+      void loadQueue();
+    }
+
+    window.addEventListener(
+      SCANNED_ENTRIES_CHANGED_EVENT,
+      handleScannedEntriesChanged as EventListener
+    );
+
+    return () => {
+      window.removeEventListener(
+        SCANNED_ENTRIES_CHANGED_EVENT,
+        handleScannedEntriesChanged as EventListener
+      );
+    };
+  }, [loadQueue]);
+
   const stopScanner = React.useCallback(async () => {
     try {
       if (scannerRef.current?.isScanning) {
@@ -308,7 +327,7 @@ export default function ScanImportPageContent({
         try {
           const savedPayload = await normalizeImportedQuestionnaireText(
             savedEntry.rawText,
-            defaultProjectId
+            savedEntry.fallbackProjectId ?? defaultProjectId
           );
 
           if (
@@ -330,7 +349,11 @@ export default function ScanImportPageContent({
         }
       }
 
-      await saveScannedEntry(buildScannedEntry(rawText));
+      await saveScannedEntry(
+        buildScannedEntry(rawText, {
+          fallbackProjectId: defaultProjectId ?? null,
+        })
+      );
       await loadQueue();
     },
     [defaultProjectId, loadQueue]

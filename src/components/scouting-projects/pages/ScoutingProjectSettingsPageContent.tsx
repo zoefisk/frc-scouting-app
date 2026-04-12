@@ -20,6 +20,7 @@ import {
 
 import NoAccess from "@/components/auth/NoAccess";
 import { useAuth } from "@/components/app/providers/AuthProvider";
+import { useSyncMode } from "@/components/app/providers/SyncModeProvider";
 import { getCurrentUserIdToken } from "@/lib/firebase/client/auth";
 import { updateScoutingProjectClient } from "@/lib/firebase/client/projects";
 import { getUserProfile } from "@/lib/firebase/client/users";
@@ -67,6 +68,7 @@ export default function ScoutingProjectSettingsPageContent({
   const { user, loading } = useAuth();
   const router = useRouter();
   const toast = useToast();
+  const { effectiveOnline } = useSyncMode();
   const memberRole = getProjectMemberRole(project, user?.uid);
   const canManageProject = memberRole === "owner" || memberRole === "admin";
   const canReassignRoles = memberRole === "owner";
@@ -168,6 +170,11 @@ export default function ScoutingProjectSettingsPageContent({
     const nextValue = event.target.checked;
     const previousValue = allowMemberInvites;
 
+    if (!effectiveOnline) {
+      toast.warning("Project settings cannot be changed while offline.");
+      return;
+    }
+
     setAllowMemberInvites(nextValue);
     setIsSavingPermissions(true);
 
@@ -191,6 +198,11 @@ export default function ScoutingProjectSettingsPageContent({
     const nextValue = event.target.value as ScoutingProjectDoc["status"];
     const previousValue = projectStatus;
 
+    if (!effectiveOnline) {
+      toast.warning("Project settings cannot be changed while offline.");
+      return;
+    }
+
     setProjectStatus(nextValue);
     setIsSavingStatus(true);
 
@@ -212,6 +224,11 @@ export default function ScoutingProjectSettingsPageContent({
     uid: string,
     nextRole: Extract<ProjectMemberRole, "admin" | "member">
   ) => {
+    if (!effectiveOnline) {
+      toast.warning("Project settings cannot be changed while offline.");
+      return;
+    }
+
     const previousMembers = projectMembers;
     const nextMembers = previousMembers.map((member) =>
       member.uid === uid ? { ...member, role: nextRole } : member
@@ -244,6 +261,11 @@ export default function ScoutingProjectSettingsPageContent({
     );
 
     if (!confirmed) {
+      return;
+    }
+
+    if (!effectiveOnline) {
+      toast.warning("Project settings cannot be changed while offline.");
       return;
     }
 
@@ -310,6 +332,17 @@ export default function ScoutingProjectSettingsPageContent({
   if (!canManageProject) {
     return (
       <NoAccess description="Only project owners and admins can open these settings." />
+    );
+  }
+
+  if (!effectiveOnline) {
+    return (
+      <NoAccess
+        title="Go online to manage this project."
+        description="Project settings, membership changes, and questionnaire builder access are unavailable while offline."
+        ctaHref={`/scouting-projects/${project.id}`}
+        ctaLabel="Back to Project"
+      />
     );
   }
 

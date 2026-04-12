@@ -8,6 +8,7 @@ import { AppRouterCacheProvider } from "@mui/material-nextjs/v13-appRouter";
 import Navbar from "@/components/app/navigation/Navbar";
 import ToastProvider from "@/components/app/providers/ToastProvider";
 import SubmissionSyncProvider from "@/components/app/providers/SubmissionSyncProvider";
+import ScannedEntriesSyncProvider from "@/components/app/providers/ScannedEntriesSyncProvider";
 import { SyncModeProvider } from "@/components/app/providers/SyncModeProvider";
 import { AuthProvider } from "@/components/app/providers/AuthProvider";
 
@@ -33,9 +34,11 @@ export default function RootLayout({
             <SyncModeProvider>
               <SubmissionSyncProvider>
                 <AuthProvider>
-                  <ServiceWorkerRegistration />
-                  <Navbar />
-                  {children}
+                  <ScannedEntriesSyncProvider>
+                    <ServiceWorkerRegistration />
+                    <Navbar />
+                    {children}
+                  </ScannedEntriesSyncProvider>
                 </AuthProvider>
               </SubmissionSyncProvider>
             </SyncModeProvider>

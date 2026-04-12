@@ -68,6 +68,7 @@ export default function NavSection({
                 <ListItemButton
                   component={Link}
                   href={item.href}
+                  prefetch={false}
                   onClick={onNavigate}
                   sx={{
                     mb: 0.75,
@@ -163,6 +164,7 @@ export default function NavSection({
                           key={project.id}
                           component={Link}
                           href={`/scouting-projects/${project.id}`}
+                          prefetch={false}
                           onClick={onNavigate}
                           sx={{
                             mb: 0.5,

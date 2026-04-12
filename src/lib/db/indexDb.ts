@@ -4,7 +4,7 @@ import { openDB, type IDBPDatabase } from "idb";
 
 let dbPromise: Promise<IDBPDatabase> | null = null;
 const DB_NAME = "frc-scouting-db";
-const DB_VERSION = 3;
+const DB_VERSION = 4;
 
 export function getDb() {
   if (typeof window === "undefined") {
@@ -49,6 +49,12 @@ export function getDb() {
         if (!db.objectStoreNames.contains("appSettings")) {
           db.createObjectStore("appSettings");
         }
+
+        if (!db.objectStoreNames.contains("offlineProjectBundles")) {
+          db.createObjectStore("offlineProjectBundles", {
+            keyPath: "projectId",
+          });
+        }
       },
     });
   }
@@ -62,6 +68,26 @@ export type OfflineEventRecord = {
   year: number;
   downloadedAt: string;
   lastUpdatedAt: string;
+};
+
+export type OfflineProjectBundleRecord = {
+  projectId: string;
+  projectName: string;
+  eventKey: string;
+  year: number;
+  dataMode: string;
+  formMode: string;
+  accessMode: string;
+  status: string;
+  activeQuestionnaireIds?: {
+    match?: string;
+    pit?: string;
+  };
+  questionnaireCount: number;
+  cachedAt: string;
+  lastUpdatedAt: string;
+  project: unknown;
+  questionnaires: unknown[];
 };
 
 export type PendingSubmission = {
@@ -156,7 +182,7 @@ export async function saveSubmission(submission: PendingSubmission) {
   await db.put("submissions", submission);
 }
 
-export async function getSubmissions<T = any[]>(): Promise<T> {
+export async function getSubmissions<T = unknown[]>(): Promise<T> {
   const db = await getDb();
   return (await db.getAll("submissions")) as T;
 }
@@ -174,7 +200,7 @@ export async function saveScannedEntry(entry: {
   await db.put("scannedEntries", entry);
 }
 
-export async function getScannedEntries<T = any[]>(): Promise<T> {
+export async function getScannedEntries<T = unknown[]>(): Promise<T> {
   const db = await getDb();
   return (await db.getAll("scannedEntries")) as T;
 }
@@ -199,7 +225,7 @@ export async function getInProgressSubmission<T>(
   return db.get("inProgressSubmissions", draftId);
 }
 
-export async function getAllInProgressSubmissions<T = any[]>(): Promise<T> {
+export async function getAllInProgressSubmissions<T = unknown[]>(): Promise<T> {
   const db = await getDb();
   return (await db.getAll("inProgressSubmissions")) as T;
 }
@@ -217,4 +243,30 @@ export async function saveAppSetting(key: string, value: unknown) {
 export async function getAppSetting<T>(key: string): Promise<T | undefined> {
   const db = await getDb();
   return db.get("appSettings", key);
+}
+
+export async function saveOfflineProjectBundle(
+  bundle: OfflineProjectBundleRecord
+) {
+  const db = await getDb();
+  await db.put("offlineProjectBundles", bundle);
+}
+
+export async function getOfflineProjectBundle<T = OfflineProjectBundleRecord>(
+  projectId: string
+): Promise<T | undefined> {
+  const db = await getDb();
+  return db.get("offlineProjectBundles", projectId);
+}
+
+export async function getOfflineProjectBundles<
+  T = OfflineProjectBundleRecord[],
+>(): Promise<T> {
+  const db = await getDb();
+  return (await db.getAll("offlineProjectBundles")) as T;
+}
+
+export async function removeOfflineProjectBundle(projectId: string) {
+  const db = await getDb();
+  await db.delete("offlineProjectBundles", projectId);
 }

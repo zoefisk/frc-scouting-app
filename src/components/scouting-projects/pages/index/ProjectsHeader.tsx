@@ -1,8 +1,13 @@
+"use client";
+
 import Link from "next/link";
 import { Box, Button, Stack, Typography } from "@mui/material";
 import JoinProjectMenu from "@/components/scouting-projects/pages/index/JoinProjectMenu";
+import { useSyncMode } from "@/components/app/providers/SyncModeProvider";
 
 export default function ProjectsHeader() {
+  const { effectiveOnline } = useSyncMode();
+
   return (
     <Stack
       direction={{ xs: "column", sm: "row" }}
@@ -21,9 +26,14 @@ export default function ProjectsHeader() {
       </Box>
 
       <Stack direction="row" spacing={1} alignItems="center">
-        <Link href="/scouting-projects/new">
-          <Button variant="contained">Create New Project</Button>
-        </Link>
+        <Button
+          component={Link}
+          href="/scouting-projects/new"
+          variant="contained"
+          disabled={!effectiveOnline}
+        >
+          Create New Project
+        </Button>
 
         <JoinProjectMenu />
       </Stack>

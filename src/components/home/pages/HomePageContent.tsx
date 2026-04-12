@@ -132,7 +132,7 @@ function HomeCard({ card }: { card: FeatureCard }) {
         </Typography>
 
         <Box>
-          <Link href={card.href}>
+          <Link href={card.href} prefetch={false}>
             <Button
               variant="text"
               sx={{
@@ -212,13 +212,13 @@ function HeroPanel() {
         </Typography>
 
         <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
-          <Link href="/match-scouting">
+          <Link href="/match-scouting" prefetch={false}>
             <Button variant="contained" size="large">
               Start Match Scouting
             </Button>
           </Link>
 
-          <Link href="/scouting-projects">
+          <Link href="/scouting-projects" prefetch={false}>
             <Button
               variant="outlined"
               size="large"

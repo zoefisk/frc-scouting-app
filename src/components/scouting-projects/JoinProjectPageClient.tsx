@@ -5,6 +5,7 @@ import { Button, Paper, Stack, Typography } from "@mui/material";
 import { useRouter } from "next/navigation";
 
 import { useAuth } from "@/components/app/providers/AuthProvider";
+import { useSyncMode } from "@/components/app/providers/SyncModeProvider";
 import { useToast } from "@/lib/hooks/useToast";
 import { saveJoinedScoutingProject } from "@/lib/db/projects";
 import type {
@@ -36,6 +37,7 @@ export default function JoinProjectPageClient({ project }: Props) {
   const router = useRouter();
   const toast = useToast();
   const { user, loading, signIn } = useAuth();
+  const { effectiveOnline } = useSyncMode();
 
   const [isJoining, setIsJoining] = React.useState(false);
 
@@ -43,6 +45,11 @@ export default function JoinProjectPageClient({ project }: Props) {
   const needsSignIn = requiresAuth && !user;
 
   const handleJoin = async () => {
+    if (!effectiveOnline) {
+      toast.warning("Joining scouting projects is unavailable while offline.");
+      return;
+    }
+
     try {
       setIsJoining(true);
 
@@ -103,6 +110,12 @@ export default function JoinProjectPageClient({ project }: Props) {
           forms.
         </Typography>
 
+        {!effectiveOnline ? (
+          <Typography color="warning.main">
+            Joining scouting projects is unavailable while offline.
+          </Typography>
+        ) : null}
+
         {requiresAuth && (
           <Typography color="text.secondary">
             This project requires authentication before joining.
@@ -113,7 +126,7 @@ export default function JoinProjectPageClient({ project }: Props) {
           variant="contained"
           size="large"
           onClick={handleJoin}
-          disabled={loading || isJoining}
+          disabled={!effectiveOnline || loading || isJoining}
         >
           {loading
             ? "Loading..."

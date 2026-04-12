@@ -25,7 +25,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (nextUser) {
         try {
-          await createUserProfileIfMissing(nextUser);
+          if (typeof navigator === "undefined" || navigator.onLine) {
+            await createUserProfileIfMissing(nextUser);
+          }
         } catch (err) {
           console.error("Failed to create user profile:", err);
         }

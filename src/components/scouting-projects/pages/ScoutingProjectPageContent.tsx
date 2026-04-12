@@ -27,6 +27,7 @@ import type { ProjectEventOverview } from "@/lib/scouting-projects/eventOverview
 import CopyLinkMenu from "@/components/scouting-projects/dashboard/scouting-schedule/CopyLinkMenu";
 import NoAccess from "@/components/auth/NoAccess";
 import { useAuth } from "@/components/app/providers/AuthProvider";
+import { useSyncMode } from "@/components/app/providers/SyncModeProvider";
 import {
   getMissingProjectQuestionnaireMessage,
   projectHasConfiguredQuestionnaire,
@@ -241,6 +242,7 @@ export default function ScoutingProjectPageContent({
   eventOverview,
 }: Props) {
   const { user, loading } = useAuth();
+  const { effectiveOnline } = useSyncMode();
   const memberRole = getProjectMemberRole(project, user?.uid);
   const requiresAuth = project.accessMode === "authenticated";
   const canAccessProject = !requiresAuth || Boolean(memberRole);
@@ -442,19 +444,17 @@ export default function ScoutingProjectPageContent({
                   ) : null}
 
                   {canManageProject ? (
-                    <Link
+                    <Button
+                      component={Link}
                       href={`/scouting-projects/${project.id}/settings`}
-                      style={{ textDecoration: "none" }}
+                      variant="outlined"
+                      size="small"
+                      startIcon={<SettingsIcon fontSize="small" />}
+                      sx={{ borderRadius: 999 }}
+                      disabled={!effectiveOnline}
                     >
-                      <Button
-                        variant="outlined"
-                        size="small"
-                        startIcon={<SettingsIcon fontSize="small" />}
-                        sx={{ borderRadius: 999 }}
-                      >
-                        Settings
-                      </Button>
-                    </Link>
+                      Settings
+                    </Button>
                   ) : null}
                 </Stack>
               )}

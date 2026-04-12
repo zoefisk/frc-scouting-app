@@ -114,7 +114,7 @@ export default function ProjectCard({
           justifyContent="space-between"
           alignItems="center"
         >
-          <Link href={`/scouting-projects/${project.id}`}>
+          <Link href={`/scouting-projects/${project.id}`} prefetch={false}>
             <Button variant="text" sx={{ px: 0 }}>
               Open Project
             </Button>

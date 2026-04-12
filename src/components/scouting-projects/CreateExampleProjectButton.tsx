@@ -5,6 +5,7 @@ import { Button } from "@mui/material";
 import { useRouter } from "next/navigation";
 import { useToast } from "@/lib/hooks/useToast";
 import { useAuth } from "@/components/app/providers/AuthProvider";
+import { useSyncMode } from "@/components/app/providers/SyncModeProvider";
 import { getScoutingProjectClient } from "@/lib/firebase/client/projects";
 import { addJoinedProjectIdToUser } from "@/lib/firebase/client/users";
 import { saveJoinedScoutingProject } from "@/lib/db/projects";
@@ -18,8 +19,14 @@ export default function CreateExampleProjectButton() {
   const router = useRouter();
   const toast = useToast();
   const { user } = useAuth();
+  const { effectiveOnline } = useSyncMode();
 
   const handleClick = async () => {
+    if (!effectiveOnline) {
+      toast.warning("Creating scouting projects is unavailable while offline.");
+      return;
+    }
+
     try {
       setLoading(true);
 
@@ -79,7 +86,11 @@ export default function CreateExampleProjectButton() {
   };
 
   return (
-    <Button variant="contained" onClick={handleClick} disabled={loading}>
+    <Button
+      variant="contained"
+      onClick={handleClick}
+      disabled={!effectiveOnline || loading}
+    >
       {loading ? "Creating..." : "Create Example Project"}
     </Button>
   );

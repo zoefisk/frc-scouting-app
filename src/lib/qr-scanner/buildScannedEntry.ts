@@ -1,6 +1,9 @@
 import type { ScannedEntry } from "@/lib/qr-scanner/types";
 
-export function buildScannedEntry(decodedText: string): ScannedEntry {
+export function buildScannedEntry(
+  decodedText: string,
+  options?: { fallbackProjectId?: string | null }
+): ScannedEntry {
   let parsedData: Record<string, unknown> | null = null;
 
   try {
@@ -17,5 +20,6 @@ export function buildScannedEntry(decodedText: string): ScannedEntry {
     rawText: decodedText,
     parsedData,
     scannedAt: new Date().toISOString(),
+    fallbackProjectId: options?.fallbackProjectId ?? null,
   };
 }
