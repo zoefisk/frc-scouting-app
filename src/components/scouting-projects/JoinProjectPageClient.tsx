@@ -11,6 +11,7 @@ import type {
   ProjectAccessMode,
   ProjectDataMode,
   ProjectFormMode,
+  ProjectStatus,
 } from "@/lib/scouting-projects/types";
 import { addJoinedProjectIdToUser } from "@/lib/firebase/client/users";
 import { addScoutingProjectMemberClient } from "@/lib/firebase/client/projects";
@@ -20,6 +21,7 @@ type JoinableProjectSummary = {
   name: string;
   eventKey: string;
   year: number;
+  status: ProjectStatus;
   accessMode: ProjectAccessMode;
   dataMode: ProjectDataMode;
   formMode: ProjectFormMode;
@@ -54,6 +56,7 @@ export default function JoinProjectPageClient({ project }: Props) {
         name: project.name,
         eventKey: project.eventKey,
         year: project.year,
+        status: project.status,
         accessMode: project.accessMode,
         dataMode: project.dataMode,
         formMode: project.formMode,

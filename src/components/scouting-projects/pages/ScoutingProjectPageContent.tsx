@@ -64,6 +64,22 @@ function getStatusChipStyles(tone: ProjectEventOverview["statusTone"]) {
   };
 }
 
+function getProjectStatusChipStyles(status: ScoutingProjectDoc["status"]) {
+  if (status === "inactive") {
+    return {
+      backgroundColor: "rgba(148,163,184,0.14)",
+      color: "#475569",
+      border: "1px solid rgba(148,163,184,0.18)",
+    };
+  }
+
+  return {
+    backgroundColor: "rgba(34,197,94,0.12)",
+    color: "#166534",
+    border: "1px solid rgba(34,197,94,0.18)",
+  };
+}
+
 const quickActions: QuickAction[] = [
   {
     title: "Match Scouting",
@@ -287,6 +303,17 @@ export default function ScoutingProjectPageContent({
                     }}
                   />
                 )}
+
+                <Chip
+                  label={project.status.toUpperCase()}
+                  sx={{
+                    height: 34,
+                    px: 1,
+                    fontSize: "0.9rem",
+                    fontWeight: 700,
+                    ...getProjectStatusChipStyles(project.status),
+                  }}
+                />
               </Stack>
 
               <Typography variant="body1" color="text.secondary">
@@ -319,6 +346,14 @@ export default function ScoutingProjectPageContent({
 
                 <Chip
                   label={`ACCESS • ${project.accessMode}`}
+                  sx={{
+                    fontWeight: 700,
+                    backgroundColor: "background.paper",
+                  }}
+                />
+
+                <Chip
+                  label={`STATUS • ${project.status}`}
                   sx={{
                     fontWeight: 700,
                     backgroundColor: "background.paper",

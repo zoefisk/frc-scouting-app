@@ -8,6 +8,7 @@ export type ProjectListItem = {
   name: string;
   eventKey: string;
   year: number;
+  status: ScoutingProjectDoc["status"];
   dataMode: ScoutingProjectDoc["dataMode"];
   accessMode: ProjectAccessMode;
   source: "owned" | "joined" | "device";

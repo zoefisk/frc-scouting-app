@@ -2,6 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Alert,
   Box,
@@ -19,8 +20,13 @@ import {
 
 import NoAccess from "@/components/auth/NoAccess";
 import { useAuth } from "@/components/app/providers/AuthProvider";
+import { getCurrentUserIdToken } from "@/lib/firebase/client/auth";
 import { updateScoutingProjectClient } from "@/lib/firebase/client/projects";
 import { getUserProfile } from "@/lib/firebase/client/users";
+import {
+  removeJoinedScoutingProject,
+  unpinScoutingProject,
+} from "@/lib/db/projects";
 import { useToast } from "@/lib/hooks/useToast";
 import {
   getProjectMemberRole,
@@ -59,14 +65,19 @@ export default function ScoutingProjectSettingsPageContent({
   hasPitScoutingData = false,
 }: Props) {
   const { user, loading } = useAuth();
+  const router = useRouter();
   const toast = useToast();
   const memberRole = getProjectMemberRole(project, user?.uid);
   const canManageProject = memberRole === "owner" || memberRole === "admin";
   const canReassignRoles = memberRole === "owner";
+  const canDeleteProject = memberRole === "owner";
+  const [projectStatus, setProjectStatus] = React.useState(project.status);
   const [allowMemberInvites, setAllowMemberInvites] = React.useState(
     project.allowMemberInvites
   );
+  const [isSavingStatus, setIsSavingStatus] = React.useState(false);
   const [isSavingPermissions, setIsSavingPermissions] = React.useState(false);
+  const [isDeletingProject, setIsDeletingProject] = React.useState(false);
   const [projectMembers, setProjectMembers] = React.useState(project.members);
   const [updatingMemberUid, setUpdatingMemberUid] = React.useState<
     string | null
@@ -140,6 +151,10 @@ export default function ScoutingProjectSettingsPageContent({
   }, [visibleMembers]);
 
   React.useEffect(() => {
+    setProjectStatus(project.status);
+  }, [project.status]);
+
+  React.useEffect(() => {
     setAllowMemberInvites(project.allowMemberInvites);
   }, [project.allowMemberInvites]);
 
@@ -170,6 +185,29 @@ export default function ScoutingProjectSettingsPageContent({
     }
   };
 
+  const handleProjectStatusChange = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const nextValue = event.target.value as ScoutingProjectDoc["status"];
+    const previousValue = projectStatus;
+
+    setProjectStatus(nextValue);
+    setIsSavingStatus(true);
+
+    try {
+      await updateScoutingProjectClient(project.id, {
+        status: nextValue,
+      });
+      toast.success("Project status updated.");
+    } catch (error) {
+      console.error("Failed to update project status:", error);
+      setProjectStatus(previousValue);
+      toast.error("Could not update project status.");
+    } finally {
+      setIsSavingStatus(false);
+    }
+  };
+
   const handleMemberRoleChange = async (
     uid: string,
     nextRole: Extract<ProjectMemberRole, "admin" | "member">
@@ -193,6 +231,60 @@ export default function ScoutingProjectSettingsPageContent({
       toast.error("Could not update member role.");
     } finally {
       setUpdatingMemberUid(null);
+    }
+  };
+
+  const handleDeleteProject = async () => {
+    if (!canDeleteProject || isDeletingProject) {
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Delete "${project.name}" and its associated scouting data? This cannot be undone.`
+    );
+
+    if (!confirmed) {
+      return;
+    }
+
+    try {
+      setIsDeletingProject(true);
+      const idToken = await getCurrentUserIdToken();
+
+      if (!idToken) {
+        throw new Error("You must be signed in as the project owner.");
+      }
+
+      const response = await fetch(`/api/scouting-projects/${project.id}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+        },
+      });
+
+      const data = await response.json();
+
+      if (!response.ok || !data?.ok) {
+        throw new Error(data?.error ?? "Could not delete scouting project.");
+      }
+
+      await Promise.all([
+        removeJoinedScoutingProject(project.id),
+        unpinScoutingProject(project.id),
+      ]);
+
+      toast.success("Scouting project deleted.");
+      router.push("/scouting-projects");
+      router.refresh();
+    } catch (error) {
+      console.error("Failed to delete project:", error);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Could not delete scouting project."
+      );
+    } finally {
+      setIsDeletingProject(false);
     }
   };
 
@@ -252,6 +344,11 @@ export default function ScoutingProjectSettingsPageContent({
               size="small"
               variant="outlined"
             />
+            <Chip
+              label={`Status: ${projectStatus}`}
+              size="small"
+              variant="outlined"
+            />
           </Stack>
 
           <Alert severity="info">
@@ -274,6 +371,24 @@ export default function ScoutingProjectSettingsPageContent({
           <Typography variant="body2" color="text.secondary">
             When this is off, only owners and admins will see the invite link
             button on the main project dashboard.
+          </Typography>
+
+          <TextField
+            select
+            size="small"
+            label="Project Status"
+            value={projectStatus}
+            disabled={isSavingStatus}
+            onChange={handleProjectStatusChange}
+            sx={{ maxWidth: 220 }}
+          >
+            <MenuItem value="active">active</MenuItem>
+            <MenuItem value="inactive">inactive</MenuItem>
+          </TextField>
+
+          <Typography variant="body2" color="text.secondary">
+            Owners and admins can mark projects inactive when they should stay
+            visible but are no longer in active use.
           </Typography>
         </Stack>
       </Paper>
@@ -413,6 +528,43 @@ export default function ScoutingProjectSettingsPageContent({
                 </Paper>
               ))}
             </Stack>
+          )}
+        </Stack>
+      </Paper>
+
+      <Paper sx={{ p: 3 }}>
+        <Stack spacing={2}>
+          <Typography variant="h6" sx={{ fontWeight: 600 }}>
+            Danger Zone
+          </Typography>
+
+          <Alert severity="warning">
+            Deleting a scouting project also deletes its project questionnaires,
+            match scouting data, pit scouting data, and member project
+            references. Alliance selector currently does not store a separate
+            project document yet.
+          </Alert>
+
+          {canDeleteProject ? (
+            <Stack spacing={1}>
+              <Button
+                variant="outlined"
+                color="error"
+                onClick={() => void handleDeleteProject()}
+                disabled={isDeletingProject}
+                sx={{ alignSelf: "flex-start" }}
+              >
+                {isDeletingProject ? "Deleting..." : "Delete Scouting Project"}
+              </Button>
+
+              <Typography variant="body2" color="text.secondary">
+                Only the project owner can permanently delete this project.
+              </Typography>
+            </Stack>
+          ) : (
+            <Typography variant="body2" color="text.secondary">
+              Only the project owner can permanently delete this project.
+            </Typography>
           )}
         </Stack>
       </Paper>

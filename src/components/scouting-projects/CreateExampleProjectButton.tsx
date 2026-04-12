@@ -55,6 +55,7 @@ export default function CreateExampleProjectButton() {
           name: project.name,
           eventKey: project.eventKey,
           year: project.year,
+          status: project.status,
           accessMode: project.accessMode,
           dataMode: project.dataMode,
           formMode: project.formMode,

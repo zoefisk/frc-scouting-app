@@ -43,6 +43,7 @@ function normalizeProjectDoc(
   return {
     id,
     ...(data as ScoutingProjectDoc),
+    status: data.status === "inactive" ? "inactive" : "active",
     allowMemberInvites:
       typeof data.allowMemberInvites === "boolean"
         ? data.allowMemberInvites
@@ -117,6 +118,7 @@ export async function updateScoutingProjectClient(
       | "name"
       | "teamKeys"
       | "accessMode"
+      | "status"
       | "allowMemberInvites"
       | "dataMode"
       | "matchCollectionMode"

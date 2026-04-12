@@ -5,6 +5,7 @@ import type {
   ProjectAccessMode,
   ProjectDataMode,
   ProjectFormMode,
+  ProjectStatus,
 } from "@/lib/scouting-projects/types";
 
 const JOINED_SCOUTING_PROJECTS_KEY = "joinedScoutingProjects";
@@ -15,6 +16,7 @@ export type JoinedScoutingProjectRecord = {
   name: string;
   eventKey: string;
   year: number;
+  status: ProjectStatus;
   accessMode: ProjectAccessMode;
   dataMode: ProjectDataMode;
   formMode: ProjectFormMode;
@@ -31,9 +33,15 @@ export async function getJoinedScoutingProjects(): Promise<
       JOINED_SCOUTING_PROJECTS_KEY
     )) ?? [];
 
-  return [...existing].sort((a, b) =>
-    b.lastOpenedAt.localeCompare(a.lastOpenedAt)
-  );
+  return existing
+    .map((project) => ({
+      ...project,
+      status:
+        project.status === "inactive"
+          ? ("inactive" as const)
+          : ("active" as const),
+    }))
+    .sort((a, b) => b.lastOpenedAt.localeCompare(a.lastOpenedAt));
 }
 
 export async function saveJoinedScoutingProject(

@@ -117,3 +117,34 @@ export async function updateProjectQuestionnaireServer(
       updatedAt: FieldValue.serverTimestamp(),
     });
 }
+
+export async function deleteProjectQuestionnairesServer(
+  projectId: string
+): Promise<void> {
+  const snap = await db
+    .collection(QUESTIONNAIRES_COLLECTION)
+    .where("projectId", "==", projectId)
+    .get();
+
+  if (snap.empty) {
+    return;
+  }
+
+  let batch = db.batch();
+  let operationCount = 0;
+
+  for (const docSnap of snap.docs) {
+    batch.delete(docSnap.ref);
+    operationCount += 1;
+
+    if (operationCount === 400) {
+      await batch.commit();
+      batch = db.batch();
+      operationCount = 0;
+    }
+  }
+
+  if (operationCount > 0) {
+    await batch.commit();
+  }
+}

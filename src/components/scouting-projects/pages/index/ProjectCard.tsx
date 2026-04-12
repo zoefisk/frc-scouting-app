@@ -16,6 +16,22 @@ function sourceLabel(source: ProjectListItem["source"]) {
   return "DEVICE";
 }
 
+function getProjectStatusChipStyles(status: ProjectListItem["status"]) {
+  if (status === "inactive") {
+    return {
+      backgroundColor: "rgba(148,163,184,0.14)",
+      color: "#475569",
+      fontWeight: 700,
+    };
+  }
+
+  return {
+    backgroundColor: "rgba(34,197,94,0.12)",
+    color: "#166534",
+    fontWeight: 700,
+  };
+}
+
 export default function ProjectCard({
   project,
   onTogglePinned,
@@ -76,6 +92,11 @@ export default function ProjectCard({
         </Stack>
 
         <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap">
+          <Chip
+            label={`Status: ${project.status}`}
+            size="small"
+            sx={getProjectStatusChipStyles(project.status)}
+          />
           <Chip
             label={`Data: ${project.dataMode}`}
             size="small"

@@ -1,4 +1,7 @@
-import type { QueryDocumentSnapshot } from "firebase-admin/firestore";
+import type {
+  DocumentReference,
+  QueryDocumentSnapshot,
+} from "firebase-admin/firestore";
 import type { MatchScoutingEntryDoc } from "@/lib/firebase/shared/types";
 import { getAdminDb } from "@/lib/firebase/server/admin";
 import { ProjectMatchCoverageByMatch } from "@/lib/scouting-projects/matchCoverage";
@@ -70,6 +73,33 @@ async function listPitEntryDocsForEvent(
   );
 }
 
+async function deleteDocumentRefsInBatches(
+  refs: DocumentReference[]
+): Promise<void> {
+  if (refs.length === 0) {
+    return;
+  }
+
+  const db = getAdminDb();
+  let batch = db.batch();
+  let operationCount = 0;
+
+  for (const ref of refs) {
+    batch.delete(ref);
+    operationCount += 1;
+
+    if (operationCount === 400) {
+      await batch.commit();
+      batch = db.batch();
+      operationCount = 0;
+    }
+  }
+
+  if (operationCount > 0) {
+    await batch.commit();
+  }
+}
+
 export async function getProjectMatchCoverageSummary(
   projectId: string,
   eventKey: string
@@ -130,4 +160,72 @@ export async function projectHasPitScoutingData(
     const setup = entry.setup;
     return setup?.kind === "pit" && setup.projectId === projectId;
   });
+}
+
+export async function deleteProjectMatchScoutingEntries(
+  projectId: string,
+  eventKey: string
+): Promise<void> {
+  const matchRefs = await getAdminDb()
+    .collection("events")
+    .doc(eventKey)
+    .collection("matches")
+    .listDocuments();
+
+  const refsToDelete: DocumentReference[] = [];
+
+  for (const matchRef of matchRefs) {
+    const snapshot = await matchRef.collection("entries").get();
+    const matchingEntryRefs = snapshot.docs
+      .filter((doc) => {
+        const setup = (doc.data() as RawEntryWithSetup).setup;
+        return setup?.kind === "match" && setup.projectId === projectId;
+      })
+      .map((doc) => doc.ref);
+
+    refsToDelete.push(...matchingEntryRefs);
+
+    if (
+      matchingEntryRefs.length > 0 &&
+      matchingEntryRefs.length === snapshot.docs.length
+    ) {
+      refsToDelete.push(matchRef);
+    }
+  }
+
+  await deleteDocumentRefsInBatches(refsToDelete);
+}
+
+export async function deleteProjectPitScoutingEntries(
+  projectId: string,
+  eventKey: string
+): Promise<void> {
+  const pitRefs = await getAdminDb()
+    .collection("events")
+    .doc(eventKey)
+    .collection("pitEntries")
+    .listDocuments();
+
+  const refsToDelete: DocumentReference[] = [];
+
+  for (const pitRef of pitRefs) {
+    const snapshot = await pitRef.collection("entries").get();
+    const matchingEntryRefs = snapshot.docs
+      .filter((doc) => {
+        const setup = (doc.data() as RawEntryWithSetup).setup;
+        return setup?.kind === "pit" && setup.projectId === projectId;
+      })
+      .map((doc) => doc.ref);
+
+    refsToDelete.push(...matchingEntryRefs);
+
+    if (
+      matchingEntryRefs.length > 0 &&
+      matchingEntryRefs.length === snapshot.docs.length
+    ) {
+      refsToDelete.push(pitRef);
+    }
+  }
+
+  await deleteDocumentRefsInBatches(refsToDelete);
 }

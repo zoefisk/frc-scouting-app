@@ -3,6 +3,11 @@ import "server-only";
 import { FieldValue, Timestamp } from "firebase-admin/firestore";
 import { getAdminDb } from "@/lib/firebase/server/admin";
 import {
+  deleteProjectMatchScoutingEntries,
+  deleteProjectPitScoutingEntries,
+} from "@/lib/firebase/server/entries";
+import { deleteProjectQuestionnairesServer } from "@/lib/firebase/server/questionnaires";
+import {
   ProjectMemberRole,
   ScoutingProjectDoc,
 } from "@/lib/scouting-projects/types";
@@ -33,6 +38,7 @@ function normalizeProjectDoc(
 
   return {
     ...(normalized as ScoutingProjectDoc),
+    status: normalized.status === "inactive" ? "inactive" : "active",
     allowMemberInvites:
       typeof normalized.allowMemberInvites === "boolean"
         ? normalized.allowMemberInvites
@@ -173,6 +179,7 @@ export async function updateScoutingProjectServer(
       | "name"
       | "teamKeys"
       | "accessMode"
+      | "status"
       | "allowMemberInvites"
       | "dataMode"
       | "matchCollectionMode"
@@ -197,6 +204,38 @@ export async function deleteScoutingProjectServer(
   projectId: string
 ): Promise<void> {
   await db.collection(PROJECTS_COLLECTION).doc(projectId).delete();
+}
+
+export async function deleteScoutingProjectCascadeServer(
+  projectId: string
+): Promise<void> {
+  const project = await getScoutingProjectServer(projectId);
+
+  if (!project) {
+    return;
+  }
+
+  await Promise.all([
+    deleteProjectMatchScoutingEntries(projectId, project.eventKey),
+    deleteProjectPitScoutingEntries(projectId, project.eventKey),
+    deleteProjectQuestionnairesServer(projectId),
+  ]);
+
+  await Promise.all(
+    (project.memberUids ?? []).map((uid) =>
+      db
+        .collection("users")
+        .doc(uid)
+        .set(
+          {
+            joinedProjectIds: FieldValue.arrayRemove(projectId),
+          },
+          { merge: true }
+        )
+    )
+  );
+
+  await deleteScoutingProjectServer(projectId);
 }
 
 export async function addScoutingProjectMemberServer(
