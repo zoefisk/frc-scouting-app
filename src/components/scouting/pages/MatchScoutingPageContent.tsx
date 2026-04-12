@@ -15,6 +15,7 @@ type Props = {
     | "red2"
     | "red3";
   lockEvent?: boolean;
+  enableDraftHydration?: boolean;
   title?: string;
   description?: string;
 };
@@ -26,6 +27,7 @@ export default function MatchScoutingPageContent({
   defaultMatchNumber,
   defaultScoutingPosition,
   lockEvent = false,
+  enableDraftHydration = true,
   title,
   description,
 }: Props) {
@@ -37,6 +39,7 @@ export default function MatchScoutingPageContent({
       defaultMatchNumber={defaultMatchNumber}
       defaultScoutingPosition={defaultScoutingPosition}
       lockEvent={lockEvent}
+      enableDraftHydration={enableDraftHydration}
       title={title}
       description={description}
     />

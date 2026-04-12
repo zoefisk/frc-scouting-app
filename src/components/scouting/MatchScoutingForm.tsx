@@ -56,6 +56,7 @@ type Props = {
   defaultMatchNumber?: string;
   defaultScoutingPosition?: ScoutingPosition | null;
   lockEvent?: boolean;
+  enableDraftHydration?: boolean;
   title?: string;
   description?: string;
 };
@@ -67,6 +68,7 @@ export default function MatchScoutingForm({
   defaultMatchNumber = "",
   defaultScoutingPosition = null,
   lockEvent = false,
+  enableDraftHydration = true,
   title = "Match Scouting",
   description = "Configure the match, complete the questionnaire, then save or submit.",
 }: Props) {
@@ -148,6 +150,7 @@ export default function MatchScoutingForm({
     questionnaire,
     snapshot,
     applyDraft,
+    enabled: enableDraftHydration,
   });
 
   const hasShownLoadedDraftToastRef = React.useRef(false);

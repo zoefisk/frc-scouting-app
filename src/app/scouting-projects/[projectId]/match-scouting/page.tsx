@@ -64,6 +64,7 @@ export default async function ProjectMatchScoutingPage({
           defaultEventKey={project.eventKey}
           defaultMatchNumber={resolvedSearchParams?.match}
           lockEvent
+          enableDraftHydration={false}
           defaultScoutingPosition={
             resolvedSearchParams?.position === "blue1" ||
             resolvedSearchParams?.position === "blue2" ||

@@ -13,12 +13,14 @@ type Args = {
   questionnaire: QuestionnaireDefinition;
   snapshot: InProgressMatchScoutingSnapshot;
   applyDraft: (snapshot: InProgressMatchScoutingSnapshot) => void;
+  enabled?: boolean;
 };
 
 export function useMatchScoutingDraft({
   questionnaire,
   snapshot,
   applyDraft,
+  enabled = true,
 }: Args) {
   const [loadedDraft, setLoadedDraft] = React.useState(false);
 
@@ -26,6 +28,11 @@ export function useMatchScoutingDraft({
   const saveTimeoutRef = React.useRef<number | null>(null);
 
   React.useEffect(() => {
+    if (!enabled) {
+      hydratedRef.current = true;
+      return;
+    }
+
     const draft = loadInProgressMatchScoutingDraft();
 
     if (
@@ -38,10 +45,10 @@ export function useMatchScoutingDraft({
     }
 
     hydratedRef.current = true;
-  }, [questionnaire.id, questionnaire.version, applyDraft]);
+  }, [enabled, questionnaire.id, questionnaire.version, applyDraft]);
 
   React.useEffect(() => {
-    if (!hydratedRef.current) {
+    if (!enabled || !hydratedRef.current) {
       return;
     }
 
@@ -58,7 +65,7 @@ export function useMatchScoutingDraft({
         window.clearTimeout(saveTimeoutRef.current);
       }
     };
-  }, [questionnaire, snapshot]);
+  }, [enabled, questionnaire, snapshot]);
 
   const clearDraft = React.useCallback(() => {
     clearInProgressMatchScoutingDraft();
