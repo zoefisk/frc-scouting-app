@@ -4,12 +4,14 @@ import PageShell from "@/components/app/layout/PageShell";
 import NoAccess from "@/components/auth/NoAccess";
 import MatchScoutingPageContent from "@/components/scouting/pages/MatchScoutingPageContent";
 import ProjectAccessGuard from "@/components/scouting-projects/ProjectAccessGuard";
+import ScoutingProjectBreadcrumbs from "@/components/scouting-projects/ScoutingProjectBreadcrumbs";
 import { getScoutingProjectServer } from "@/lib/firebase/server/projects";
 import {
   getMissingProjectQuestionnaireMessage,
   projectHasConfiguredQuestionnaire,
 } from "@/lib/scouting-projects/questionnaires/availability";
 import { resolveProjectQuestionnaireServer } from "@/lib/scouting-projects/questionnaires/resolveProjectQuestionnaireServer";
+import { Stack } from "@mui/material";
 
 type Props = {
   params: Promise<{
@@ -37,11 +39,23 @@ export default async function ProjectMatchScoutingPage({
     return (
       <PageShell width="md">
         <ProjectAccessGuard project={project}>
-          <NoAccess
-            title="Match scouting is not ready yet."
-            description="This project uses a custom form, but its match scouting questionnaire has not been created yet."
-            note={getMissingProjectQuestionnaireMessage("match")}
-          />
+          <Stack spacing={2}>
+            <ScoutingProjectBreadcrumbs
+              items={[
+                { label: "Scouting Projects", href: "/scouting-projects" },
+                {
+                  label: project.name,
+                  href: `/scouting-projects/${project.id}`,
+                },
+                { label: "Match Scouting" },
+              ]}
+            />
+            <NoAccess
+              title="Match scouting is not ready yet."
+              description="This project uses a custom form, but its match scouting questionnaire has not been created yet."
+              note={getMissingProjectQuestionnaireMessage("match")}
+            />
+          </Stack>
         </ProjectAccessGuard>
       </PageShell>
     );
@@ -58,26 +72,35 @@ export default async function ProjectMatchScoutingPage({
   return (
     <PageShell>
       <ProjectAccessGuard project={project}>
-        <MatchScoutingPageContent
-          projectId={project.id}
-          questionnaire={questionnaire}
-          defaultEventKey={project.eventKey}
-          defaultMatchNumber={resolvedSearchParams?.match}
-          lockEvent
-          enableDraftHydration={false}
-          defaultScoutingPosition={
-            resolvedSearchParams?.position === "blue1" ||
-            resolvedSearchParams?.position === "blue2" ||
-            resolvedSearchParams?.position === "blue3" ||
-            resolvedSearchParams?.position === "red1" ||
-            resolvedSearchParams?.position === "red2" ||
-            resolvedSearchParams?.position === "red3"
-              ? resolvedSearchParams.position
-              : undefined
-          }
-          title={`${project.name} Match Scouting`}
-          description="Match scouting entries saved from this page stay associated with this scouting project."
-        />
+        <Stack spacing={2}>
+          <ScoutingProjectBreadcrumbs
+            items={[
+              { label: "Scouting Projects", href: "/scouting-projects" },
+              { label: project.name, href: `/scouting-projects/${project.id}` },
+              { label: "Match Scouting" },
+            ]}
+          />
+          <MatchScoutingPageContent
+            projectId={project.id}
+            questionnaire={questionnaire}
+            defaultEventKey={project.eventKey}
+            defaultMatchNumber={resolvedSearchParams?.match}
+            lockEvent
+            enableDraftHydration={false}
+            defaultScoutingPosition={
+              resolvedSearchParams?.position === "blue1" ||
+              resolvedSearchParams?.position === "blue2" ||
+              resolvedSearchParams?.position === "blue3" ||
+              resolvedSearchParams?.position === "red1" ||
+              resolvedSearchParams?.position === "red2" ||
+              resolvedSearchParams?.position === "red3"
+                ? resolvedSearchParams.position
+                : undefined
+            }
+            title={`${project.name} Match Scouting`}
+            description="Match scouting entries saved from this page stay associated with this scouting project."
+          />
+        </Stack>
       </ProjectAccessGuard>
     </PageShell>
   );

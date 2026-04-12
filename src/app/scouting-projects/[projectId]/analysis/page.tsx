@@ -5,6 +5,7 @@ import PageShell from "@/components/app/layout/PageShell";
 import ProjectQualificationResultsGrid from "@/components/scouting-projects/analysis/ProjectQualificationResultsGrid";
 import ProjectRankingsGrid from "@/components/scouting-projects/analysis/ProjectRankingsGrid";
 import ProjectAccessGuard from "@/components/scouting-projects/ProjectAccessGuard";
+import ScoutingProjectBreadcrumbs from "@/components/scouting-projects/ScoutingProjectBreadcrumbs";
 import { buildProjectAnalysisOverview } from "@/lib/scouting-projects/analysis/buildProjectAnalysisOverview";
 import { getScoutingProjectServer } from "@/lib/firebase/server/projects";
 
@@ -30,6 +31,13 @@ export default async function ProjectAnalysisPage({ params }: Props) {
     <PageShell width="xl">
       <ProjectAccessGuard project={project}>
         <Stack spacing={2.5}>
+          <ScoutingProjectBreadcrumbs
+            items={[
+              { label: "Scouting Projects", href: "/scouting-projects" },
+              { label: project.name, href: `/scouting-projects/${project.id}` },
+              { label: "Analysis" },
+            ]}
+          />
           <Typography variant="h4" sx={{ fontWeight: 700 }}>
             {project.name} Analysis
           </Typography>

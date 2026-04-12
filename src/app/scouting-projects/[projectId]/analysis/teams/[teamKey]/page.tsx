@@ -2,12 +2,12 @@ import { notFound } from "next/navigation";
 import { Alert, Stack } from "@mui/material";
 
 import PageShell from "@/components/app/layout/PageShell";
-import ProjectAnalysisBreadcrumbs from "@/components/scouting-projects/analysis/ProjectAnalysisBreadcrumbs";
 import ProjectTeamInfoCards from "@/components/scouting-projects/analysis/ProjectTeamInfoCards";
 import ProjectTeamMatchPerformanceChart from "@/components/scouting-projects/analysis/ProjectTeamMatchPerformanceChart";
 import ProjectTeamRadarPanel from "@/components/scouting-projects/analysis/ProjectTeamRadarPanel";
 import ProjectTeamRawDataAccordion from "@/components/scouting-projects/analysis/ProjectTeamRawDataAccordion";
 import ProjectAccessGuard from "@/components/scouting-projects/ProjectAccessGuard";
+import ScoutingProjectBreadcrumbs from "@/components/scouting-projects/ScoutingProjectBreadcrumbs";
 import { getScoutingProjectServer } from "@/lib/firebase/server/projects";
 import { buildProjectTeamAnalysisOverview } from "@/lib/scouting-projects/analysis/buildProjectTeamAnalysisOverview";
 
@@ -32,10 +32,16 @@ export default async function ProjectTeamAnalysisPage({ params }: Props) {
     <PageShell width="xl">
       <ProjectAccessGuard project={project}>
         <Stack spacing={2.25}>
-          <ProjectAnalysisBreadcrumbs
-            projectId={project.id}
-            projectName={project.name}
-            teamLabel={`Team ${overview.teamDisplayName}`}
+          <ScoutingProjectBreadcrumbs
+            items={[
+              { label: "Scouting Projects", href: "/scouting-projects" },
+              { label: project.name, href: `/scouting-projects/${project.id}` },
+              {
+                label: "Analysis",
+                href: `/scouting-projects/${project.id}/analysis`,
+              },
+              { label: `Team ${overview.teamDisplayName}` },
+            ]}
           />
 
           <ProjectTeamInfoCards

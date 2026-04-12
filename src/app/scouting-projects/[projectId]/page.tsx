@@ -4,6 +4,8 @@ import { getScoutingProjectServer } from "@/lib/firebase/server/projects";
 import React from "react";
 import ScoutingProjectPageContent from "@/components/scouting-projects/pages/ScoutingProjectPageContent";
 import { getProjectEventOverview } from "@/lib/scouting-projects/eventOverview";
+import { Stack } from "@mui/material";
+import ScoutingProjectBreadcrumbs from "@/components/scouting-projects/ScoutingProjectBreadcrumbs";
 
 type PageProps = {
   params: Promise<{
@@ -19,10 +21,18 @@ export default async function ScoutingProjectPage({ params }: PageProps) {
 
   return (
     <PageShell width="xl">
-      <ScoutingProjectPageContent
-        project={project}
-        eventOverview={eventOverview}
-      />
+      <Stack spacing={2}>
+        <ScoutingProjectBreadcrumbs
+          items={[
+            { label: "Scouting Projects", href: "/scouting-projects" },
+            { label: project.name },
+          ]}
+        />
+        <ScoutingProjectPageContent
+          project={project}
+          eventOverview={eventOverview}
+        />
+      </Stack>
     </PageShell>
   );
 }

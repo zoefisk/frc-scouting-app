@@ -1,7 +1,9 @@
 import React from "react";
 import { notFound } from "next/navigation";
+import { Stack } from "@mui/material";
 
 import PageShell from "@/components/app/layout/PageShell";
+import ScoutingProjectBreadcrumbs from "@/components/scouting-projects/ScoutingProjectBreadcrumbs";
 import ScoutingProjectSettingsPageContent from "@/components/scouting-projects/pages/ScoutingProjectSettingsPageContent";
 import {
   projectHasMatchScoutingData,
@@ -32,11 +34,20 @@ export default async function ScoutingProjectSettingsPage({
 
   return (
     <PageShell width="md">
-      <ScoutingProjectSettingsPageContent
-        project={project}
-        hasMatchScoutingData={hasMatchScoutingData}
-        hasPitScoutingData={hasPitScoutingData}
-      />
+      <Stack spacing={2}>
+        <ScoutingProjectBreadcrumbs
+          items={[
+            { label: "Scouting Projects", href: "/scouting-projects" },
+            { label: project.name, href: `/scouting-projects/${project.id}` },
+            { label: "Settings" },
+          ]}
+        />
+        <ScoutingProjectSettingsPageContent
+          project={project}
+          hasMatchScoutingData={hasMatchScoutingData}
+          hasPitScoutingData={hasPitScoutingData}
+        />
+      </Stack>
     </PageShell>
   );
 }
