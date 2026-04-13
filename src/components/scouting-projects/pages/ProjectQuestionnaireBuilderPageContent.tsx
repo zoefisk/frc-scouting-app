@@ -3,6 +3,9 @@
 import React from "react";
 import Link from "next/link";
 import {
+  Accordion,
+  AccordionDetails,
+  AccordionSummary,
   Alert,
   Box,
   Button,
@@ -17,6 +20,7 @@ import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import PlaylistAddRoundedIcon from "@mui/icons-material/PlaylistAddRounded";
 import UploadFileRoundedIcon from "@mui/icons-material/UploadFileRounded";
+import ExpandMoreRoundedIcon from "@mui/icons-material/ExpandMoreRounded";
 import { useRouter } from "next/navigation";
 import { ZodError } from "zod";
 
@@ -519,76 +523,119 @@ export default function ProjectQuestionnaireBuilderPageContent({
           <QuestionnaireSchemaReference />
         </Stack>
       ) : (
-        <Stack
-          direction={{ xs: "column", xl: "row" }}
-          spacing={2}
-          alignItems="flex-start"
-        >
+        <Stack spacing={2}>
           {/* Editor */}
-          <Stack flex={1} minWidth={0} spacing={2}>
-            <Alert severity="info">
-              This builder currently edits the questionnaire definition as JSON.
-              It is owner-only and updates the active project questionnaire
-              directly.
-            </Alert>
-
-            <Paper sx={{ p: 3 }}>
-              <Stack spacing={2}>
-                <TextField
-                  label="Questionnaire Name"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  disabled={!effectiveOnline || isSaving}
-                  fullWidth
-                />
-
-                <Box>
-                  <Typography
-                    variant="caption"
-                    color="text.secondary"
-                    sx={{ display: "block", mb: 0.5, ml: 0.25 }}
-                  >
-                    Questionnaire Definition (JSON)
-                  </Typography>
-                  <JsonEditorWithLineNumbers
-                    value={definitionText}
-                    onChange={setDefinitionText}
-                    disabled={!effectiveOnline || isSaving}
-                  />
-                </Box>
-
-                {saveError ? (
-                  <Alert severity="error" sx={{ whiteSpace: "pre-line" }}>
-                    {saveError}
-                  </Alert>
-                ) : null}
-
-                <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
-                  <Button
-                    variant="contained"
-                    onClick={() => void handleSave()}
-                    disabled={!effectiveOnline || isSaving}
-                  >
-                    {isSaving ? "Saving..." : "Save Questionnaire"}
-                  </Button>
-                </Stack>
+          <Accordion
+            disableGutters
+            defaultExpanded
+            sx={{
+              border: "1px solid",
+              borderColor: "divider",
+              borderRadius: "12px !important",
+              boxShadow: "none",
+              "&:before": { display: "none" },
+            }}
+          >
+            <AccordionSummary expandIcon={<ExpandMoreRoundedIcon />}>
+              <Stack spacing={0.25}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                  JSON Editor
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Edit the active project questionnaire definition directly.
+                </Typography>
               </Stack>
-            </Paper>
-          </Stack>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Stack spacing={2}>
+                <Alert severity="info">
+                  This builder currently edits the questionnaire definition as
+                  JSON. It is owner-only and updates the active project
+                  questionnaire directly.
+                </Alert>
 
-          {/* Schema reference — sidebar on xl, stacked below on smaller */}
+                <Paper sx={{ p: 3 }}>
+                  <Stack spacing={2}>
+                    <TextField
+                      label="Questionnaire Name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      disabled={!effectiveOnline || isSaving}
+                      fullWidth
+                    />
+
+                    <Box>
+                      <Typography
+                        variant="caption"
+                        color="text.secondary"
+                        sx={{ display: "block", mb: 0.5, ml: 0.25 }}
+                      >
+                        Questionnaire Definition (JSON)
+                      </Typography>
+                      <JsonEditorWithLineNumbers
+                        value={definitionText}
+                        onChange={setDefinitionText}
+                        disabled={!effectiveOnline || isSaving}
+                      />
+                    </Box>
+
+                    {saveError ? (
+                      <Alert severity="error" sx={{ whiteSpace: "pre-line" }}>
+                        {saveError}
+                      </Alert>
+                    ) : null}
+
+                    <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
+                      <Button
+                        variant="contained"
+                        onClick={() => void handleSave()}
+                        disabled={!effectiveOnline || isSaving}
+                      >
+                        {isSaving ? "Saving..." : "Save Questionnaire"}
+                      </Button>
+                    </Stack>
+                  </Stack>
+                </Paper>
+              </Stack>
+            </AccordionDetails>
+          </Accordion>
+
+          {/* Schema reference */}
           <Box
             sx={{
-              width: { xs: "100%", xl: 420 },
-              flexShrink: 0,
-              position: { xl: "sticky" },
-              top: { xl: 16 },
-              maxHeight: { xl: "calc(100vh - 32px)" },
-              overflowY: { xl: "auto" },
+              width: "100%",
             }}
           >
             <QuestionnaireSchemaReference defaultExpanded />
           </Box>
+
+          <Accordion
+            disableGutters
+            sx={{
+              border: "1px solid",
+              borderColor: "divider",
+              borderRadius: "12px !important",
+              boxShadow: "none",
+              "&:before": { display: "none" },
+            }}
+          >
+            <AccordionSummary expandIcon={<ExpandMoreRoundedIcon />}>
+              <Stack spacing={0.25}>
+                <Typography variant="subtitle1" sx={{ fontWeight: 700 }}>
+                  Questionnaire Preview
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Preview how this questionnaire will render for scouts.
+                </Typography>
+              </Stack>
+            </AccordionSummary>
+            <AccordionDetails>
+              <Alert severity="info">
+                Preview UI coming soon. This panel will show a live rendering of
+                the current questionnaire definition.
+              </Alert>
+            </AccordionDetails>
+          </Accordion>
         </Stack>
       )}
     </Stack>

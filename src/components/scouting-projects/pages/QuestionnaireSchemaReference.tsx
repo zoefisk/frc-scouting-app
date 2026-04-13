@@ -6,7 +6,9 @@ import {
   AccordionDetails,
   AccordionSummary,
   Box,
+  ButtonBase,
   Chip,
+  Collapse,
   Divider,
   Stack,
   Table,
@@ -105,11 +107,87 @@ function PropsTable({
 function SectionHeading({ label, color }: { label: string; color?: string }) {
   return (
     <Typography
-      variant="subtitle1"
-      sx={{ fontWeight: 700, color: color ?? "text.primary" }}
+      variant="body2"
+      sx={{ fontWeight: 700, color: color ?? "text.primary", lineHeight: 1.2 }}
     >
       {label}
     </Typography>
+  );
+}
+
+function CollapsibleSection({
+  title,
+  subtitle,
+  defaultExpanded = false,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  defaultExpanded?: boolean;
+  children: React.ReactNode;
+}) {
+  const [expanded, setExpanded] = React.useState(defaultExpanded);
+
+  return (
+    <Stack spacing={0.75}>
+      <ButtonBase
+        onClick={() => setExpanded((value) => !value)}
+        aria-label={expanded ? `Collapse ${title}` : `Expand ${title}`}
+        sx={{
+          alignSelf: "flex-start",
+          borderRadius: 1,
+          px: 0,
+          py: 0,
+          textAlign: "left",
+          "&:hover .schema-read-more": {
+            color: "primary.main",
+          },
+        }}
+      >
+        <Stack
+          direction="row"
+          spacing={0.5}
+          alignItems="center"
+          useFlexGap
+          flexWrap="wrap"
+        >
+          <Typography
+            className="schema-read-more"
+            variant="caption"
+            sx={{
+              fontWeight: 700,
+              color: expanded ? "text.primary" : "text.secondary",
+              transition: "color 0.2s ease",
+              lineHeight: 1.2,
+            }}
+          >
+            {expanded ? "Hide details" : "Read more"}
+          </Typography>
+          <ExpandMoreRoundedIcon
+            sx={{
+              fontSize: 16,
+              color: "text.secondary",
+              transform: expanded ? "rotate(180deg)" : "rotate(0deg)",
+              transition: "transform 0.2s ease",
+            }}
+          />
+          <SectionHeading label={title} />
+          {subtitle ? (
+            <Typography
+              variant="caption"
+              color="text.secondary"
+              sx={{ lineHeight: 1.2 }}
+            >
+              {subtitle}
+            </Typography>
+          ) : null}
+        </Stack>
+      </ButtonBase>
+
+      <Collapse in={expanded}>
+        <Box sx={{ px: { xs: 0, sm: 0.25 }, pt: 0 }}>{children}</Box>
+      </Collapse>
+    </Stack>
   );
 }
 
@@ -202,138 +280,147 @@ export default function QuestionnaireSchemaReference({
           <Divider />
 
           {/* ── Sections ── */}
-          <Stack spacing={1.5}>
-            <SectionHeading label="Sections" />
-            <Typography variant="body2" color="text.secondary">
-              A questionnaire is divided into sections. Each section groups
-              related fields and appears as a labeled group in the scouting
-              form.
-            </Typography>
-            <CodeBlock>{`{
+          <CollapsibleSection
+            title="Sections"
+            subtitle="How questionnaires group related fields into labeled blocks."
+            defaultExpanded
+          >
+            <Stack spacing={1.5}>
+              <Typography variant="body2" color="text.secondary">
+                A questionnaire is divided into sections. Each section groups
+                related fields and appears as a labeled group in the scouting
+                form.
+              </Typography>
+              <CodeBlock>{`{
   "id": "auto_section",      // unique string ID within the questionnaire
   "title": "Autonomous",     // displayed as the section heading
   "description": "...",      // optional subtitle under the heading
   "fields": [ ... ]          // array of field objects (see below)
 }`}</CodeBlock>
-            <PropsTable
-              rows={[
-                {
-                  name: "id",
-                  type: "string",
-                  required: true,
-                  description:
-                    "Unique identifier for this section. Use lowercase with underscores.",
-                },
-                {
-                  name: "title",
-                  type: "string",
-                  required: true,
-                  description: "Heading displayed to the scout.",
-                },
-                {
-                  name: "description",
-                  type: "string",
-                  description:
-                    "Optional subtitle shown beneath the section heading.",
-                },
-                {
-                  name: "fields",
-                  type: "Field[]",
-                  required: true,
-                  description: "Array of field objects. See field types below.",
-                },
-              ]}
-            />
-          </Stack>
+              <PropsTable
+                rows={[
+                  {
+                    name: "id",
+                    type: "string",
+                    required: true,
+                    description:
+                      "Unique identifier for this section. Use lowercase with underscores.",
+                  },
+                  {
+                    name: "title",
+                    type: "string",
+                    required: true,
+                    description: "Heading displayed to the scout.",
+                  },
+                  {
+                    name: "description",
+                    type: "string",
+                    description:
+                      "Optional subtitle shown beneath the section heading.",
+                  },
+                  {
+                    name: "fields",
+                    type: "Field[]",
+                    required: true,
+                    description:
+                      "Array of field objects. See field types below.",
+                  },
+                ]}
+              />
+            </Stack>
+          </CollapsibleSection>
 
           <Divider />
 
           {/* ── Field types ── */}
-          <Stack spacing={2.5}>
-            <SectionHeading label="Field Types" />
-            <Typography variant="body2" color="text.secondary">
-              Every field requires{" "}
-              <Box
-                component="span"
-                sx={{ fontFamily: "monospace", fontSize: 12.5 }}
-              >
-                id
-              </Box>
-              ,{" "}
-              <Box
-                component="span"
-                sx={{ fontFamily: "monospace", fontSize: 12.5 }}
-              >
-                type
-              </Box>
-              , and{" "}
-              <Box
-                component="span"
-                sx={{ fontFamily: "monospace", fontSize: 12.5 }}
-              >
-                label
-              </Box>
-              . The following additional properties are shared by all types:
-            </Typography>
-            <PropsTable
-              rows={[
-                {
-                  name: "id",
-                  type: "string",
-                  required: true,
-                  description:
-                    "Unique field ID within the questionnaire. Used as the key in saved answer data.",
-                },
-                {
-                  name: "type",
-                  type: "string",
-                  required: true,
-                  description:
-                    'One of: "text", "number", "select", "boolean", "rating".',
-                },
-                {
-                  name: "label",
-                  type: "string",
-                  required: true,
-                  description: "The question label shown to the scout.",
-                },
-                {
-                  name: "required",
-                  type: "boolean",
-                  description:
-                    "If true, the scout must answer this field before submitting. Defaults to false.",
-                },
-                {
-                  name: "helpText",
-                  type: "string",
-                  description: "Small hint text displayed under the label.",
-                },
-                {
-                  name: "visibleWhen",
-                  type: "VisibilityConditionGroup",
-                  description:
-                    "Conditional logic that shows/hides this field based on other answers. See Conditional Visibility.",
-                },
-              ]}
-            />
-
-            {/* text */}
-            <Stack spacing={1}>
-              <Stack direction="row" spacing={1} alignItems="center">
-                <Chip
-                  label="text"
-                  size="small"
-                  color="primary"
-                  variant="outlined"
-                />
-                <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                  Free-text input
-                </Typography>
-              </Stack>
+          <CollapsibleSection
+            title="Field Types"
+            subtitle="Shared field properties plus examples for each supported field type."
+          >
+            <Stack spacing={2.5}>
               <Typography variant="body2" color="text.secondary">
-                Single-line or multi-line text entry.
+                Every field requires{" "}
+                <Box
+                  component="span"
+                  sx={{ fontFamily: "monospace", fontSize: 12.5 }}
+                >
+                  id
+                </Box>
+                ,{" "}
+                <Box
+                  component="span"
+                  sx={{ fontFamily: "monospace", fontSize: 12.5 }}
+                >
+                  type
+                </Box>
+                , and{" "}
+                <Box
+                  component="span"
+                  sx={{ fontFamily: "monospace", fontSize: 12.5 }}
+                >
+                  label
+                </Box>
+                . The following additional properties are shared by all types:
               </Typography>
-              <CodeBlock>{`{
+              <PropsTable
+                rows={[
+                  {
+                    name: "id",
+                    type: "string",
+                    required: true,
+                    description:
+                      "Unique field ID within the questionnaire. Used as the key in saved answer data.",
+                  },
+                  {
+                    name: "type",
+                    type: "string",
+                    required: true,
+                    description:
+                      'One of: "text", "number", "select", "boolean", "rating".',
+                  },
+                  {
+                    name: "label",
+                    type: "string",
+                    required: true,
+                    description: "The question label shown to the scout.",
+                  },
+                  {
+                    name: "required",
+                    type: "boolean",
+                    description:
+                      "If true, the scout must answer this field before submitting. Defaults to false.",
+                  },
+                  {
+                    name: "helpText",
+                    type: "string",
+                    description: "Small hint text displayed under the label.",
+                  },
+                  {
+                    name: "visibleWhen",
+                    type: "VisibilityConditionGroup",
+                    description:
+                      "Conditional logic that shows/hides this field based on other answers. See Conditional Visibility.",
+                  },
+                ]}
+              />
+
+              {/* text */}
+              <Stack spacing={1}>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <Chip
+                    label="text"
+                    size="small"
+                    color="primary"
+                    variant="outlined"
+                  />
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    Free-text input
+                  </Typography>
+                </Stack>
+                <Typography variant="body2" color="text.secondary">
+                  Single-line or multi-line text entry.
+                </Typography>
+                <CodeBlock>{`{
   "type": "text",
   "id": "auto_notes",
   "label": "Autonomous Notes",
@@ -342,41 +429,41 @@ export default function QuestionnaireSchemaReference({
   "placeholder": "e.g. scored 3 pieces, started left",
   "required": false
 }`}</CodeBlock>
-              <PropsTable
-                rows={[
-                  {
-                    name: "multiline",
-                    type: "boolean",
-                    description:
-                      "Renders a multi-line textarea instead of a single-line input.",
-                  },
-                  {
-                    name: "placeholder",
-                    type: "string",
-                    description:
-                      "Greyed-out hint text shown inside the input when empty.",
-                  },
-                ]}
-              />
-            </Stack>
-
-            {/* number */}
-            <Stack spacing={1}>
-              <Stack direction="row" spacing={1} alignItems="center">
-                <Chip
-                  label="number"
-                  size="small"
-                  color="primary"
-                  variant="outlined"
+                <PropsTable
+                  rows={[
+                    {
+                      name: "multiline",
+                      type: "boolean",
+                      description:
+                        "Renders a multi-line textarea instead of a single-line input.",
+                    },
+                    {
+                      name: "placeholder",
+                      type: "string",
+                      description:
+                        "Greyed-out hint text shown inside the input when empty.",
+                    },
+                  ]}
                 />
-                <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                  Numeric input
-                </Typography>
               </Stack>
-              <Typography variant="body2" color="text.secondary">
-                Numeric entry with optional bounds and step size.
-              </Typography>
-              <CodeBlock>{`{
+
+              {/* number */}
+              <Stack spacing={1}>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <Chip
+                    label="number"
+                    size="small"
+                    color="primary"
+                    variant="outlined"
+                  />
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    Numeric input
+                  </Typography>
+                </Stack>
+                <Typography variant="body2" color="text.secondary">
+                  Numeric entry with optional bounds and step size.
+                </Typography>
+                <CodeBlock>{`{
   "type": "number",
   "id": "teleop_cycles",
   "label": "Teleop Cycles",
@@ -385,58 +472,58 @@ export default function QuestionnaireSchemaReference({
   "step": 1,
   "required": true
 }`}</CodeBlock>
-              <PropsTable
-                rows={[
-                  {
-                    name: "min",
-                    type: "number",
-                    description: "Minimum allowed value.",
-                  },
-                  {
-                    name: "max",
-                    type: "number",
-                    description: "Maximum allowed value.",
-                  },
-                  {
-                    name: "step",
-                    type: "number",
-                    description: "Increment amount for the +/− controls.",
-                  },
-                ]}
-              />
-            </Stack>
-
-            {/* select */}
-            <Stack spacing={1}>
-              <Stack direction="row" spacing={1} alignItems="center">
-                <Chip
-                  label="select"
-                  size="small"
-                  color="primary"
-                  variant="outlined"
+                <PropsTable
+                  rows={[
+                    {
+                      name: "min",
+                      type: "number",
+                      description: "Minimum allowed value.",
+                    },
+                    {
+                      name: "max",
+                      type: "number",
+                      description: "Maximum allowed value.",
+                    },
+                    {
+                      name: "step",
+                      type: "number",
+                      description: "Increment amount for the +/− controls.",
+                    },
+                  ]}
                 />
-                <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                  Dropdown / single-choice
-                </Typography>
               </Stack>
-              <Typography variant="body2" color="text.secondary">
-                Scout picks one option from a defined list. The{" "}
-                <Box
-                  component="span"
-                  sx={{ fontFamily: "monospace", fontSize: 12.5 }}
-                >
-                  value
-                </Box>{" "}
-                is what gets saved;{" "}
-                <Box
-                  component="span"
-                  sx={{ fontFamily: "monospace", fontSize: 12.5 }}
-                >
-                  label
-                </Box>{" "}
-                is what the scout sees.
-              </Typography>
-              <CodeBlock>{`{
+
+              {/* select */}
+              <Stack spacing={1}>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <Chip
+                    label="select"
+                    size="small"
+                    color="primary"
+                    variant="outlined"
+                  />
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    Dropdown / single-choice
+                  </Typography>
+                </Stack>
+                <Typography variant="body2" color="text.secondary">
+                  Scout picks one option from a defined list. The{" "}
+                  <Box
+                    component="span"
+                    sx={{ fontFamily: "monospace", fontSize: 12.5 }}
+                  >
+                    value
+                  </Box>{" "}
+                  is what gets saved;{" "}
+                  <Box
+                    component="span"
+                    sx={{ fontFamily: "monospace", fontSize: 12.5 }}
+                  >
+                    label
+                  </Box>{" "}
+                  is what the scout sees.
+                </Typography>
+                <CodeBlock>{`{
   "type": "select",
   "id": "endgame_status",
   "label": "Endgame Status",
@@ -448,95 +535,95 @@ export default function QuestionnaireSchemaReference({
     { "label": "Failed", "value": "failed" }
   ]
 }`}</CodeBlock>
-              <PropsTable
-                rows={[
-                  {
-                    name: "options",
-                    type: "{ label, value }[]",
-                    required: true,
-                    description:
-                      'Array of choice objects. "label" is displayed; "value" is stored in the answer.',
-                  },
-                ]}
-              />
-            </Stack>
-
-            {/* boolean */}
-            <Stack spacing={1}>
-              <Stack direction="row" spacing={1} alignItems="center">
-                <Chip
-                  label="boolean"
-                  size="small"
-                  color="primary"
-                  variant="outlined"
+                <PropsTable
+                  rows={[
+                    {
+                      name: "options",
+                      type: "{ label, value }[]",
+                      required: true,
+                      description:
+                        'Array of choice objects. "label" is displayed; "value" is stored in the answer.',
+                    },
+                  ]}
                 />
-                <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                  Yes / No toggle
-                </Typography>
               </Stack>
-              <Typography variant="body2" color="text.secondary">
-                A single checkbox or toggle. Saves{" "}
-                <Box
-                  component="span"
-                  sx={{ fontFamily: "monospace", fontSize: 12.5 }}
-                >
-                  true
-                </Box>{" "}
-                or{" "}
-                <Box
-                  component="span"
-                  sx={{ fontFamily: "monospace", fontSize: 12.5 }}
-                >
-                  false
-                </Box>
-                . Commonly used as a condition target for{" "}
-                <Box
-                  component="span"
-                  sx={{ fontFamily: "monospace", fontSize: 12.5 }}
-                >
-                  visibleWhen
-                </Box>
-                .
-              </Typography>
-              <CodeBlock>{`{
+
+              {/* boolean */}
+              <Stack spacing={1}>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <Chip
+                    label="boolean"
+                    size="small"
+                    color="primary"
+                    variant="outlined"
+                  />
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    Yes / No toggle
+                  </Typography>
+                </Stack>
+                <Typography variant="body2" color="text.secondary">
+                  A single checkbox or toggle. Saves{" "}
+                  <Box
+                    component="span"
+                    sx={{ fontFamily: "monospace", fontSize: 12.5 }}
+                  >
+                    true
+                  </Box>{" "}
+                  or{" "}
+                  <Box
+                    component="span"
+                    sx={{ fontFamily: "monospace", fontSize: 12.5 }}
+                  >
+                    false
+                  </Box>
+                  . Commonly used as a condition target for{" "}
+                  <Box
+                    component="span"
+                    sx={{ fontFamily: "monospace", fontSize: 12.5 }}
+                  >
+                    visibleWhen
+                  </Box>
+                  .
+                </Typography>
+                <CodeBlock>{`{
   "type": "boolean",
   "id": "played_defense",
   "label": "Played Defense?",
   "helpText": "Check if this robot played defense during teleop."
 }`}</CodeBlock>
-            </Stack>
-
-            {/* rating */}
-            <Stack spacing={1}>
-              <Stack direction="row" spacing={1} alignItems="center">
-                <Chip
-                  label="rating"
-                  size="small"
-                  color="primary"
-                  variant="outlined"
-                />
-                <Typography variant="body2" sx={{ fontWeight: 600 }}>
-                  Star / numeric rating
-                </Typography>
               </Stack>
-              <Typography variant="body2" color="text.secondary">
-                A bounded scale selector.{" "}
-                <Box
-                  component="span"
-                  sx={{ fontFamily: "monospace", fontSize: 12.5 }}
-                >
-                  min
-                </Box>{" "}
-                and{" "}
-                <Box
-                  component="span"
-                  sx={{ fontFamily: "monospace", fontSize: 12.5 }}
-                >
-                  max
-                </Box>{" "}
-                are required. Typical usage is 1–5.
-              </Typography>
-              <CodeBlock>{`{
+
+              {/* rating */}
+              <Stack spacing={1}>
+                <Stack direction="row" spacing={1} alignItems="center">
+                  <Chip
+                    label="rating"
+                    size="small"
+                    color="primary"
+                    variant="outlined"
+                  />
+                  <Typography variant="body2" sx={{ fontWeight: 600 }}>
+                    Star / numeric rating
+                  </Typography>
+                </Stack>
+                <Typography variant="body2" color="text.secondary">
+                  A bounded scale selector.{" "}
+                  <Box
+                    component="span"
+                    sx={{ fontFamily: "monospace", fontSize: 12.5 }}
+                  >
+                    min
+                  </Box>{" "}
+                  and{" "}
+                  <Box
+                    component="span"
+                    sx={{ fontFamily: "monospace", fontSize: 12.5 }}
+                  >
+                    max
+                  </Box>{" "}
+                  are required. Typical usage is 1–5.
+                </Typography>
+                <CodeBlock>{`{
   "type": "rating",
   "id": "driver_skill",
   "label": "Driver Skill",
@@ -545,43 +632,47 @@ export default function QuestionnaireSchemaReference({
   "max": 5,
   "required": true
 }`}</CodeBlock>
-              <PropsTable
-                rows={[
-                  {
-                    name: "min",
-                    type: "number",
-                    required: true,
-                    description: "Minimum rating value.",
-                  },
-                  {
-                    name: "max",
-                    type: "number",
-                    required: true,
-                    description: "Maximum rating value.",
-                  },
-                ]}
-              />
+                <PropsTable
+                  rows={[
+                    {
+                      name: "min",
+                      type: "number",
+                      required: true,
+                      description: "Minimum rating value.",
+                    },
+                    {
+                      name: "max",
+                      type: "number",
+                      required: true,
+                      description: "Maximum rating value.",
+                    },
+                  ]}
+                />
+              </Stack>
             </Stack>
-          </Stack>
+          </CollapsibleSection>
 
           <Divider />
 
           {/* ── Conditional visibility ── */}
-          <Stack spacing={1.5}>
-            <SectionHeading label="Conditional Visibility (visibleWhen)" />
-            <Typography variant="body2" color="text.secondary">
-              Any field can include a{" "}
-              <Box
-                component="span"
-                sx={{ fontFamily: "monospace", fontSize: 12.5 }}
-              >
-                visibleWhen
-              </Box>{" "}
-              property to conditionally show or hide it based on the current
-              answers. Hidden fields are also excluded from required-field
-              validation. Groups can be nested for complex logic.
-            </Typography>
-            <CodeBlock>{`// Show "Defense Effectiveness" only when "Played Defense?" is checked
+          <CollapsibleSection
+            title="Conditional Visibility (visibleWhen)"
+            subtitle="Show or hide fields based on answers from earlier fields."
+          >
+            <Stack spacing={1.5}>
+              <Typography variant="body2" color="text.secondary">
+                Any field can include a{" "}
+                <Box
+                  component="span"
+                  sx={{ fontFamily: "monospace", fontSize: 12.5 }}
+                >
+                  visibleWhen
+                </Box>{" "}
+                property to conditionally show or hide it based on the current
+                answers. Hidden fields are also excluded from required-field
+                validation. Groups can be nested for complex logic.
+              </Typography>
+              <CodeBlock>{`// Show "Defense Effectiveness" only when "Played Defense?" is checked
 {
   "type": "rating",
   "id": "defense_effectiveness",
@@ -595,129 +686,141 @@ export default function QuestionnaireSchemaReference({
     ]
   }
 }`}</CodeBlock>
-            <CodeBlock>{`// Show a field only when a select answer is one of several values
+              <CodeBlock>{`// Show a field only when a select answer is one of several values
 "visibleWhen": {
   "mode": "any",
   "rules": [
     { "fieldId": "endgame_status", "operator": "in", "value": ["climb", "parked"] }
   ]
 }`}</CodeBlock>
-            <PropsTable
-              rows={[
-                {
-                  name: "mode",
-                  type: '"all" | "any"',
-                  required: true,
-                  description:
-                    '"all" = every rule must pass (AND). "any" = at least one rule must pass (OR).',
-                },
-                {
-                  name: "rules",
-                  type: "(Rule | Group)[]",
-                  required: true,
-                  description:
-                    "Array of individual rules or nested condition groups.",
-                },
-              ]}
-            />
+              <PropsTable
+                rows={[
+                  {
+                    name: "mode",
+                    type: '"all" | "any"',
+                    required: true,
+                    description:
+                      '"all" = every rule must pass (AND). "any" = at least one rule must pass (OR).',
+                  },
+                  {
+                    name: "rules",
+                    type: "(Rule | Group)[]",
+                    required: true,
+                    description:
+                      "Array of individual rules or nested condition groups.",
+                  },
+                ]}
+              />
 
-            <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>
-              Rule object
-            </Typography>
-            <PropsTable
-              rows={[
-                {
-                  name: "fieldId",
-                  type: "string",
-                  required: true,
-                  description:
-                    "The id of the field whose answer is being checked.",
-                },
-                {
-                  name: "operator",
-                  type: "VisibilityOperator",
-                  required: true,
-                  description:
-                    "How to compare the answer. See operator table below.",
-                },
-                {
-                  name: "value",
-                  type: "string | number | boolean | null | array",
-                  description:
-                    'The comparison value. Not required for "isTruthy" and "isFalsy".',
-                },
-              ]}
-            />
+              <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>
+                Rule object
+              </Typography>
+              <PropsTable
+                rows={[
+                  {
+                    name: "fieldId",
+                    type: "string",
+                    required: true,
+                    description:
+                      "The id of the field whose answer is being checked.",
+                  },
+                  {
+                    name: "operator",
+                    type: "VisibilityOperator",
+                    required: true,
+                    description:
+                      "How to compare the answer. See operator table below.",
+                  },
+                  {
+                    name: "value",
+                    type: "string | number | boolean | null | array",
+                    description:
+                      'The comparison value. Not required for "isTruthy" and "isFalsy".',
+                  },
+                ]}
+              />
 
-            <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>
-              Operators
-            </Typography>
-            <Table
-              size="small"
-              sx={{ "& td, & th": { borderColor: "divider" } }}
-            >
-              <TableHead>
-                <TableRow>
-                  <TableCell sx={{ fontWeight: 700, fontSize: 12 }}>
-                    Operator
-                  </TableCell>
-                  <TableCell sx={{ fontWeight: 700, fontSize: 12 }}>
-                    Meaning
-                  </TableCell>
-                  <TableCell sx={{ fontWeight: 700, fontSize: 12 }}>
-                    value required?
-                  </TableCell>
-                </TableRow>
-              </TableHead>
-              <TableBody>
-                {[
-                  ["equals", "Answer strictly equals value", "Yes"],
-                  ["notEquals", "Answer does not equal value", "Yes"],
-                  ["greaterThan", "Answer > value (numbers)", "Yes"],
-                  ["greaterThanOrEqual", "Answer ≥ value (numbers)", "Yes"],
-                  ["lessThan", "Answer < value (numbers)", "Yes"],
-                  ["lessThanOrEqual", "Answer ≤ value (numbers)", "Yes"],
-                  ["in", "Answer is one of the values array", "Yes (array)"],
-                  ["notIn", "Answer is not in the values array", "Yes (array)"],
-                  [
-                    "isTruthy",
-                    "Answer is truthy (non-empty, non-zero, true)",
-                    "No",
-                  ],
-                  ["isFalsy", "Answer is falsy (empty, 0, false, null)", "No"],
-                ].map(([op, meaning, req]) => (
-                  <TableRow key={op}>
-                    <TableCell
-                      sx={{ fontFamily: "monospace", fontSize: 12, py: 0.75 }}
-                    >
-                      {op}
+              <Typography variant="body2" sx={{ fontWeight: 600, mt: 0.5 }}>
+                Operators
+              </Typography>
+              <Table
+                size="small"
+                sx={{ "& td, & th": { borderColor: "divider" } }}
+              >
+                <TableHead>
+                  <TableRow>
+                    <TableCell sx={{ fontWeight: 700, fontSize: 12 }}>
+                      Operator
                     </TableCell>
-                    <TableCell
-                      sx={{ py: 0.75, fontSize: 13, color: "text.secondary" }}
-                    >
-                      {meaning}
+                    <TableCell sx={{ fontWeight: 700, fontSize: 12 }}>
+                      Meaning
                     </TableCell>
-                    <TableCell
-                      sx={{ py: 0.75, fontSize: 13, color: "text.secondary" }}
-                    >
-                      {req}
+                    <TableCell sx={{ fontWeight: 700, fontSize: 12 }}>
+                      value required?
                     </TableCell>
                   </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </Stack>
+                </TableHead>
+                <TableBody>
+                  {[
+                    ["equals", "Answer strictly equals value", "Yes"],
+                    ["notEquals", "Answer does not equal value", "Yes"],
+                    ["greaterThan", "Answer > value (numbers)", "Yes"],
+                    ["greaterThanOrEqual", "Answer ≥ value (numbers)", "Yes"],
+                    ["lessThan", "Answer < value (numbers)", "Yes"],
+                    ["lessThanOrEqual", "Answer ≤ value (numbers)", "Yes"],
+                    ["in", "Answer is one of the values array", "Yes (array)"],
+                    [
+                      "notIn",
+                      "Answer is not in the values array",
+                      "Yes (array)",
+                    ],
+                    [
+                      "isTruthy",
+                      "Answer is truthy (non-empty, non-zero, true)",
+                      "No",
+                    ],
+                    [
+                      "isFalsy",
+                      "Answer is falsy (empty, 0, false, null)",
+                      "No",
+                    ],
+                  ].map(([op, meaning, req]) => (
+                    <TableRow key={op}>
+                      <TableCell
+                        sx={{ fontFamily: "monospace", fontSize: 12, py: 0.75 }}
+                      >
+                        {op}
+                      </TableCell>
+                      <TableCell
+                        sx={{ py: 0.75, fontSize: 13, color: "text.secondary" }}
+                      >
+                        {meaning}
+                      </TableCell>
+                      <TableCell
+                        sx={{ py: 0.75, fontSize: 13, color: "text.secondary" }}
+                      >
+                        {req}
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </Stack>
+          </CollapsibleSection>
 
           <Divider />
 
           {/* ── Full example ── */}
-          <Stack spacing={1.5}>
-            <SectionHeading label="Minimal Full Example" />
-            <Typography variant="body2" color="text.secondary">
-              A complete questionnaire with one section, demonstrating multiple
-              field types and conditional visibility.
-            </Typography>
-            <CodeBlock>{`{
+          <CollapsibleSection
+            title="Minimal Full Example"
+            subtitle="A complete example you can use as a starting point."
+          >
+            <Stack spacing={1.5}>
+              <Typography variant="body2" color="text.secondary">
+                A complete questionnaire with one section, demonstrating
+                multiple field types and conditional visibility.
+              </Typography>
+              <CodeBlock>{`{
   "id": "your-questionnaire-id",
   "name": "My Match Questionnaire",
   "version": 1,
@@ -776,7 +879,8 @@ export default function QuestionnaireSchemaReference({
     }
   ]
 }`}</CodeBlock>
-          </Stack>
+            </Stack>
+          </CollapsibleSection>
         </Stack>
       </AccordionDetails>
     </Accordion>
