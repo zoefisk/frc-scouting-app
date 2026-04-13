@@ -31,6 +31,7 @@ import {
 import { useToast } from "@/lib/hooks/useToast";
 import {
   getProjectMemberRole,
+  type ProjectAllianceSelectorRole,
   type ProjectMemberRole,
   type ScoutingProjectDoc,
 } from "@/lib/scouting-projects/types";
@@ -44,6 +45,7 @@ type Props = {
 type MemberListItem = {
   uid: string;
   role: ProjectMemberRole;
+  allianceSelectorRole: ProjectAllianceSelectorRole | null;
   displayName: string;
   email: string;
 };
@@ -77,6 +79,8 @@ export default function ScoutingProjectSettingsPageContent({
   const [allowMemberInvites, setAllowMemberInvites] = React.useState(
     project.allowMemberInvites
   );
+  const [lockAllianceSelectorEditing, setLockAllianceSelectorEditing] =
+    React.useState(project.lockAllianceSelectorEditing);
   const [isSavingStatus, setIsSavingStatus] = React.useState(false);
   const [isSavingPermissions, setIsSavingPermissions] = React.useState(false);
   const [isDeletingProject, setIsDeletingProject] = React.useState(false);
@@ -115,6 +119,7 @@ export default function ScoutingProjectSettingsPageContent({
             return {
               uid: member.uid,
               role: member.role,
+              allianceSelectorRole: member.allianceSelectorRole ?? null,
               displayName:
                 profile?.displayName?.trim() || "Unknown team member",
               email: profile?.email?.trim() || "",
@@ -133,6 +138,7 @@ export default function ScoutingProjectSettingsPageContent({
             visibleMembers.map((member) => ({
               uid: member.uid,
               role: member.role,
+              allianceSelectorRole: member.allianceSelectorRole ?? null,
               displayName: "Unknown team member",
               email: "",
             }))
@@ -159,6 +165,10 @@ export default function ScoutingProjectSettingsPageContent({
   React.useEffect(() => {
     setAllowMemberInvites(project.allowMemberInvites);
   }, [project.allowMemberInvites]);
+
+  React.useEffect(() => {
+    setLockAllianceSelectorEditing(project.lockAllianceSelectorEditing);
+  }, [project.lockAllianceSelectorEditing]);
 
   React.useEffect(() => {
     setProjectMembers(project.members);
@@ -220,6 +230,34 @@ export default function ScoutingProjectSettingsPageContent({
     }
   };
 
+  const handleAllianceSelectorLockChange = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const nextValue = event.target.checked;
+    const previousValue = lockAllianceSelectorEditing;
+
+    if (!effectiveOnline) {
+      toast.warning("Project settings cannot be changed while offline.");
+      return;
+    }
+
+    setLockAllianceSelectorEditing(nextValue);
+    setIsSavingPermissions(true);
+
+    try {
+      await updateScoutingProjectClient(project.id, {
+        lockAllianceSelectorEditing: nextValue,
+      });
+      toast.success("Alliance selector permissions updated.");
+    } catch (error) {
+      console.error("Failed to update alliance selector lock:", error);
+      setLockAllianceSelectorEditing(previousValue);
+      toast.error("Could not update alliance selector permissions.");
+    } finally {
+      setIsSavingPermissions(false);
+    }
+  };
+
   const handleMemberRoleChange = async (
     uid: string,
     nextRole: Extract<ProjectMemberRole, "admin" | "member">
@@ -246,6 +284,42 @@ export default function ScoutingProjectSettingsPageContent({
       console.error("Failed to update member role:", error);
       setProjectMembers(previousMembers);
       toast.error("Could not update member role.");
+    } finally {
+      setUpdatingMemberUid(null);
+    }
+  };
+
+  const handleAllianceSelectorRoleChange = async (
+    uid: string,
+    nextRole: ProjectAllianceSelectorRole | null
+  ) => {
+    if (!effectiveOnline) {
+      toast.warning("Project settings cannot be changed while offline.");
+      return;
+    }
+
+    const previousMembers = projectMembers;
+    const nextMembers = previousMembers.map((member) =>
+      member.uid === uid
+        ? {
+            ...member,
+            allianceSelectorRole: nextRole,
+          }
+        : member
+    );
+
+    setProjectMembers(nextMembers);
+    setUpdatingMemberUid(uid);
+
+    try {
+      await updateScoutingProjectClient(project.id, {
+        members: nextMembers,
+      });
+      toast.success("Alliance selector role updated.");
+    } catch (error) {
+      console.error("Failed to update alliance selector role:", error);
+      setProjectMembers(previousMembers);
+      toast.error("Could not update alliance selector role.");
     } finally {
       setUpdatingMemberUid(null);
     }
@@ -382,6 +456,15 @@ export default function ScoutingProjectSettingsPageContent({
               size="small"
               variant="outlined"
             />
+            <Chip
+              label={
+                lockAllianceSelectorEditing
+                  ? "Alliance Selector: locked"
+                  : "Alliance Selector: open"
+              }
+              size="small"
+              variant="outlined"
+            />
           </Stack>
 
           <Alert severity="info">
@@ -404,6 +487,23 @@ export default function ScoutingProjectSettingsPageContent({
           <Typography variant="body2" color="text.secondary">
             When this is off, only owners and admins will see the invite link
             button on the main project dashboard.
+          </Typography>
+
+          <FormControlLabel
+            control={
+              <Checkbox
+                checked={lockAllianceSelectorEditing}
+                onChange={handleAllianceSelectorLockChange}
+                disabled={isSavingPermissions}
+              />
+            }
+            label="Lock alliance selector editing"
+          />
+
+          <Typography variant="body2" color="text.secondary">
+            When this is on, only owners, admins, and members marked as student
+            leaders can edit the alliance selector. Everyone else can still view
+            and export it.
           </Typography>
 
           <TextField
@@ -529,34 +629,70 @@ export default function ScoutingProjectSettingsPageContent({
                       </Typography>
                     </Stack>
 
-                    {canReassignRoles && member.role !== "owner" ? (
-                      <TextField
-                        select
-                        size="small"
-                        label="Role"
-                        value={member.role}
-                        disabled={updatingMemberUid === member.uid}
-                        onChange={(event) =>
-                          void handleMemberRoleChange(
-                            member.uid,
-                            event.target.value as Extract<
-                              ProjectMemberRole,
-                              "admin" | "member"
-                            >
-                          )
-                        }
-                        sx={{ minWidth: 140 }}
-                      >
-                        <MenuItem value="member">member</MenuItem>
-                        <MenuItem value="admin">admin</MenuItem>
-                      </TextField>
-                    ) : (
-                      <Chip
-                        label={member.role}
-                        color={getRoleChipColor(member.role)}
-                        size="small"
-                      />
-                    )}
+                    <Stack
+                      direction={{ xs: "column", sm: "row" }}
+                      spacing={1}
+                      alignItems={{ xs: "stretch", sm: "center" }}
+                    >
+                      {canReassignRoles && member.role !== "owner" ? (
+                        <TextField
+                          select
+                          size="small"
+                          label="Role"
+                          value={member.role}
+                          disabled={updatingMemberUid === member.uid}
+                          onChange={(event) =>
+                            void handleMemberRoleChange(
+                              member.uid,
+                              event.target.value as Extract<
+                                ProjectMemberRole,
+                                "admin" | "member"
+                              >
+                            )
+                          }
+                          sx={{ minWidth: 140 }}
+                        >
+                          <MenuItem value="member">member</MenuItem>
+                          <MenuItem value="admin">admin</MenuItem>
+                        </TextField>
+                      ) : (
+                        <Chip
+                          label={member.role}
+                          color={getRoleChipColor(member.role)}
+                          size="small"
+                        />
+                      )}
+
+                      {member.role === "owner" || member.role === "admin" ? (
+                        <Chip
+                          label="Alliance selector: included automatically"
+                          size="small"
+                          variant="outlined"
+                        />
+                      ) : (
+                        <TextField
+                          select
+                          size="small"
+                          label="Alliance selector"
+                          value={member.allianceSelectorRole ?? "standard"}
+                          disabled={updatingMemberUid === member.uid}
+                          onChange={(event) =>
+                            void handleAllianceSelectorRoleChange(
+                              member.uid,
+                              event.target.value === "student_leader"
+                                ? "student_leader"
+                                : null
+                            )
+                          }
+                          sx={{ minWidth: 190 }}
+                        >
+                          <MenuItem value="standard">standard member</MenuItem>
+                          <MenuItem value="student_leader">
+                            student leader
+                          </MenuItem>
+                        </TextField>
+                      )}
+                    </Stack>
                   </Stack>
                 </Paper>
               ))}
@@ -573,9 +709,8 @@ export default function ScoutingProjectSettingsPageContent({
 
           <Alert severity="warning">
             Deleting a scouting project also deletes its project questionnaires,
-            match scouting data, pit scouting data, and member project
-            references. Alliance selector currently does not store a separate
-            project document yet.
+            match scouting data, pit scouting data, alliance selector data, and
+            member project references.
           </Alert>
 
           {canDeleteProject ? (

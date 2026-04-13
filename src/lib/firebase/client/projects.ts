@@ -14,6 +14,7 @@ import {
   type DocumentData,
 } from "firebase/firestore";
 import {
+  ProjectAllianceSelectorRole,
   ProjectMemberRole,
   ScoutingProjectDoc,
 } from "@/lib/scouting-projects/types";
@@ -33,9 +34,27 @@ function normalizeProjectDoc(
   const createdByUid = String(data.createdByUid ?? "");
   const existingMembers = Array.isArray(data.members) ? data.members : [];
   const fallbackOwner = createdByUid
-    ? [{ uid: createdByUid, role: "owner" as const }]
+    ? [
+        {
+          uid: createdByUid,
+          role: "owner" as const,
+          allianceSelectorRole: null,
+        },
+      ]
     : [];
-  const members = existingMembers.length > 0 ? existingMembers : fallbackOwner;
+  const members = (
+    existingMembers.length > 0 ? existingMembers : fallbackOwner
+  ).map((member) => ({
+    uid: String(member.uid ?? ""),
+    role:
+      member.role === "owner" || member.role === "admin"
+        ? member.role
+        : ("member" as const),
+    allianceSelectorRole:
+      member.allianceSelectorRole === "student_leader"
+        ? ("student_leader" as ProjectAllianceSelectorRole)
+        : null,
+  }));
   const memberUids = Array.isArray(data.memberUids)
     ? data.memberUids
     : members.map((member) => member.uid);
@@ -48,6 +67,10 @@ function normalizeProjectDoc(
       typeof data.allowMemberInvites === "boolean"
         ? data.allowMemberInvites
         : true,
+    lockAllianceSelectorEditing:
+      typeof data.lockAllianceSelectorEditing === "boolean"
+        ? data.lockAllianceSelectorEditing
+        : false,
     members,
     memberUids,
   };
@@ -120,6 +143,7 @@ export async function updateScoutingProjectClient(
       | "accessMode"
       | "status"
       | "allowMemberInvites"
+      | "lockAllianceSelectorEditing"
       | "dataMode"
       | "matchCollectionMode"
       | "formMode"

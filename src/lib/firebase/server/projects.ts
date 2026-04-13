@@ -8,9 +8,11 @@ import {
 } from "@/lib/firebase/server/entries";
 import { deleteProjectQuestionnairesServer } from "@/lib/firebase/server/questionnaires";
 import {
+  ProjectAllianceSelectorRole,
   ProjectMemberRole,
   ScoutingProjectDoc,
 } from "@/lib/scouting-projects/types";
+import { deleteAllianceSelectorServer } from "@/lib/firebase/server/allianceSelector";
 
 const PROJECTS_COLLECTION = "scoutingProjects";
 const db = getAdminDb();
@@ -29,9 +31,27 @@ function normalizeProjectDoc(
     ? normalized.members
     : [];
   const fallbackOwner = createdByUid
-    ? [{ uid: createdByUid, role: "owner" as const }]
+    ? [
+        {
+          uid: createdByUid,
+          role: "owner" as const,
+          allianceSelectorRole: null,
+        },
+      ]
     : [];
-  const members = existingMembers.length > 0 ? existingMembers : fallbackOwner;
+  const members = (
+    existingMembers.length > 0 ? existingMembers : fallbackOwner
+  ).map((member) => ({
+    uid: String(member.uid ?? ""),
+    role:
+      member.role === "owner" || member.role === "admin"
+        ? member.role
+        : ("member" as const),
+    allianceSelectorRole:
+      member.allianceSelectorRole === "student_leader"
+        ? ("student_leader" as ProjectAllianceSelectorRole)
+        : null,
+  }));
   const memberUids = Array.isArray(normalized.memberUids)
     ? normalized.memberUids
     : members.map((member) => member.uid);
@@ -43,6 +63,10 @@ function normalizeProjectDoc(
       typeof normalized.allowMemberInvites === "boolean"
         ? normalized.allowMemberInvites
         : true,
+    lockAllianceSelectorEditing:
+      typeof normalized.lockAllianceSelectorEditing === "boolean"
+        ? normalized.lockAllianceSelectorEditing
+        : false,
     members,
     memberUids,
   };
@@ -181,6 +205,7 @@ export async function updateScoutingProjectServer(
       | "accessMode"
       | "status"
       | "allowMemberInvites"
+      | "lockAllianceSelectorEditing"
       | "dataMode"
       | "matchCollectionMode"
       | "formMode"
@@ -219,6 +244,7 @@ export async function deleteScoutingProjectCascadeServer(
     deleteProjectMatchScoutingEntries(projectId, project.eventKey),
     deleteProjectPitScoutingEntries(projectId, project.eventKey),
     deleteProjectQuestionnairesServer(projectId),
+    deleteAllianceSelectorServer(projectId),
   ]);
 
   await Promise.all(

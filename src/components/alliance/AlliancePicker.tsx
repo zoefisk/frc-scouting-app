@@ -45,6 +45,10 @@ import { CSS } from "@dnd-kit/utilities";
 import { getAppSetting, saveAppSetting } from "../../lib/db";
 import { getOfflineEventOptions } from "@/lib/offline/getOfflineEventOptions";
 import { useSyncMode } from "@/components/app/providers/SyncModeProvider";
+import { useAuth } from "@/components/app/providers/AuthProvider";
+import { getCurrentUserIdToken } from "@/lib/firebase/client/auth";
+import { useToast } from "@/lib/hooks/useToast";
+import type { AllianceSelectorDoc } from "@/lib/scouting-projects/alliance-selector";
 
 type EventOption = {
   key: string;
@@ -66,19 +70,15 @@ type EventTeam = {
   nickname?: string;
 };
 
-type AllianceTeam = {
-  originalRank: number;
-  teamKey: string;
-  teamNumber: number;
-  nickname: string;
-  reasoning: string;
-};
+type AllianceTeam = AllianceSelectorDoc["teams"][number];
 
 type Props = {
   myTeamNumber?: number;
   defaultYear?: number;
   defaultEventKey?: string;
   lockProjectEvent?: boolean;
+  projectId?: string;
+  canEdit?: boolean;
   title?: string;
   description?: string;
 };
@@ -98,22 +98,22 @@ type SortableRowProps = {
   team: AllianceTeam;
   index: number;
   totalTeams: number;
-  onReasoningChange: (teamKey: string, reasoning: string) => void;
   onMoveToTop: (index: number) => void;
   onMoveToBottom: (index: number) => void;
   onRemove: (teamKey: string) => void;
   onOpenDetails: (team: AllianceTeam) => void;
+  canEdit: boolean;
 };
 
 function SortableTeamRow({
   team,
   index,
   totalTeams,
-  onReasoningChange,
   onMoveToTop,
   onMoveToBottom,
   onRemove,
   onOpenDetails,
+  canEdit,
 }: SortableRowProps) {
   const {
     attributes,
@@ -123,7 +123,7 @@ function SortableTeamRow({
     transform,
     transition,
     isDragging,
-  } = useSortable({ id: team.teamKey });
+  } = useSortable({ id: team.teamKey, disabled: !canEdit });
 
   return (
     <Box
@@ -209,7 +209,7 @@ function SortableTeamRow({
           <IconButton
             size="small"
             onClick={() => onMoveToTop(index)}
-            disabled={index === 0}
+            disabled={!canEdit || index === 0}
             title="Bring to top"
           >
             <VerticalAlignTopIcon fontSize="small" />
@@ -218,7 +218,7 @@ function SortableTeamRow({
           <IconButton
             size="small"
             onClick={() => onMoveToBottom(index)}
-            disabled={index === totalTeams - 1}
+            disabled={!canEdit || index === totalTeams - 1}
             title="Bring to bottom"
           >
             <VerticalAlignBottomIcon fontSize="small" />
@@ -235,6 +235,7 @@ function SortableTeamRow({
           <IconButton
             size="small"
             onClick={() => onRemove(team.teamKey)}
+            disabled={!canEdit}
             title="Remove team"
           >
             <DeleteOutlineIcon fontSize="small" />
@@ -246,13 +247,16 @@ function SortableTeamRow({
 }
 
 export default function AlliancePicker({
-  myTeamNumber = 3461,
   defaultYear = 2026,
   defaultEventKey,
   lockProjectEvent = false,
+  projectId,
+  canEdit = true,
   title = "Alliance Selector",
   description = "Review ranked teams, reorder your board, and export your shortlist.",
 }: Props) {
+  const { user } = useAuth();
+  const toast = useToast();
   const [year, setYear] = React.useState(String(defaultYear));
   const [events, setEvents] = React.useState<EventOption[]>([]);
   const [selectedEvent, setSelectedEvent] = React.useState<EventOption | null>(
@@ -261,6 +265,16 @@ export default function AlliancePicker({
 
   const [teams, setTeams] = React.useState<AllianceTeam[]>([]);
   const [removedTeams, setRemovedTeams] = React.useState<AllianceTeam[]>([]);
+  const [baseRankedTeams, setBaseRankedTeams] = React.useState<AllianceTeam[]>(
+    []
+  );
+  const [projectSelector, setProjectSelector] =
+    React.useState<AllianceSelectorDoc | null>(null);
+  const [projectSelectorLoaded, setProjectSelectorLoaded] =
+    React.useState(!projectId);
+  const [saveState, setSaveState] = React.useState<
+    "idle" | "saving" | "saved" | "error"
+  >("idle");
 
   const [loadingEvents, setLoadingEvents] = React.useState(false);
   const [loadingRankings, setLoadingRankings] = React.useState(false);
@@ -272,6 +286,7 @@ export default function AlliancePicker({
   const [activeTeamKey, setActiveTeamKey] = React.useState<string | null>(null);
 
   const [settingsLoaded, setSettingsLoaded] = React.useState(false);
+  const skippedInitialProjectSaveRef = React.useRef(false);
 
   const sensors = useSensors(
     useSensor(MouseSensor),
@@ -282,6 +297,61 @@ export default function AlliancePicker({
       },
     })
   );
+
+  React.useEffect(() => {
+    if (!projectId) {
+      setProjectSelector(null);
+      setProjectSelectorLoaded(true);
+      return;
+    }
+
+    let cancelled = false;
+    setProjectSelectorLoaded(false);
+    skippedInitialProjectSaveRef.current = false;
+    setSaveState("idle");
+
+    async function loadProjectSelector() {
+      try {
+        const idToken = await getCurrentUserIdToken();
+        const response = await fetch(
+          `/api/scouting-projects/${projectId}/alliance-selector`,
+          {
+            headers: idToken
+              ? {
+                  Authorization: `Bearer ${idToken}`,
+                }
+              : undefined,
+          }
+        );
+
+        const data = await response.json();
+
+        if (!response.ok) {
+          throw new Error(data?.error ?? "Could not load alliance selector.");
+        }
+
+        if (!cancelled) {
+          setProjectSelector(data?.selector ?? null);
+        }
+      } catch (error) {
+        console.error("Failed to load project alliance selector:", error);
+
+        if (!cancelled) {
+          setProjectSelector(null);
+        }
+      } finally {
+        if (!cancelled) {
+          setProjectSelectorLoaded(true);
+        }
+      }
+    }
+
+    void loadProjectSelector();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [projectId]);
 
   React.useEffect(() => {
     async function loadSavedSettings() {
@@ -360,19 +430,25 @@ export default function AlliancePicker({
     async function loadEvents() {
       if (!year) return;
 
-      if (!effectiveOnline) {
-        const offlineEvents = await getOfflineEventOptions(year);
-        setEvents(offlineEvents);
-        return;
-      }
+      setLoadingEvents(true);
 
-      const res = await fetch(`/api/tba/events/${year}`);
-      if (!res.ok) {
-        throw new Error("Could not load events.");
-      }
+      try {
+        if (!effectiveOnline) {
+          const offlineEvents = await getOfflineEventOptions(year);
+          setEvents(offlineEvents);
+          return;
+        }
 
-      const data: EventOption[] = await res.json();
-      setEvents(data);
+        const res = await fetch(`/api/tba/events/${year}`);
+        if (!res.ok) {
+          throw new Error("Could not load events.");
+        }
+
+        const data: EventOption[] = await res.json();
+        setEvents(data);
+      } finally {
+        setLoadingEvents(false);
+      }
     }
 
     loadEvents();
@@ -401,8 +477,6 @@ export default function AlliancePicker({
 
       setLoadingRankings(true);
       setError("");
-      setTeams([]);
-      setRemovedTeams([]);
 
       try {
         const [rankingsRes, teamsRes] = await Promise.all([
@@ -449,10 +523,11 @@ export default function AlliancePicker({
             };
           });
 
-        setTeams(mapped);
+        setBaseRankedTeams(mapped);
       } catch (err) {
         console.error(err);
         setError("Could not load ranked teams for this event.");
+        setBaseRankedTeams([]);
       } finally {
         setLoadingRankings(false);
       }
@@ -460,6 +535,118 @@ export default function AlliancePicker({
 
     loadRankingsAndTeams();
   }, [selectedEvent]);
+
+  React.useEffect(() => {
+    if (!selectedEvent?.key) {
+      setTeams([]);
+      setRemovedTeams([]);
+      return;
+    }
+
+    if (projectSelector && projectSelector.eventKey === selectedEvent.key) {
+      setTeams(projectSelector.teams);
+      setRemovedTeams(projectSelector.removedTeams);
+      return;
+    }
+
+    setTeams(baseRankedTeams);
+    setRemovedTeams([]);
+  }, [baseRankedTeams, projectSelector, selectedEvent]);
+
+  React.useEffect(() => {
+    if (!projectId || !projectSelectorLoaded || !settingsLoaded) {
+      return;
+    }
+
+    if (loadingRankings) {
+      return;
+    }
+
+    if (!selectedEvent?.key || Number.isNaN(Number(year))) {
+      return;
+    }
+
+    if (!skippedInitialProjectSaveRef.current) {
+      skippedInitialProjectSaveRef.current = true;
+      return;
+    }
+
+    if (!canEdit || !effectiveOnline) {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => {
+      void (async () => {
+        try {
+          setSaveState("saving");
+          const idToken = await getCurrentUserIdToken();
+
+          const response = await fetch(
+            `/api/scouting-projects/${projectId}/alliance-selector`,
+            {
+              method: "PUT",
+              headers: {
+                "Content-Type": "application/json",
+                ...(idToken
+                  ? {
+                      Authorization: `Bearer ${idToken}`,
+                    }
+                  : {}),
+              },
+              body: JSON.stringify({
+                year: Number(year),
+                eventKey: selectedEvent.key,
+                teams,
+                removedTeams,
+              }),
+            }
+          );
+
+          const data = await response.json();
+
+          if (!response.ok || !data?.ok) {
+            throw new Error(data?.error ?? "Could not save alliance selector.");
+          }
+
+          setProjectSelector({
+            projectId,
+            year: Number(year),
+            eventKey: selectedEvent.key,
+            teams,
+            removedTeams,
+            updatedAt: new Date().toISOString(),
+            updatedByUid: user?.uid ?? null,
+          });
+          setSaveState("saved");
+        } catch (error) {
+          console.error("Failed to save project alliance selector:", error);
+          setSaveState("error");
+          toast.error(
+            error instanceof Error
+              ? error.message
+              : "Could not save the alliance selector."
+          );
+        }
+      })();
+    }, 500);
+
+    return () => {
+      window.clearTimeout(timeout);
+    };
+  }, [
+    canEdit,
+    effectiveOnline,
+    loadingRankings,
+    projectId,
+    projectSelectorLoaded,
+    removedTeams,
+    selectedEvent,
+    settingsLoaded,
+    teams,
+    toast,
+    user?.uid,
+    year,
+  ]);
 
   const handleDragStart = (event: DragStartEvent) => {
     setActiveTeamKey(String(event.active.id));
@@ -470,6 +657,7 @@ export default function AlliancePicker({
     setActiveTeamKey(null);
 
     if (!over || active.id === over.id) return;
+    if (!canEdit) return;
 
     setTeams((prev) => {
       const oldIndex = prev.findIndex((team) => team.teamKey === active.id);
@@ -484,15 +672,11 @@ export default function AlliancePicker({
     setActiveTeamKey(null);
   };
 
-  const updateReasoning = (teamKey: string, reasoning: string) => {
-    setTeams((prev) =>
-      prev.map((team) =>
-        team.teamKey === teamKey ? { ...team, reasoning } : team
-      )
-    );
-  };
-
   const moveToTop = (index: number) => {
+    if (!canEdit) {
+      return;
+    }
+
     setTeams((prev) => {
       if (index <= 0) return prev;
       const copy = [...prev];
@@ -503,6 +687,10 @@ export default function AlliancePicker({
   };
 
   const moveToBottom = (index: number) => {
+    if (!canEdit) {
+      return;
+    }
+
     setTeams((prev) => {
       if (index >= prev.length - 1) return prev;
       const copy = [...prev];
@@ -513,6 +701,10 @@ export default function AlliancePicker({
   };
 
   const removeTeam = (teamKey: string) => {
+    if (!canEdit) {
+      return;
+    }
+
     setTeams((prev) => {
       const found = prev.find((team) => team.teamKey === teamKey);
       if (!found) return prev;
@@ -529,6 +721,10 @@ export default function AlliancePicker({
   };
 
   const restoreTeam = (teamKey: string) => {
+    if (!canEdit) {
+      return;
+    }
+
     setRemovedTeams((prevRemoved) => {
       const found = prevRemoved.find((team) => team.teamKey === teamKey);
       if (!found) return prevRemoved;
@@ -536,13 +732,6 @@ export default function AlliancePicker({
       setTeams((prevTeams) => [...prevTeams, found]);
       return prevRemoved.filter((team) => team.teamKey !== teamKey);
     });
-  };
-
-  const removeMyTeam = () => {
-    const myTeam = teams.find((team) => team.teamNumber === myTeamNumber);
-    if (myTeam) {
-      removeTeam(myTeam.teamKey);
-    }
   };
 
   const exportCsv = () => {
@@ -607,7 +796,7 @@ export default function AlliancePicker({
           value={year}
           onChange={(e) => setYear(e.target.value)}
           size="small"
-          disabled={lockProjectEvent}
+          disabled={lockProjectEvent || !canEdit}
           sx={{ width: 120 }}
         />
 
@@ -616,7 +805,7 @@ export default function AlliancePicker({
           value={selectedEvent}
           onChange={(_, newValue) => setSelectedEvent(newValue)}
           loading={loadingEvents}
-          disabled={lockProjectEvent}
+          disabled={lockProjectEvent || !canEdit}
           getOptionLabel={(option) => `${option.name} (${option.key})`}
           isOptionEqualToValue={(option, value) => option.key === value.key}
           renderInput={(params) => (
@@ -648,6 +837,20 @@ export default function AlliancePicker({
 
       {error && <Alert severity="warning">{error}</Alert>}
 
+      {projectId ? (
+        <Alert severity={canEdit ? "info" : "warning"}>
+          {canEdit
+            ? saveState === "saving"
+              ? "Saving alliance selector changes to this project..."
+              : saveState === "saved"
+                ? "Alliance selector changes are saved to this project."
+                : saveState === "error"
+                  ? "Alliance selector changes could not be saved just now."
+                  : "Alliance selector changes save automatically to this project."
+            : "Alliance selector editing is locked for this project. You can still review and export the board."}
+        </Alert>
+      ) : null}
+
       {loadingRankings && (
         <Alert severity="info">Loading ranked teams...</Alert>
       )}
@@ -678,11 +881,11 @@ export default function AlliancePicker({
                 team={team}
                 index={index}
                 totalTeams={teams.length}
-                onReasoningChange={updateReasoning}
                 onMoveToTop={moveToTop}
                 onMoveToBottom={moveToBottom}
                 onRemove={removeTeam}
                 onOpenDetails={setDetailTeam}
+                canEdit={canEdit}
               />
             ))}
           </Stack>
@@ -791,6 +994,7 @@ export default function AlliancePicker({
                   size="small"
                   startIcon={<RestoreFromTrashIcon />}
                   onClick={() => restoreTeam(team.teamKey)}
+                  disabled={!canEdit}
                 >
                   Restore
                 </Button>

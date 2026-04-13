@@ -5,10 +5,12 @@ export type ProjectFormMode = "default" | "custom";
 export type ProjectStatus = "active" | "inactive";
 export type ScoutingScheduleMode = MatchCollectionMode;
 export type ProjectMemberRole = "owner" | "admin" | "member";
+export type ProjectAllianceSelectorRole = "student_leader";
 
 export type ScoutingProjectMember = {
   uid: string;
   role: ProjectMemberRole;
+  allianceSelectorRole?: ProjectAllianceSelectorRole | null;
 };
 
 export const SCOUTING_SCHEDULE_SLOTS_BY_MODE = {
@@ -44,6 +46,7 @@ export type ScoutingProjectDoc = {
   accessMode: ProjectAccessMode;
   status: ProjectStatus;
   allowMemberInvites: boolean;
+  lockAllianceSelectorEditing: boolean;
   dataMode: ProjectDataMode;
   matchCollectionMode: MatchCollectionMode | null;
   formMode: ProjectFormMode;
@@ -88,4 +91,42 @@ export function getProjectMemberRole(
   return (
     (project.members ?? []).find((member) => member.uid === uid)?.role ?? null
   );
+}
+
+export function getProjectAllianceSelectorRole(
+  project: Pick<ScoutingProjectDoc, "members">,
+  uid: string | null | undefined
+): ProjectAllianceSelectorRole | null {
+  if (!uid) {
+    return null;
+  }
+
+  return (
+    (project.members ?? []).find((member) => member.uid === uid)
+      ?.allianceSelectorRole ?? null
+  );
+}
+
+export function canEditProjectAllianceSelector(
+  project: Pick<
+    ScoutingProjectDoc,
+    "accessMode" | "createdByUid" | "lockAllianceSelectorEditing" | "members"
+  >,
+  uid: string | null | undefined
+): boolean {
+  if (!project.lockAllianceSelectorEditing) {
+    return true;
+  }
+
+  const memberRole = getProjectMemberRole(project, uid);
+
+  if (memberRole === "owner" || memberRole === "admin") {
+    return true;
+  }
+
+  if (memberRole !== "member") {
+    return false;
+  }
+
+  return getProjectAllianceSelectorRole(project, uid) === "student_leader";
 }

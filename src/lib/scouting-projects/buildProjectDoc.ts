@@ -50,6 +50,7 @@ export function buildScoutingProjectDoc({
     accessMode: input.accessMode,
     status: "active",
     allowMemberInvites: true,
+    lockAllianceSelectorEditing: false,
     dataMode: input.dataMode,
     matchCollectionMode: input.matchCollectionMode,
     formMode: input.formMode,
