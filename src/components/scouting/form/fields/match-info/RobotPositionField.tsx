@@ -12,9 +12,14 @@ export type RobotPosition = "left" | "center" | "right" | null;
 type Props = {
   value: RobotPosition;
   onChange: (value: RobotPosition) => void;
+  disabled?: boolean;
 };
 
-export default function RobotPositionField({ value, onChange }: Props) {
+export default function RobotPositionField({
+  value,
+  onChange,
+  disabled = false,
+}: Props) {
   return (
     <Box>
       <FieldLabelWithHelp
@@ -37,6 +42,7 @@ export default function RobotPositionField({ value, onChange }: Props) {
         value={value}
         onChange={(_, newValue) => onChange(newValue)}
         fullWidth
+        disabled={disabled}
       >
         <ToggleButton value="left">Left</ToggleButton>
         <ToggleButton value="center">Center</ToggleButton>

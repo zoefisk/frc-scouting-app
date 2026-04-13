@@ -37,9 +37,14 @@ const scoutingOptions: Array<{
 type Props = {
   value: ScoutingPosition | null;
   onChange: (value: ScoutingPosition | null) => void;
+  disabled?: boolean;
 };
 
-export default function ScoutingPositionField({ value, onChange }: Props) {
+export default function ScoutingPositionField({
+  value,
+  onChange,
+  disabled = false,
+}: Props) {
   return (
     <FormControl fullWidth>
       <FieldLabelWithHelp
@@ -63,6 +68,7 @@ export default function ScoutingPositionField({ value, onChange }: Props) {
         onChange={(event: SelectChangeEvent) =>
           onChange((event.target.value || null) as ScoutingPosition | null)
         }
+        disabled={disabled}
         displayEmpty
         renderValue={(selected) => {
           if (!selected) {

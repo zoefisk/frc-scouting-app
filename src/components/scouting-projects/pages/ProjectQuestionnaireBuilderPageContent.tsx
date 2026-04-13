@@ -9,9 +9,13 @@ import {
   Alert,
   Box,
   Button,
+  Card,
+  CardContent,
   Chip,
   CircularProgress,
+  MenuItem,
   Paper,
+  Skeleton,
   Stack,
   TextField,
   Typography,
@@ -26,12 +30,25 @@ import { ZodError } from "zod";
 
 import NoAccess from "@/components/auth/NoAccess";
 import UnsavedChangesGuard from "@/components/app/guards/UnsavedChangesGuard";
+import QuestionnaireForm from "@/components/scouting/form/QuestionnaireForm";
+import EventField from "@/components/scouting/form/fields/match-info/EventField";
+import MatchNumberField from "@/components/scouting/form/fields/match-info/MatchNumberField";
+import RobotPositionField from "@/components/scouting/form/fields/match-info/RobotPositionField";
+import ScoutingPositionField, {
+  type ScoutingPosition,
+} from "@/components/scouting/form/fields/match-info/ScoutingPositionField";
+import TeamAutocompleteField from "@/components/scouting/form/fields/match-info/TeamAutocompleteField";
 import QuestionnaireSchemaReference from "@/components/scouting-projects/pages/QuestionnaireSchemaReference";
 import { useAuth } from "@/components/app/providers/AuthProvider";
 import { useSyncMode } from "@/components/app/providers/SyncModeProvider";
 import { getCurrentUserIdToken } from "@/lib/firebase/client/auth";
 import { useToast } from "@/lib/hooks/useToast";
 import { questionnaireSchema } from "@/lib/scouting/questionnaire/schema";
+import type {
+  QuestionnaireAnswers,
+  QuestionnaireDefinition,
+} from "@/lib/scouting/questionnaire/types";
+import type { TeamOption } from "@/lib/scouting/tba/loadEventTeams";
 import type {
   ProjectQuestionnaireDoc,
   ProjectQuestionnaireKind,
@@ -193,6 +210,137 @@ function getKindLabel(kind: ProjectQuestionnaireKind) {
   return kind === "match" ? "Match Scouting" : "Pit Scouting";
 }
 
+function QuestionnairePreviewSetupCard({
+  kind,
+  project,
+}: {
+  kind: ProjectQuestionnaireKind;
+  project: ScoutingProjectDoc & { id: string };
+}) {
+  const previewTeams = React.useMemo<TeamOption[]>(
+    () => [
+      {
+        key: "frc155",
+        team_number: 155,
+        nickname: "The TechnoNuts",
+        name: "The TechnoNuts",
+      },
+    ],
+    []
+  );
+  const previewScoutingPosition: ScoutingPosition = "red2";
+
+  return (
+    <Card variant="outlined">
+      <CardContent>
+        <Stack spacing={2.5}>
+          <Typography variant="h6" sx={{ fontWeight: 700 }}>
+            {kind === "match" ? "Match Setup" : "Setup"}
+          </Typography>
+
+          {kind === "match" ? (
+            <>
+              <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
+                <EventField
+                  value={project.eventKey}
+                  onChange={() => {}}
+                  disabled
+                />
+                <MatchNumberField value="12" onChange={() => {}} disabled />
+              </Stack>
+
+              <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
+                <ScoutingPositionField
+                  value={previewScoutingPosition}
+                  onChange={() => {}}
+                  disabled
+                />
+                <RobotPositionField
+                  value="center"
+                  onChange={() => {}}
+                  disabled
+                />
+              </Stack>
+
+              <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
+                <TextField
+                  select
+                  label="Team Presence"
+                  value="present"
+                  fullWidth
+                  size="small"
+                  disabled
+                >
+                  <MenuItem value="present">Present</MenuItem>
+                  <MenuItem value="absent">Absent</MenuItem>
+                  <MenuItem value="surrogate">Surrogate</MenuItem>
+                </TextField>
+
+                <div style={{ flex: 1 }} />
+              </Stack>
+
+              <TeamAutocompleteField
+                teams={previewTeams}
+                selectedTeamKey="frc155"
+                loading={false}
+                disabled
+                onChange={() => {}}
+              />
+            </>
+          ) : (
+            <>
+              <TextField
+                label="Event"
+                value={project.eventKey}
+                InputProps={{ readOnly: true }}
+                helperText="Pit scouting is tied to this project's event."
+              />
+
+              <TeamAutocompleteField
+                teams={previewTeams}
+                selectedTeamKey="frc155"
+                loading={false}
+                disabled
+                onChange={() => {}}
+              />
+            </>
+          )}
+        </Stack>
+      </CardContent>
+    </Card>
+  );
+}
+
+function buildPreviewDefinition({
+  name,
+  definitionText,
+}: {
+  name: string;
+  definitionText: string;
+}): QuestionnaireDefinition {
+  let parsedDefinition: unknown;
+
+  try {
+    parsedDefinition = JSON.parse(definitionText);
+  } catch (error) {
+    throw new Error(formatValidationError(error, definitionText));
+  }
+
+  const normalizedDefinition =
+    parsedDefinition && typeof parsedDefinition === "object"
+      ? {
+          ...(parsedDefinition as Record<string, unknown>),
+          name: name.trim() || "Preview Questionnaire",
+        }
+      : parsedDefinition;
+
+  try {
+    return questionnaireSchema.parse(normalizedDefinition);
+  } catch (error) {
+    throw new Error(formatValidationError(error));
+  }
+}
+
 export default function ProjectQuestionnaireBuilderPageContent({
   project,
   kind,
@@ -217,6 +365,14 @@ export default function ProjectQuestionnaireBuilderPageContent({
   );
   const [isSaving, setIsSaving] = React.useState(false);
   const [saveError, setSaveError] = React.useState<string | null>(null);
+  const [previewDefinition, setPreviewDefinition] =
+    React.useState<QuestionnaireDefinition | null>(
+      editableQuestionnaire?.definition ?? null
+    );
+  const [previewAnswers, setPreviewAnswers] =
+    React.useState<QuestionnaireAnswers>({});
+  const [previewError, setPreviewError] = React.useState<string | null>(null);
+  const [previewLoading, setPreviewLoading] = React.useState(false);
 
   React.useEffect(() => {
     setName(editableQuestionnaire?.name ?? "");
@@ -226,6 +382,10 @@ export default function ProjectQuestionnaireBuilderPageContent({
         : ""
     );
     setSaveError(null);
+    setPreviewDefinition(editableQuestionnaire?.definition ?? null);
+    setPreviewAnswers({});
+    setPreviewError(null);
+    setPreviewLoading(false);
   }, [editableQuestionnaire]);
 
   const isDirty = React.useMemo(() => {
@@ -350,6 +510,32 @@ export default function ProjectQuestionnaireBuilderPageContent({
     } finally {
       setIsSaving(false);
     }
+  };
+
+  const handleRefreshPreview = async () => {
+    try {
+      setPreviewLoading(true);
+      setPreviewError(null);
+
+      await new Promise((resolve) => window.setTimeout(resolve, 350));
+
+      const nextDefinition = buildPreviewDefinition({ name, definitionText });
+      setPreviewDefinition(nextDefinition);
+      setPreviewAnswers({});
+    } catch (error) {
+      console.error("Failed to refresh questionnaire preview:", error);
+      setPreviewError(
+        error instanceof Error
+          ? error.message
+          : "Could not refresh questionnaire preview."
+      );
+    } finally {
+      setPreviewLoading(false);
+    }
+  };
+
+  const handleClearPreview = () => {
+    setPreviewAnswers({});
   };
 
   if (loading) {
@@ -630,10 +816,86 @@ export default function ProjectQuestionnaireBuilderPageContent({
               </Stack>
             </AccordionSummary>
             <AccordionDetails>
-              <Alert severity="info">
-                Preview UI coming soon. This panel will show a live rendering of
-                the current questionnaire definition.
-              </Alert>
+              <Stack spacing={2}>
+                <Stack
+                  direction={{ xs: "column", sm: "row" }}
+                  spacing={1}
+                  alignItems={{ xs: "stretch", sm: "center" }}
+                >
+                  <Typography color="text.secondary" sx={{ mr: "auto" }}>
+                    Refresh the preview manually to render the current JSON
+                    definition.
+                  </Typography>
+
+                  <Button
+                    variant="outlined"
+                    onClick={() => void handleRefreshPreview()}
+                    disabled={previewLoading}
+                  >
+                    {previewLoading ? "Refreshing..." : "Refresh Preview"}
+                  </Button>
+                </Stack>
+
+                {previewError ? (
+                  <Alert severity="error" sx={{ whiteSpace: "pre-line" }}>
+                    {previewError}
+                  </Alert>
+                ) : null}
+
+                {previewLoading ? (
+                  <Stack spacing={2}>
+                    <Skeleton variant="rounded" height={84} />
+                    <Skeleton variant="rounded" height={190} />
+                    <Skeleton variant="rounded" height={190} />
+                  </Stack>
+                ) : previewDefinition ? (
+                  <Stack spacing={2}>
+                    <Paper
+                      variant="outlined"
+                      sx={{ p: 2.5, borderRadius: 2.5 }}
+                    >
+                      <Stack spacing={0.75}>
+                        <Typography variant="h5" sx={{ fontWeight: 700 }}>
+                          {previewDefinition.name}
+                        </Typography>
+                        {previewDefinition.description ? (
+                          <Typography color="text.secondary">
+                            {previewDefinition.description}
+                          </Typography>
+                        ) : null}
+                      </Stack>
+                    </Paper>
+
+                    <QuestionnairePreviewSetupCard
+                      kind={kind}
+                      project={project}
+                    />
+
+                    <QuestionnaireForm
+                      definition={previewDefinition}
+                      answers={previewAnswers}
+                      onAnswersChange={setPreviewAnswers}
+                      onSubmit={async () => {}}
+                      showSubmitButton={false}
+                    />
+
+                    <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
+                      <Button
+                        variant="outlined"
+                        onClick={handleClearPreview}
+                        disabled={Object.keys(previewAnswers).length === 0}
+                      >
+                        Clear
+                      </Button>
+                    </Stack>
+                  </Stack>
+                ) : (
+                  <Alert severity="info">
+                    Refresh the preview to render the current questionnaire
+                    definition.
+                  </Alert>
+                )}
+              </Stack>
             </AccordionDetails>
           </Accordion>
         </Stack>

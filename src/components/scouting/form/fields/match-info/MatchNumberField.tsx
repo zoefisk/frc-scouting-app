@@ -7,12 +7,14 @@ type Props = {
   value: string;
   onChange: (value: string) => void;
   maxMatchNumber?: number | null;
+  disabled?: boolean;
 };
 
 export default function MatchNumberField({
   value,
   onChange,
   maxMatchNumber = null,
+  disabled = false,
 }: Props) {
   const num = value === "" ? 0 : Number(value);
   const isAtMin = num <= 1;
@@ -69,7 +71,7 @@ export default function MatchNumberField({
         <IconButton
           size="small"
           onClick={decrement}
-          disabled={isAtMin}
+          disabled={disabled || isAtMin}
           aria-label="Decrease match number"
           sx={{ width: 32, height: 32, borderRadius: 1.5 }}
         >
@@ -82,6 +84,7 @@ export default function MatchNumberField({
           placeholder="##"
           variant="outlined"
           size="small"
+          disabled={disabled}
           inputProps={{
             inputMode: "numeric",
             pattern: "[0-9]*",
@@ -122,7 +125,7 @@ export default function MatchNumberField({
         <IconButton
           size="small"
           onClick={increment}
-          disabled={isAtMax}
+          disabled={disabled || isAtMax}
           aria-label="Increase match number"
           sx={{ width: 32, height: 32, borderRadius: 1.5 }}
         >
