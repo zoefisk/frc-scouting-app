@@ -248,6 +248,7 @@ function getAssignmentColumns(
   scouterOptions: string[],
   editable: boolean,
   coverageByMatch: ProjectMatchCoverageByMatch,
+  coverageLoaded: boolean,
   qualificationMatches: RawTbaMatch[]
 ): GridColDef<DisplayRow>[] {
   const slotConfigs =
@@ -277,6 +278,7 @@ function getAssignmentColumns(
         ? slotHasRecordedData(config.slot, matchCoverage.positionsWithData)
         : false;
       const showMissingWarning =
+        coverageLoaded &&
         Boolean(assignedName) &&
         !hasSlotData &&
         hasNextQualificationMatchStarted(
@@ -941,6 +943,7 @@ export default function ScoutingSchedule({
         normalizedWorkingScouterNames,
         isEditMode && canEdit,
         coverageByMatch,
+        !isLoadingCoverage,
         qualificationMatches
       ),
       {
@@ -978,6 +981,7 @@ export default function ScoutingSchedule({
       canEdit,
       coverageByMatch,
       effectiveSchedule?.mode,
+      isLoadingCoverage,
       isEditMode,
       normalizedWorkingScouterNames,
       project.id,
@@ -1114,7 +1118,6 @@ export default function ScoutingSchedule({
       {project.dataMode !== "pit" ? (
         <Accordion
           disableGutters
-          defaultExpanded
           disabled={!hasMatchQuestionnaire}
           sx={accordionSx}
         >
