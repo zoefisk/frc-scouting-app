@@ -1,5 +1,5 @@
 import { notFound } from "next/navigation";
-import { Alert, Stack } from "@mui/material";
+import { Alert, AlertTitle, Stack } from "@mui/material";
 
 import PageShell from "@/components/app/layout/PageShell";
 import ProjectTeamInfoCards from "@/components/scouting-projects/analysis/ProjectTeamInfoCards";
@@ -57,6 +57,26 @@ export default async function ProjectTeamAnalysisPage({ params }: Props) {
             charts and raw response sections are already structured so we can
             swap in real project-derived metrics next.
           </Alert>
+
+          {(overview.missingScouting.missingMatchNumbers.length > 0 ||
+            overview.missingScouting.missingPit) && (
+            <Alert severity="warning">
+              <AlertTitle>Missing Scouting Data</AlertTitle>
+              {overview.missingScouting.missingMatchNumbers.length > 0 && (
+                <div>
+                  No match scouting entry for:{" "}
+                  {overview.missingScouting.missingMatchNumbers
+                    .map((n) => `Q${n}`)
+                    .join(", ")}
+                </div>
+              )}
+              {overview.missingScouting.missingPit && (
+                <div>
+                  No pit scouting entry has been submitted for this team.
+                </div>
+              )}
+            </Alert>
+          )}
 
           <Stack
             direction={{ xs: "column", xl: "row" }}

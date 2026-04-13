@@ -50,6 +50,11 @@ export type ProjectTeamRadarSeries = {
   summary: TeamRadarSummary;
 };
 
+export type ProjectTeamMissingScouting = {
+  missingMatchNumbers: number[];
+  missingPit: boolean;
+};
+
 export type ProjectTeamAnalysisOverview = {
   teamKey: string;
   teamNumber: number;
@@ -69,6 +74,7 @@ export type ProjectTeamAnalysisOverview = {
   radarSampleSize: number;
   matchRawTable: ProjectTeamRawTable | null;
   pitRawTable: ProjectTeamRawTable | null;
+  missingScouting: ProjectTeamMissingScouting;
 };
 
 function teamKeyToNumber(teamKey: string): number {
@@ -274,13 +280,31 @@ export async function buildProjectTeamAnalysisOverview(
     "tower",
   ]);
 
-  const performancePoints = teamMatches.map((match) => ({
+  const playedMatches = teamMatches.filter((match) => match.blueScore >= 0);
+
+  const performancePoints = playedMatches.map((match) => ({
     matchNumber: match.matchNumber,
     totalScore:
       match.allianceColor === "blue" ? match.blueScore : match.redScore,
     result: match.result,
     allianceColor: match.allianceColor,
   }));
+
+  const playedMatchNumbers = new Set(playedMatches.map((m) => m.matchNumber));
+  const scoutedMatchNumbers = new Set(
+    matchEntries.map((e) => e.matchNumber).filter((n): n is number => n != null)
+  );
+  const missingScouting: ProjectTeamMissingScouting = {
+    missingMatchNumbers: hasMatchData(project.dataMode)
+      ? [...playedMatchNumbers]
+          .filter((n) => !scoutedMatchNumbers.has(n))
+          .sort((a, b) => a - b)
+      : [],
+    missingPit:
+      hasPitData(project.dataMode) &&
+      playedMatches.length > 0 &&
+      pitEntries.length === 0,
+  };
 
   const averageOfficialScore =
     performancePoints.length > 0
@@ -362,5 +386,6 @@ export async function buildProjectTeamAnalysisOverview(
           "pit"
         )
       : null,
+    missingScouting,
   };
 }
