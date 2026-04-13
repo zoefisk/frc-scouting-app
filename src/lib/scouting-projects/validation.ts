@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { hasMatchData } from "@/lib/scouting-projects/types";
 
 export const MIN_SCOUTING_PROJECT_YEAR = 2015;
 export const MIN_SCOUTING_PROJECT_NAME_LENGTH = 5;
@@ -62,7 +63,7 @@ export const createScoutingProjectInputSchema = z
     formMode: projectFormModeSchema,
   })
   .superRefine((data, ctx) => {
-    const usesMatchData = data.dataMode === "match" || data.dataMode === "both";
+    const usesMatchData = hasMatchData(data.dataMode);
 
     if (usesMatchData && data.matchCollectionMode == null) {
       ctx.addIssue({

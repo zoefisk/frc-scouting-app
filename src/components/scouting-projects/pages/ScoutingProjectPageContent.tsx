@@ -21,8 +21,12 @@ import QrCodeScannerIcon from "@mui/icons-material/QrCodeScanner";
 import SettingsIcon from "@mui/icons-material/Settings";
 
 import ScoutingSchedule from "@/components/scouting-projects/dashboard/ScoutingSchedule";
-import type { ScoutingProjectDoc } from "@/lib/scouting-projects/types";
-import { getProjectMemberRole } from "@/lib/scouting-projects/types";
+import {
+  getProjectMemberRole,
+  hasMatchData,
+  hasPitData,
+  type ScoutingProjectDoc,
+} from "@/lib/scouting-projects/types";
 import type { ProjectEventOverview } from "@/lib/scouting-projects/eventOverview";
 import CopyLinkMenu from "@/components/scouting-projects/dashboard/scouting-schedule/CopyLinkMenu";
 import NoAccess from "@/components/auth/NoAccess";
@@ -252,11 +256,14 @@ export default function ScoutingProjectPageContent({
 
   const renderedQuickActions = quickActions
     .filter((action) => {
-      if (project.dataMode === "match" && action.title === "Pit Scouting") {
+      if (!hasPitData(project.dataMode) && action.title === "Pit Scouting") {
         return false;
       }
 
-      if (project.dataMode === "pit" && action.title === "Match Scouting") {
+      if (
+        !hasMatchData(project.dataMode) &&
+        action.title === "Match Scouting"
+      ) {
         return false;
       }
 

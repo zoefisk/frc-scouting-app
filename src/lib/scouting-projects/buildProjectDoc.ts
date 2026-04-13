@@ -1,5 +1,9 @@
 import type { CreateScoutingProjectInput } from "./validation";
-import { ScoutingProjectDoc } from "@/lib/scouting-projects/types";
+import {
+  hasMatchData,
+  hasPitData,
+  ScoutingProjectDoc,
+} from "@/lib/scouting-projects/types";
 import {
   generateInviteCodeGrouped,
   generateInviteLinkToken,
@@ -27,11 +31,11 @@ export function buildScoutingProjectDoc({
   const activeQuestionnaireIds: ScoutingProjectDoc["activeQuestionnaireIds"] =
     {};
 
-  if (input.dataMode === "match" || input.dataMode === "both") {
+  if (hasMatchData(input.dataMode)) {
     activeQuestionnaireIds.match = "match-scouting";
   }
 
-  if (input.dataMode === "pit" || input.dataMode === "both") {
+  if (hasPitData(input.dataMode)) {
     activeQuestionnaireIds.pit = "pit-scouting";
   }
 

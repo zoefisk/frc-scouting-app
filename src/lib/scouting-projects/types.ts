@@ -65,6 +65,14 @@ export type ScoutingProjectDoc = {
   scoutingSchedule?: ScoutingScheduleDoc;
 };
 
+export function hasMatchData(dataMode: ProjectDataMode): boolean {
+  return dataMode === "match" || dataMode === "both";
+}
+
+export function hasPitData(dataMode: ProjectDataMode): boolean {
+  return dataMode === "pit" || dataMode === "both";
+}
+
 export function getProjectMemberRole(
   project: Pick<ScoutingProjectDoc, "createdByUid" | "members">,
   uid: string | null | undefined

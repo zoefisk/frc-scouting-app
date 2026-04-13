@@ -5,7 +5,11 @@ import { useRouter } from "next/navigation";
 
 import { useSyncMode } from "@/components/app/providers/SyncModeProvider";
 import { projectHasConfiguredQuestionnaire } from "@/lib/scouting-projects/questionnaires/availability";
-import type { ScoutingProjectDoc } from "@/lib/scouting-projects/types";
+import {
+  hasMatchData,
+  hasPitData,
+  type ScoutingProjectDoc,
+} from "@/lib/scouting-projects/types";
 
 type Props = {
   project: Pick<
@@ -18,14 +22,14 @@ function getProjectWarmRoutes(project: Props["project"]) {
   const routes = [`/scouting-projects/${project.id}`];
 
   if (
-    (project.dataMode === "match" || project.dataMode === "both") &&
+    hasMatchData(project.dataMode) &&
     projectHasConfiguredQuestionnaire(project, "match")
   ) {
     routes.push(`/scouting-projects/${project.id}/match-scouting`);
   }
 
   if (
-    (project.dataMode === "pit" || project.dataMode === "both") &&
+    hasPitData(project.dataMode) &&
     projectHasConfiguredQuestionnaire(project, "pit")
   ) {
     routes.push(`/scouting-projects/${project.id}/pit-scouting`);

@@ -26,6 +26,7 @@ import {
   MIN_SCOUTING_PROJECT_YEAR,
   type CreateScoutingProjectInput,
 } from "@/lib/scouting-projects/validation";
+import { hasMatchData } from "@/lib/scouting-projects/types";
 import { getCurrentUserIdToken } from "@/lib/firebase/client/auth";
 import CreateExampleProjectButton from "@/components/scouting-projects/CreateExampleProjectButton";
 import ProjectBuilderEventField from "@/components/scouting-projects/pages/new/ProjectBuilderEventField";
@@ -59,7 +60,7 @@ const INITIAL_FORM_STATE: FormState = {
 };
 
 function buildInput(form: FormState, selectedTeams: TeamOption[]): unknown {
-  const usesMatchData = form.dataMode === "match" || form.dataMode === "both";
+  const usesMatchData = hasMatchData(form.dataMode);
 
   return {
     name: form.name.trim(),
@@ -104,7 +105,7 @@ export default function ScoutingProjectBuilder() {
   const [hasSaved, setHasSaved] = React.useState(false);
   const eventKeyRef = React.useRef(form.eventKey);
 
-  const usesMatchData = form.dataMode === "match" || form.dataMode === "both";
+  const usesMatchData = hasMatchData(form.dataMode);
   const showUnsavedChangesGuard =
     (isDirty(form) || selectedTeams.length > 0) && !hasSaved;
 

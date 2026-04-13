@@ -71,7 +71,11 @@ import type {
   ScoutingScheduleMode,
   ScoutingScheduleSlot,
 } from "@/lib/scouting-projects/types";
-import { getProjectMemberRole } from "@/lib/scouting-projects/types";
+import {
+  getProjectMemberRole,
+  hasMatchData,
+  hasPitData,
+} from "@/lib/scouting-projects/types";
 import {
   countRecordedScheduleSlots,
   hasNextQualificationMatchStarted,
@@ -510,7 +514,7 @@ export default function ScoutingSchedule({
       }
     }
 
-    if (project.dataMode === "pit") {
+    if (!hasMatchData(project.dataMode)) {
       setCoverageByMatch({});
       return;
     }
@@ -551,7 +555,7 @@ export default function ScoutingSchedule({
       }
     }
 
-    if (project.dataMode === "match") {
+    if (!hasPitData(project.dataMode)) {
       setEventTeams([]);
       setPitTeamsError(null);
       return;
@@ -598,7 +602,7 @@ export default function ScoutingSchedule({
       }
     }
 
-    if (project.dataMode === "match") {
+    if (!hasPitData(project.dataMode)) {
       setPitCoverageByTeam({});
       return;
     }
@@ -1086,7 +1090,7 @@ export default function ScoutingSchedule({
   const summaryMode = effectiveSchedule?.mode ?? workingMode;
 
   if (
-    project.dataMode !== "pit" &&
+    hasMatchData(project.dataMode) &&
     hasMatchQuestionnaire &&
     !canEdit &&
     !hasAnyScheduleSetup
@@ -1622,7 +1626,7 @@ export default function ScoutingSchedule({
         </Accordion>
       ) : null}
 
-      {project.dataMode !== "match" ? (
+      {hasPitData(project.dataMode) ? (
         <Accordion
           disableGutters
           disabled={!hasPitQuestionnaire}

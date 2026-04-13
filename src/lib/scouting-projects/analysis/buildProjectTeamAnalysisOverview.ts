@@ -8,7 +8,11 @@ import {
 } from "@/lib/firebase/server/entries";
 import type { QuestionnaireDefinition } from "@/lib/scouting/questionnaire/types";
 import { resolveProjectQuestionnaireServer } from "@/lib/scouting-projects/questionnaires/resolveProjectQuestionnaireServer";
-import type { ScoutingProjectDoc } from "@/lib/scouting-projects/types";
+import {
+  hasMatchData,
+  hasPitData,
+  type ScoutingProjectDoc,
+} from "@/lib/scouting-projects/types";
 import {
   getEvent,
   getEventRankings,
@@ -340,25 +344,23 @@ export async function buildProjectTeamAnalysisOverview(
       },
     ],
     radarSampleSize: radarSummary.sampleSize,
-    matchRawTable:
-      project.dataMode === "pit"
-        ? null
-        : buildRawTable(
-            "Match Scouting Raw Data",
-            "Project-scoped raw match scouting responses for this team.",
-            matchQuestionnaire,
-            matchEntries,
-            "match"
-          ),
-    pitRawTable:
-      project.dataMode === "match"
-        ? null
-        : buildRawTable(
-            "Pit Scouting Raw Data",
-            "Project-scoped raw pit scouting responses for this team.",
-            pitQuestionnaire,
-            pitEntries,
-            "pit"
-          ),
+    matchRawTable: hasMatchData(project.dataMode)
+      ? buildRawTable(
+          "Match Scouting Raw Data",
+          "Project-scoped raw match scouting responses for this team.",
+          matchQuestionnaire,
+          matchEntries,
+          "match"
+        )
+      : null,
+    pitRawTable: hasPitData(project.dataMode)
+      ? buildRawTable(
+          "Pit Scouting Raw Data",
+          "Project-scoped raw pit scouting responses for this team.",
+          pitQuestionnaire,
+          pitEntries,
+          "pit"
+        )
+      : null,
   };
 }
