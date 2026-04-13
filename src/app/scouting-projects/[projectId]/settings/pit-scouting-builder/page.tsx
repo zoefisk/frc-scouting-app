@@ -36,7 +36,7 @@ export default async function PitScoutingBuilderPage({ params }: Props) {
       : null;
 
   return (
-    <PageShell>
+    <PageShell width={"xl"}>
       <Stack spacing={2}>
         <ScoutingProjectBreadcrumbs
           items={[
