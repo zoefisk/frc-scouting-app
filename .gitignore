@@ -44,3 +44,6 @@ next-env.d.ts
 # .zip
 *.zip
 /.claude
+
+*storybook.log
+storybook-static
