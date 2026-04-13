@@ -30,7 +30,6 @@ export default async function JoinProjectPage({ params }: Props) {
           status: project.status,
           accessMode: project.accessMode,
           dataMode: project.dataMode,
-          formMode: project.formMode,
           inviteLinkToken: project.inviteLinkToken,
         }}
       />

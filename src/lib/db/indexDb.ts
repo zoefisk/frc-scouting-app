@@ -76,7 +76,6 @@ export type OfflineProjectBundleRecord = {
   eventKey: string;
   year: number;
   dataMode: string;
-  formMode: string;
   accessMode: string;
   status: string;
   activeQuestionnaireIds?: {

@@ -146,7 +146,6 @@ export async function updateScoutingProjectClient(
       | "lockAllianceSelectorEditing"
       | "dataMode"
       | "matchCollectionMode"
-      | "formMode"
       | "memberUids"
       | "members"
       | "activeQuestionnaireIds"

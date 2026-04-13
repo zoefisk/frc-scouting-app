@@ -11,7 +11,6 @@ import { saveJoinedScoutingProject } from "@/lib/db/projects";
 import type {
   ProjectAccessMode,
   ProjectDataMode,
-  ProjectFormMode,
   ProjectStatus,
 } from "@/lib/scouting-projects/types";
 import { addJoinedProjectIdToUser } from "@/lib/firebase/client/users";
@@ -25,7 +24,6 @@ type JoinableProjectSummary = {
   status: ProjectStatus;
   accessMode: ProjectAccessMode;
   dataMode: ProjectDataMode;
-  formMode: ProjectFormMode;
   inviteLinkToken: string;
 };
 
@@ -66,7 +64,6 @@ export default function JoinProjectPageClient({ project }: Props) {
         status: project.status,
         accessMode: project.accessMode,
         dataMode: project.dataMode,
-        formMode: project.formMode,
         inviteLinkToken: project.inviteLinkToken,
         joinedAt: new Date().toISOString(),
       });
@@ -106,8 +103,7 @@ export default function JoinProjectPageClient({ project }: Props) {
         </Typography>
 
         <Typography color="text.secondary">
-          This project uses {project.dataMode} scouting and {project.formMode}{" "}
-          forms.
+          This project uses {project.dataMode} scouting.
         </Typography>
 
         {!effectiveOnline ? (

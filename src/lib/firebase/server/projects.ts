@@ -208,7 +208,6 @@ export async function updateScoutingProjectServer(
       | "lockAllianceSelectorEditing"
       | "dataMode"
       | "matchCollectionMode"
-      | "formMode"
       | "memberUids"
       | "members"
       | "activeQuestionnaireIds"

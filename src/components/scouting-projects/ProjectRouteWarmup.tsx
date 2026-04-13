@@ -14,7 +14,7 @@ import {
 type Props = {
   project: Pick<
     ScoutingProjectDoc,
-    "projectId" | "dataMode" | "formMode" | "activeQuestionnaireIds"
+    "projectId" | "dataMode" | "activeQuestionnaireIds"
   > & { id: string };
 };
 

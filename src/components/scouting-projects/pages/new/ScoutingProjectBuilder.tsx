@@ -44,7 +44,6 @@ type FormState = {
   accessMode: CreateScoutingProjectInput["accessMode"];
   dataMode: CreateScoutingProjectInput["dataMode"];
   matchCollectionMode: CreateScoutingProjectInput["matchCollectionMode"];
-  formMode: CreateScoutingProjectInput["formMode"];
 };
 
 type FieldErrors = Partial<Record<keyof FormState | "teamKeys", string>>;
@@ -56,7 +55,6 @@ const INITIAL_FORM_STATE: FormState = {
   accessMode: "authenticated",
   dataMode: "match",
   matchCollectionMode: "robot",
-  formMode: "custom",
 };
 
 function buildInput(form: FormState, selectedTeams: TeamOption[]): unknown {
@@ -70,7 +68,6 @@ function buildInput(form: FormState, selectedTeams: TeamOption[]): unknown {
     accessMode: form.accessMode,
     dataMode: form.dataMode,
     matchCollectionMode: usesMatchData ? form.matchCollectionMode : null,
-    formMode: form.formMode,
   };
 }
 
@@ -561,28 +558,6 @@ export default function ScoutingProjectBuilder() {
                   <MenuItem value="match">Match</MenuItem>
                   <MenuItem value="pit">Pit</MenuItem>
                   <MenuItem value="both">Both</MenuItem>
-                </TextField>
-              </Stack>
-
-              <Stack spacing={1} sx={{ flex: 1 }}>
-                <FieldLabelWithHelp
-                  label="Form Mode"
-                  tooltip="Use the default questionnaire setup or start from a custom form configuration."
-                />
-
-                <TextField
-                  select
-                  fullWidth
-                  value={form.formMode}
-                  onChange={(event) =>
-                    updateForm(
-                      "formMode",
-                      event.target.value as FormState["formMode"]
-                    )
-                  }
-                >
-                  <MenuItem value="custom">Custom</MenuItem>
-                  <MenuItem value="default">Default</MenuItem>
                 </TextField>
               </Stack>
             </Stack>

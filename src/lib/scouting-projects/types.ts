@@ -1,7 +1,6 @@
 export type ProjectAccessMode = "anonymous" | "authenticated";
 export type ProjectDataMode = "match" | "pit" | "both";
 export type MatchCollectionMode = "robot" | "alliance";
-export type ProjectFormMode = "default" | "custom";
 export type ProjectStatus = "active" | "inactive";
 export type ScoutingScheduleMode = MatchCollectionMode;
 export type ProjectMemberRole = "owner" | "admin" | "member";
@@ -49,7 +48,6 @@ export type ScoutingProjectDoc = {
   lockAllianceSelectorEditing: boolean;
   dataMode: ProjectDataMode;
   matchCollectionMode: MatchCollectionMode | null;
-  formMode: ProjectFormMode;
 
   createdByUid: string;
   memberUids: string[];

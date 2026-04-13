@@ -1,9 +1,5 @@
 import type { CreateScoutingProjectInput } from "./validation";
-import {
-  hasMatchData,
-  hasPitData,
-  ScoutingProjectDoc,
-} from "@/lib/scouting-projects/types";
+import { ScoutingProjectDoc } from "@/lib/scouting-projects/types";
 import {
   generateInviteCodeGrouped,
   generateInviteLinkToken,
@@ -28,17 +24,6 @@ export function buildScoutingProjectDoc({
 }: BuildScoutingProjectDocArgs): ScoutingProjectDoc {
   const teamKeys = uniqueSortedStrings(input.teamKeys);
 
-  const activeQuestionnaireIds: ScoutingProjectDoc["activeQuestionnaireIds"] =
-    {};
-
-  if (hasMatchData(input.dataMode)) {
-    activeQuestionnaireIds.match = "match-scouting";
-  }
-
-  if (hasPitData(input.dataMode)) {
-    activeQuestionnaireIds.pit = "pit-scouting";
-  }
-
   return {
     projectId,
     name: input.name.trim(),
@@ -53,9 +38,8 @@ export function buildScoutingProjectDoc({
     lockAllianceSelectorEditing: false,
     dataMode: input.dataMode,
     matchCollectionMode: input.matchCollectionMode,
-    formMode: input.formMode,
 
-    activeQuestionnaireIds,
+    activeQuestionnaireIds: {},
 
     createdByUid,
     memberUids: [createdByUid],

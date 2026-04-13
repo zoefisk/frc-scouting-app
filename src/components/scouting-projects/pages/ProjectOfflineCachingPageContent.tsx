@@ -278,7 +278,6 @@ export default function ProjectOfflineCachingPageContent({ project }: Props) {
               <Chip label={project.eventKey} />
               <Chip label={String(project.year)} />
               <Chip label={project.dataMode} />
-              <Chip label={project.formMode} />
             </Stack>
 
             <Stack direction="row" spacing={1} flexWrap="wrap">
@@ -324,11 +323,7 @@ export default function ProjectOfflineCachingPageContent({ project }: Props) {
                   `${offlineProject.questionnaireCount} questionnaire${offlineProject.questionnaireCount === 1 ? "" : "s"}`,
                   `Updated ${new Date(offlineProject.lastUpdatedAt).toLocaleString()}`,
                 ]
-              : [
-                  project.formMode === "custom"
-                    ? "Custom questionnaires supported"
-                    : "Built-in questionnaires",
-                ]
+              : ["Not cached yet"]
           }
           onCache={() => void handleCacheAll()}
           onRemove={() => void handleRemoveProject()}

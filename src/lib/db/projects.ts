@@ -4,7 +4,6 @@ import { getAppSetting, saveAppSetting } from "@/lib/db/indexDb";
 import type {
   ProjectAccessMode,
   ProjectDataMode,
-  ProjectFormMode,
   ProjectStatus,
 } from "@/lib/scouting-projects/types";
 
@@ -21,7 +20,6 @@ export type JoinedScoutingProjectRecord = {
   status: ProjectStatus;
   accessMode: ProjectAccessMode;
   dataMode: ProjectDataMode;
-  formMode: ProjectFormMode;
   inviteLinkToken: string;
   joinedAt: string;
   lastOpenedAt: string;

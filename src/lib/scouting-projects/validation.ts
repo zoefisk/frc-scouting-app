@@ -9,8 +9,6 @@ export const MAX_SCOUTING_PROJECT_YEAR = new Date().getFullYear();
 export const projectAccessModeSchema = z.enum(["anonymous", "authenticated"]);
 export const projectDataModeSchema = z.enum(["match", "pit", "both"]);
 export const projectMatchCollectionModeSchema = z.enum(["robot", "alliance"]);
-export const projectFormModeSchema = z.enum(["default", "custom"]);
-
 export const createScoutingProjectInputSchema = z
   .object({
     name: z
@@ -59,8 +57,6 @@ export const createScoutingProjectInputSchema = z
     dataMode: projectDataModeSchema,
 
     matchCollectionMode: projectMatchCollectionModeSchema.nullable(),
-
-    formMode: projectFormModeSchema,
   })
   .superRefine((data, ctx) => {
     const usesMatchData = hasMatchData(data.dataMode);
@@ -116,8 +112,7 @@ export function mapCreateScoutingProjectIssuesToFieldErrors(
       path === "year" ||
       path === "accessMode" ||
       path === "dataMode" ||
-      path === "matchCollectionMode" ||
-      path === "formMode"
+      path === "matchCollectionMode"
     ) {
       nextErrors[path] = issue.message;
     }

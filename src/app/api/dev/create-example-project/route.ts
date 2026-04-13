@@ -31,7 +31,6 @@ export async function POST(request: Request) {
         accessMode: "authenticated",
         dataMode: "match",
         matchCollectionMode: "robot",
-        formMode: "custom",
       },
       projectId,
       createdByUid: uid,

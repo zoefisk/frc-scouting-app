@@ -1,14 +1,14 @@
 import { notFound } from "next/navigation";
 
 import PageShell from "@/components/app/layout/PageShell";
-import NoAccess from "@/components/auth/NoAccess";
 import MatchScoutingPageContent from "@/components/scouting/pages/MatchScoutingPageContent";
 import ProjectAccessGuard from "@/components/scouting-projects/ProjectAccessGuard";
 import ScoutingProjectBreadcrumbs from "@/components/scouting-projects/ScoutingProjectBreadcrumbs";
 import { getScoutingProjectServer } from "@/lib/firebase/server/projects";
 import {
-  getMissingProjectQuestionnaireMessage,
+  getProjectQuestionnaireId,
   projectHasConfiguredQuestionnaire,
+  projectSupportsQuestionnaireKind,
 } from "@/lib/scouting-projects/questionnaires/availability";
 import { resolveProjectQuestionnaireServer } from "@/lib/scouting-projects/questionnaires/resolveProjectQuestionnaireServer";
 import { Stack } from "@mui/material";
@@ -35,35 +35,22 @@ export default async function ProjectMatchScoutingPage({
     notFound();
   }
 
-  if (!projectHasConfiguredQuestionnaire(project, "match")) {
-    return (
-      <PageShell width="md">
-        <ProjectAccessGuard project={project}>
-          <Stack spacing={2}>
-            <ScoutingProjectBreadcrumbs
-              items={[
-                { label: "Scouting Projects", href: "/scouting-projects" },
-                {
-                  label: project.name,
-                  href: `/scouting-projects/${project.id}`,
-                },
-                { label: "Match Scouting" },
-              ]}
-            />
-            <NoAccess
-              title="Match scouting is not ready yet."
-              description="This project uses a custom form, but its match scouting questionnaire has not been created yet."
-              note={getMissingProjectQuestionnaireMessage("match")}
-            />
-          </Stack>
-        </ProjectAccessGuard>
-      </PageShell>
-    );
+  if (!projectSupportsQuestionnaireKind(project, "match")) {
+    notFound();
   }
 
-  const questionnaire = await resolveProjectQuestionnaireServer(
-    project.activeQuestionnaireIds?.match
-  );
+  if (!projectHasConfiguredQuestionnaire(project, "match")) {
+    notFound();
+  }
+
+  const questionnaireId = getProjectQuestionnaireId(project, "match");
+
+  if (!questionnaireId) {
+    notFound();
+  }
+
+  const questionnaire =
+    await resolveProjectQuestionnaireServer(questionnaireId);
 
   if (!questionnaire) {
     notFound();

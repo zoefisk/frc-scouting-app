@@ -23,7 +23,6 @@ export async function downloadProjectBundle(projectId: string) {
     eventKey: project.eventKey,
     year: project.year,
     dataMode: project.dataMode,
-    formMode: project.formMode,
     accessMode: project.accessMode,
     status: project.status,
     activeQuestionnaireIds: project.activeQuestionnaireIds,

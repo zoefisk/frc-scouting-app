@@ -65,7 +65,6 @@ export default function CreateExampleProjectButton() {
           status: project.status,
           accessMode: project.accessMode,
           dataMode: project.dataMode,
-          formMode: project.formMode,
           inviteLinkToken: project.inviteLinkToken,
           joinedAt: new Date().toISOString(),
         });

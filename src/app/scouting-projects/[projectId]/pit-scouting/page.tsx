@@ -1,14 +1,14 @@
 import { notFound } from "next/navigation";
 
 import PageShell from "@/components/app/layout/PageShell";
-import NoAccess from "@/components/auth/NoAccess";
 import PitScoutingForm from "@/components/scouting/PitScoutingForm";
 import ProjectAccessGuard from "@/components/scouting-projects/ProjectAccessGuard";
 import ScoutingProjectBreadcrumbs from "@/components/scouting-projects/ScoutingProjectBreadcrumbs";
 import { getScoutingProjectServer } from "@/lib/firebase/server/projects";
 import {
-  getMissingProjectQuestionnaireMessage,
+  getProjectQuestionnaireId,
   projectHasConfiguredQuestionnaire,
+  projectSupportsQuestionnaireKind,
 } from "@/lib/scouting-projects/questionnaires/availability";
 import { resolveProjectQuestionnaireServer } from "@/lib/scouting-projects/questionnaires/resolveProjectQuestionnaireServer";
 import { Stack } from "@mui/material";
@@ -34,35 +34,22 @@ export default async function ProjectPitScoutingPage({
     notFound();
   }
 
-  if (!projectHasConfiguredQuestionnaire(project, "pit")) {
-    return (
-      <PageShell width="md">
-        <ProjectAccessGuard project={project}>
-          <Stack spacing={2}>
-            <ScoutingProjectBreadcrumbs
-              items={[
-                { label: "Scouting Projects", href: "/scouting-projects" },
-                {
-                  label: project.name,
-                  href: `/scouting-projects/${project.id}`,
-                },
-                { label: "Pit Scouting" },
-              ]}
-            />
-            <NoAccess
-              title="Pit scouting is not ready yet."
-              description="This project uses a custom form, but its pit scouting questionnaire has not been created yet."
-              note={getMissingProjectQuestionnaireMessage("pit")}
-            />
-          </Stack>
-        </ProjectAccessGuard>
-      </PageShell>
-    );
+  if (!projectSupportsQuestionnaireKind(project, "pit")) {
+    notFound();
   }
 
-  const questionnaire = await resolveProjectQuestionnaireServer(
-    project.activeQuestionnaireIds?.pit
-  );
+  if (!projectHasConfiguredQuestionnaire(project, "pit")) {
+    notFound();
+  }
+
+  const questionnaireId = getProjectQuestionnaireId(project, "pit");
+
+  if (!questionnaireId) {
+    notFound();
+  }
+
+  const questionnaire =
+    await resolveProjectQuestionnaireServer(questionnaireId);
 
   if (!questionnaire) {
     notFound();

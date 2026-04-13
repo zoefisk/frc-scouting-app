@@ -496,7 +496,6 @@ export default function ProjectQuestionnaireBuilderPageContent({
   const setupChips: { label: string; value: string }[] = [
     { label: "Event", value: `${project.eventKey} (${project.year})` },
     { label: "Data mode", value: project.dataMode },
-    { label: "Form mode", value: project.formMode },
     { label: "Access", value: project.accessMode },
     ...(kind === "match" && project.matchCollectionMode
       ? [{ label: "Collection mode", value: project.matchCollectionMode }]

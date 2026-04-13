@@ -9,6 +9,7 @@ import {
   Chip,
   CircularProgress,
   Stack,
+  Tooltip,
   Typography,
 } from "@mui/material";
 import Grid from "@mui/material/Grid";
@@ -203,10 +204,10 @@ function QuickActionCard({
           {disabledReason ? (
             <Typography
               variant="caption"
-              color="text.secondary"
-              sx={{ lineHeight: 1.2 }}
+              color="warning.main"
+              sx={{ lineHeight: 1.2, fontWeight: 500 }}
             >
-              Questionnaire not created yet
+              Not ready — configure in settings
             </Typography>
           ) : null}
         </Stack>
@@ -216,12 +217,17 @@ function QuickActionCard({
 
   if (disabled) {
     return (
-      <Card
-        elevation={0}
-        sx={{ width: "100%", bgcolor: "transparent", boxShadow: "none" }}
+      <Tooltip
+        title={disabledReason || "This feature is currently unavailable"}
+        arrow
       >
-        {card}
-      </Card>
+        <Card
+          elevation={0}
+          sx={{ width: "100%", bgcolor: "transparent", boxShadow: "none" }}
+        >
+          {card}
+        </Card>
+      </Tooltip>
     );
   }
 
