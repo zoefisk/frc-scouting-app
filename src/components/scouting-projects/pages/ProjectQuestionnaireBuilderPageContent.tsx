@@ -30,6 +30,7 @@ import { ZodError } from "zod";
 
 import NoAccess from "@/components/auth/NoAccess";
 import UnsavedChangesGuard from "@/components/app/guards/UnsavedChangesGuard";
+import JsonEditor from "@/components/common/JsonEditor";
 import QuestionnaireForm from "@/components/scouting/form/QuestionnaireForm";
 import EventField from "@/components/scouting/form/fields/match-info/EventField";
 import MatchNumberField from "@/components/scouting/form/fields/match-info/MatchNumberField";
@@ -57,111 +58,6 @@ import {
   getProjectMemberRole,
   type ScoutingProjectDoc,
 } from "@/lib/scouting-projects/types";
-
-// ─── Line-number JSON editor ──────────────────────────────────────────────────
-
-const LINE_HEIGHT = 20;
-const V_PAD = 8;
-
-function JsonEditorWithLineNumbers({
-  value,
-  onChange,
-  disabled,
-}: {
-  value: string;
-  onChange: (v: string) => void;
-  disabled?: boolean;
-}) {
-  const textareaRef = React.useRef<HTMLTextAreaElement>(null);
-  const gutterRef = React.useRef<HTMLDivElement>(null);
-
-  const lineCount = Math.max(1, value.split("\n").length);
-  const contentHeight = lineCount * LINE_HEIGHT + V_PAD * 2;
-  const editorHeight = Math.min(620, Math.max(400, contentHeight));
-
-  const syncScroll = React.useCallback(() => {
-    if (gutterRef.current && textareaRef.current) {
-      gutterRef.current.scrollTop = textareaRef.current.scrollTop;
-    }
-  }, []);
-
-  return (
-    <Box
-      sx={{
-        display: "flex",
-        height: editorHeight,
-        border: "1px solid",
-        borderColor: "divider",
-        borderRadius: 1,
-        overflow: "hidden",
-        fontFamily: "monospace",
-        fontSize: 13,
-        lineHeight: `${LINE_HEIGHT}px`,
-        transition: "height 0.1s ease",
-        "&:focus-within": {
-          outline: "2px solid",
-          outlineColor: "primary.main",
-          outlineOffset: -1,
-        },
-      }}
-    >
-      {/* Gutter */}
-      <Box
-        ref={gutterRef}
-        aria-hidden
-        sx={{
-          flexShrink: 0,
-          width: 44,
-          overflowY: "hidden",
-          bgcolor: "rgba(15,23,42,0.04)",
-          borderRight: "1px solid",
-          borderColor: "divider",
-          pt: `${V_PAD}px`,
-          pb: `${V_PAD}px`,
-          pr: 1,
-          textAlign: "right",
-          userSelect: "none",
-          color: "text.disabled",
-          fontSize: 12,
-          lineHeight: `${LINE_HEIGHT}px`,
-        }}
-      >
-        {Array.from({ length: lineCount }, (_, i) => (
-          <div key={i}>{i + 1}</div>
-        ))}
-      </Box>
-
-      {/* Textarea */}
-      <Box
-        component="textarea"
-        ref={textareaRef}
-        value={value}
-        onChange={(e: React.ChangeEvent<HTMLTextAreaElement>) =>
-          onChange(e.target.value)
-        }
-        onScroll={syncScroll}
-        disabled={disabled}
-        spellCheck={false}
-        autoCapitalize="off"
-        autoCorrect="off"
-        sx={{
-          flex: 1,
-          height: "100%",
-          resize: "none",
-          border: "none",
-          outline: "none",
-          fontFamily: "monospace",
-          fontSize: 13,
-          lineHeight: `${LINE_HEIGHT}px`,
-          p: `${V_PAD}px 12px`,
-          overflowY: "auto",
-          bgcolor: disabled ? "rgba(15,23,42,0.02)" : "background.paper",
-          color: "text.primary",
-        }}
-      />
-    </Box>
-  );
-}
 
 // ─── Validation error formatting ─────────────────────────────────────────────
 
@@ -365,6 +261,9 @@ export default function ProjectQuestionnaireBuilderPageContent({
   );
   const [isSaving, setIsSaving] = React.useState(false);
   const [saveError, setSaveError] = React.useState<string | null>(null);
+  const [liveValidationError, setLiveValidationError] = React.useState<
+    string | null
+  >(null);
   const [previewDefinition, setPreviewDefinition] =
     React.useState<QuestionnaireDefinition | null>(
       editableQuestionnaire?.definition ?? null
@@ -382,11 +281,30 @@ export default function ProjectQuestionnaireBuilderPageContent({
         : ""
     );
     setSaveError(null);
+    setLiveValidationError(null);
     setPreviewDefinition(editableQuestionnaire?.definition ?? null);
     setPreviewAnswers({});
     setPreviewError(null);
     setPreviewLoading(false);
   }, [editableQuestionnaire]);
+
+  React.useEffect(() => {
+    if (!editableQuestionnaire) {
+      setLiveValidationError(null);
+      return;
+    }
+
+    try {
+      buildPreviewDefinition({ name, definitionText });
+      setLiveValidationError(null);
+    } catch (error) {
+      setLiveValidationError(
+        error instanceof Error
+          ? error.message
+          : "Questionnaire definition is invalid."
+      );
+    }
+  }, [definitionText, editableQuestionnaire, name]);
 
   const isDirty = React.useMemo(() => {
     if (!editableQuestionnaire) return false;
@@ -758,12 +676,23 @@ export default function ProjectQuestionnaireBuilderPageContent({
                       >
                         Questionnaire Definition (JSON)
                       </Typography>
-                      <JsonEditorWithLineNumbers
+                      <JsonEditor
                         value={definitionText}
                         onChange={setDefinitionText}
                         disabled={!effectiveOnline || isSaving}
+                        showLineNumbers
                       />
                     </Box>
+
+                    {liveValidationError ? (
+                      <Alert severity="warning" sx={{ whiteSpace: "pre-line" }}>
+                        {liveValidationError}
+                      </Alert>
+                    ) : (
+                      <Alert severity="success">
+                        Questionnaire definition is valid.
+                      </Alert>
+                    )}
 
                     {saveError ? (
                       <Alert severity="error" sx={{ whiteSpace: "pre-line" }}>
