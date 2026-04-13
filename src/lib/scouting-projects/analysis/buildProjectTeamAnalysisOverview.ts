@@ -6,6 +6,7 @@ import {
   getProjectTeamPitQuestionnaireEntries,
   type QuestionnaireEntryDoc,
 } from "@/lib/firebase/server/entries";
+import { PERF_FIELDS } from "@/lib/scouting/performanceRatings";
 import type { QuestionnaireDefinition } from "@/lib/scouting/questionnaire/types";
 import { resolveProjectQuestionnaireServer } from "@/lib/scouting-projects/questionnaires/resolveProjectQuestionnaireServer";
 import {
@@ -208,24 +209,25 @@ function buildRawTable(
   };
 }
 
-function buildPlaceholderRadarSummary(teamNumber: number): TeamRadarSummary {
-  const seed = String(teamNumber)
-    .split("")
-    .reduce((sum, digit, index) => sum + Number(digit) * (index + 3), 11);
+function buildRadarSummaryFromEntries(
+  entries: QuestionnaireEntryDoc[]
+): TeamRadarSummary {
+  const presentEntries = entries.filter((e) => e.teamPresence === "present");
 
-  const metricValue = (offset: number) =>
-    Math.min(5, Math.max(1, ((seed + offset * 7) % 21) / 5 + 1));
+  function avgForField(fieldId: string): number {
+    const values = presentEntries
+      .map((e) => e.answers?.[fieldId])
+      .filter((v): v is number => typeof v === "number");
+    if (values.length === 0) return 0;
+    return values.reduce((sum, v) => sum + v, 0) / values.length;
+  }
 
   return {
-    sampleSize: 4,
-    metrics: [
-      { label: "Auto", value: Number(metricValue(1).toFixed(1)) },
-      { label: "Teleop", value: Number(metricValue(2).toFixed(1)) },
-      { label: "Defense", value: Number(metricValue(3).toFixed(1)) },
-      { label: "Reliability", value: Number(metricValue(4).toFixed(1)) },
-      { label: "Driver", value: Number(metricValue(5).toFixed(1)) },
-      { label: "Endgame", value: Number(metricValue(6).toFixed(1)) },
-    ],
+    sampleSize: presentEntries.length,
+    metrics: PERF_FIELDS.map((field) => ({
+      label: field.label,
+      value: avgForField(field.id),
+    })),
   };
 }
 
@@ -322,7 +324,7 @@ export async function buildProjectTeamAnalysisOverview(
 
   const teamDisplayName = `${team.team_number}`;
   const teamLongName = team.nickname ?? team.name ?? team.key;
-  const radarSummary = buildPlaceholderRadarSummary(teamNumber);
+  const radarSummary = buildRadarSummaryFromEntries(matchEntries);
 
   return {
     teamKey,

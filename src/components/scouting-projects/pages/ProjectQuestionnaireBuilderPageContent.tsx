@@ -32,6 +32,7 @@ import NoAccess from "@/components/auth/NoAccess";
 import UnsavedChangesGuard from "@/components/app/guards/UnsavedChangesGuard";
 import JsonEditor from "@/components/common/JsonEditor";
 import QuestionnaireForm from "@/components/scouting/form/QuestionnaireForm";
+import PerformanceRatingsCard from "@/components/scouting/form/PerformanceRatingsCard";
 import EventField from "@/components/scouting/form/fields/match-info/EventField";
 import MatchNumberField from "@/components/scouting/form/fields/match-info/MatchNumberField";
 import RobotPositionField from "@/components/scouting/form/fields/match-info/RobotPositionField";
@@ -807,6 +808,8 @@ export default function ProjectQuestionnaireBuilderPageContent({
                       onSubmit={async () => {}}
                       showSubmitButton={false}
                     />
+
+                    <PerformanceRatingsCard answers={{}} locked />
 
                     <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
                       <Button

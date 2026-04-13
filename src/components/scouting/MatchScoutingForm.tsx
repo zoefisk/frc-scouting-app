@@ -12,6 +12,7 @@ import {
 } from "@mui/material";
 
 import QuestionnaireForm from "@/components/scouting/form/QuestionnaireForm";
+import PerformanceRatingsCard from "@/components/scouting/form/PerformanceRatingsCard";
 import EventField from "@/components/scouting/form/fields/match-info/EventField";
 import MatchNumberField from "@/components/scouting/form/fields/match-info/MatchNumberField";
 import ScoutingPositionField, {
@@ -473,6 +474,8 @@ export default function MatchScoutingForm({
         }}
         showSubmitButton={false}
       />
+
+      <PerformanceRatingsCard answers={answers} onAnswersChange={setAnswers} />
 
       <MatchScoutingActionBar
         questionnaire={questionnaire}
