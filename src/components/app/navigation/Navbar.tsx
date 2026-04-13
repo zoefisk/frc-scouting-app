@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { Drawer } from "@mui/material";
+import { Box, Drawer } from "@mui/material";
 import { usePathname } from "next/navigation";
 import MobileTopBar from "@/components/app/navigation/navbar/MobileTopBar";
 import NavbarDrawerContent from "@/components/app/navigation/navbar/NavbarDrawerContent";
@@ -16,6 +16,8 @@ export default function Navbar() {
   const pathname = usePathname();
   const [mobileOpen, setMobileOpen] = React.useState(false);
   const [collapsed, setCollapsed] = React.useState(true);
+  const desktopDrawerContentRef = React.useRef<HTMLDivElement | null>(null);
+  const previousPathnameRef = React.useRef(pathname);
 
   React.useEffect(() => {
     const savedValue = window.localStorage.getItem("app-sidebar-collapsed");
@@ -35,6 +37,42 @@ export default function Navbar() {
 
     return () => {
       document.documentElement.style.removeProperty("--app-sidebar-width");
+    };
+  }, [collapsed]);
+
+  React.useEffect(() => {
+    if (previousPathnameRef.current !== pathname) {
+      setMobileOpen(false);
+      setCollapsed(true);
+      previousPathnameRef.current = pathname;
+    }
+  }, [pathname]);
+
+  React.useEffect(() => {
+    if (collapsed) {
+      return;
+    }
+
+    function handlePointerDown(event: MouseEvent | TouchEvent) {
+      const target = event.target;
+
+      if (!(target instanceof Node)) {
+        return;
+      }
+
+      if (desktopDrawerContentRef.current?.contains(target)) {
+        return;
+      }
+
+      setCollapsed(true);
+    }
+
+    document.addEventListener("mousedown", handlePointerDown);
+    document.addEventListener("touchstart", handlePointerDown);
+
+    return () => {
+      document.removeEventListener("mousedown", handlePointerDown);
+      document.removeEventListener("touchstart", handlePointerDown);
     };
   }, [collapsed]);
 
@@ -98,13 +136,15 @@ export default function Navbar() {
           },
         }}
       >
-        <NavbarDrawerContent
-          pathname={pathname}
-          collapsed={collapsed}
-          primaryItems={primaryItems}
-          workspaceItems={workspaceItems}
-          header={header}
-        />
+        <Box ref={desktopDrawerContentRef} sx={{ height: "100%" }}>
+          <NavbarDrawerContent
+            pathname={pathname}
+            collapsed={collapsed}
+            primaryItems={primaryItems}
+            workspaceItems={workspaceItems}
+            header={header}
+          />
+        </Box>
       </Drawer>
     </>
   );
