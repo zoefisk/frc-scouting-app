@@ -447,6 +447,7 @@ export default function ScoutingProjectPageContent({
                   {canInviteMembers ? (
                     <CopyLinkMenu
                       url={`https://frc-scouting-app-jade.vercel.app/join/${project.inviteLinkToken}`} // TODO, add the url as an environment variable
+                      inviteCode={project.inviteCode}
                     />
                   ) : null}
 
