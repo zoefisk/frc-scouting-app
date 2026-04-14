@@ -22,13 +22,21 @@ import {
   Button,
   Chip,
   CircularProgress,
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogTitle,
   FormControl,
   InputLabel,
   Divider,
+  List,
+  ListItem,
+  ListItemText,
   Menu,
   MenuItem,
   Paper,
   Select,
+  Skeleton,
   Stack,
   TextField,
   Tooltip,
@@ -118,6 +126,25 @@ type PitDisplayRow = {
   teamLocation: string;
   hasRecordedData: boolean;
   dataLabel: string;
+};
+
+type MatchSlotModalState = {
+  matchNumber: number;
+  slot: ScoutingScheduleSlot;
+  assignedName: string | null;
+};
+
+type MatchSlotDetailEntry = {
+  entryId: string;
+  savedAt: string | null;
+  teamNumber: number | null;
+  teamName: string | null;
+  scoutingPosition: string | null;
+  teamPresence: string | null;
+  answers: Array<{
+    label: string;
+    value: string;
+  }>;
 };
 
 const ROBOT_SLOT_LABELS: Array<{
@@ -249,7 +276,8 @@ function getAssignmentColumns(
   editable: boolean,
   coverageByMatch: ProjectMatchCoverageByMatch,
   coverageLoaded: boolean,
-  qualificationMatches: RawTbaMatch[]
+  qualificationMatches: RawTbaMatch[],
+  onOpenMatchSlotModal: (details: MatchSlotModalState) => void
 ): GridColDef<DisplayRow>[] {
   const slotConfigs =
     mode === "robot" ? ROBOT_SLOT_LABELS : ALLIANCE_SLOT_LABELS;
@@ -262,6 +290,8 @@ function getAssignmentColumns(
     valueOptions: scouterOptions,
     flex: 1,
     minWidth: mode === "robot" ? 120 : 180,
+    align: "center",
+    headerAlign: "center",
     headerClassName:
       config.tone === "red" ? "schedule-header-red" : "schedule-header-blue",
     cellClassName:
@@ -288,13 +318,7 @@ function getAssignmentColumns(
       const currentMatch = qualificationMatches.find(
         (match) => match.match_number === params.row.matchNumber
       );
-      const showQuestionnaireLink =
-        Boolean(assignedName) &&
-        !editable &&
-        !hasSlotData &&
-        !showMissingWarning &&
-        currentMatch != null &&
-        !isTbaMatchPlayed(currentMatch);
+      const showQuestionnaireLink = !editable && currentMatch != null;
       const prefillParams = new URLSearchParams({
         match: String(params.row.matchNumber),
       });
@@ -308,6 +332,7 @@ function getAssignmentColumns(
           direction="row"
           spacing={0.5}
           alignItems="center"
+          justifyContent="center"
           sx={{ minWidth: 0, width: "100%" }}
         >
           <Typography
@@ -323,33 +348,39 @@ function getAssignmentColumns(
           </Typography>
 
           {assignedName && showMissingWarning ? (
-            <Link
-              href={`/scouting-projects/${projectId}/match-scouting?${prefillParams.toString()}`}
-              style={{ display: "inline-flex", color: "inherit" }}
+            <Tooltip
+              arrow
+              title="No recorded match data yet, and the next qualification match has already started."
             >
-              <Tooltip
-                arrow
-                title="No recorded match data yet, and the next qualification match has already started. Open match scouting for this assignment."
-              >
-                <WarningAmberOutlinedIcon
-                  sx={{ fontSize: 16, color: "warning.main" }}
-                />
-              </Tooltip>
-            </Link>
+              <WarningAmberOutlinedIcon
+                sx={{ fontSize: 16, color: "warning.main" }}
+              />
+            </Tooltip>
           ) : null}
 
           {showQuestionnaireLink ? (
-            <Link
-              href={`/scouting-projects/${projectId}/match-scouting?${prefillParams.toString()}`}
-              style={{ display: "inline-flex", color: "inherit" }}
+            <Tooltip
+              arrow
+              title={
+                hasSlotData
+                  ? "View collected data for this assignment"
+                  : "Open actions for this scouting assignment"
+              }
             >
-              <Tooltip
-                arrow
-                title="Open match scouting with this match preloaded"
+              <IconButton
+                size="small"
+                onClick={() =>
+                  onOpenMatchSlotModal({
+                    matchNumber: params.row.matchNumber,
+                    slot: config.slot,
+                    assignedName: assignedName || null,
+                  })
+                }
+                sx={{ p: 0.25 }}
               >
                 <OpenInNewIcon sx={{ fontSize: 16, color: "text.secondary" }} />
-              </Tooltip>
-            </Link>
+              </IconButton>
+            </Tooltip>
           ) : null}
         </Stack>
       );
@@ -403,6 +434,16 @@ export default function ScoutingSchedule({
     Record<string, boolean>
   >({});
   const [isLoadingPitCoverage, setIsLoadingPitCoverage] = React.useState(false);
+  const [matchSlotModal, setMatchSlotModal] =
+    React.useState<MatchSlotModalState | null>(null);
+  const [matchSlotDetails, setMatchSlotDetails] = React.useState<
+    MatchSlotDetailEntry[]
+  >([]);
+  const [isLoadingMatchSlotDetails, setIsLoadingMatchSlotDetails] =
+    React.useState(false);
+  const [matchSlotDetailsError, setMatchSlotDetailsError] = React.useState<
+    string | null
+  >(null);
 
   const memberRole = getProjectMemberRole(project, user?.uid);
   const canEdit = memberRole === "owner" || memberRole === "admin";
@@ -906,6 +947,70 @@ export default function ScoutingSchedule({
     setFilterAnchorEl(null);
   }, []);
 
+  const handleOpenMatchSlotModal = React.useCallback(
+    (details: MatchSlotModalState) => {
+      setMatchSlotModal(details);
+      setMatchSlotDetails([]);
+      setMatchSlotDetailsError(null);
+    },
+    []
+  );
+
+  const handleCloseMatchSlotModal = React.useCallback(() => {
+    setMatchSlotModal(null);
+    setMatchSlotDetails([]);
+    setMatchSlotDetailsError(null);
+  }, []);
+
+  React.useEffect(() => {
+    let cancelled = false;
+
+    async function loadMatchSlotDetails() {
+      if (!matchSlotModal) {
+        return;
+      }
+
+      try {
+        setIsLoadingMatchSlotDetails(true);
+        setMatchSlotDetailsError(null);
+
+        const response = await fetch(
+          `/api/scouting-projects/${project.id}/match-slot-details?matchNumber=${matchSlotModal.matchNumber}&slot=${encodeURIComponent(matchSlotModal.slot)}`
+        );
+        const data = (await response.json()) as {
+          entries?: MatchSlotDetailEntry[];
+          error?: string;
+        };
+
+        if (!response.ok || !Array.isArray(data.entries)) {
+          throw new Error(data.error ?? "Could not load match slot details.");
+        }
+
+        if (!cancelled) {
+          setMatchSlotDetails(data.entries);
+        }
+      } catch (error) {
+        console.error("Failed to load match slot details:", error);
+        if (!cancelled) {
+          setMatchSlotDetails([]);
+          setMatchSlotDetailsError(
+            "Could not load collected data for this assignment."
+          );
+        }
+      } finally {
+        if (!cancelled) {
+          setIsLoadingMatchSlotDetails(false);
+        }
+      }
+    }
+
+    void loadMatchSlotDetails();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [matchSlotModal, project.id]);
+
   const columns = React.useMemo<GridColDef<DisplayRow>[]>(
     () => [
       {
@@ -944,17 +1049,26 @@ export default function ScoutingSchedule({
         isEditMode && canEdit,
         coverageByMatch,
         !isLoadingCoverage,
-        qualificationMatches
+        qualificationMatches,
+        handleOpenMatchSlotModal
       ),
       {
         field: "collectionLabel",
         headerName: "Data",
         minWidth: 150,
+        align: "center",
+        headerAlign: "center",
         sortable: false,
         filterable: false,
         renderCell: (params: GridRenderCellParams<DisplayRow>) => {
           return (
-            <Stack direction="row" spacing={0.75} alignItems="center">
+            <Stack
+              direction="row"
+              spacing={0.75}
+              alignItems="center"
+              justifyContent="center"
+              sx={{ width: "100%" }}
+            >
               <Chip
                 label={params.row.collectionLabel}
                 size="small"
@@ -986,6 +1100,7 @@ export default function ScoutingSchedule({
       normalizedWorkingScouterNames,
       project.id,
       qualificationMatches,
+      handleOpenMatchSlotModal,
       workingMode,
     ]
   );
@@ -1092,6 +1207,24 @@ export default function ScoutingSchedule({
   );
 
   const summaryMode = effectiveSchedule?.mode ?? workingMode;
+  const matchSlotPrefillHref = React.useMemo(() => {
+    if (!matchSlotModal) {
+      return null;
+    }
+
+    const params = new URLSearchParams({
+      match: String(matchSlotModal.matchNumber),
+    });
+
+    if (
+      matchSlotModal.slot !== "redAlliance" &&
+      matchSlotModal.slot !== "blueAlliance"
+    ) {
+      params.set("position", matchSlotModal.slot);
+    }
+
+    return `/scouting-projects/${project.id}/match-scouting?${params.toString()}`;
+  }, [matchSlotModal, project.id]);
 
   if (
     hasMatchData(project.dataMode) &&
@@ -1114,90 +1247,67 @@ export default function ScoutingSchedule({
   } as const;
 
   return (
-    <Stack spacing={1.5}>
-      {project.dataMode !== "pit" ? (
-        <Accordion
-          disableGutters
-          disabled={!hasMatchQuestionnaire}
-          sx={accordionSx}
-        >
-          <AccordionSummary expandIcon={<ExpandMoreRoundedIcon />}>
-            <Stack spacing={0.25}>
-              <Typography variant="h6" sx={{ fontWeight: 800 }}>
-                {title}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Match schedule generation, assignment, and coverage for this
-                project.
-              </Typography>
-            </Stack>
-          </AccordionSummary>
-          <AccordionDetails sx={{ p: 0 }}>
-            {!hasMatchQuestionnaire ? (
-              <Box sx={{ p: 2.5 }}>
-                <Alert severity="info">
-                  {getMissingProjectQuestionnaireMessage("match")}
-                </Alert>
-              </Box>
-            ) : (
-              <Paper sx={{ p: 2.5, borderRadius: 0, boxShadow: "none" }}>
-                <Stack spacing={2.5}>
-                  <Stack
-                    direction={{ xs: "column", md: "row" }}
-                    justifyContent="space-between"
-                    alignItems={{ xs: "stretch", md: "center" }}
-                    spacing={2}
-                  >
-                    <Box>
-                      <Typography variant="h6" sx={{ fontWeight: 800 }}>
-                        {title}
-                      </Typography>
-                      <Typography variant="body2" color="text.secondary">
-                        Build a match schedule from real qualification matches,
-                        then save it to this scouting project. Editing is manual
-                        on purpose so it does not change by accident.
-                      </Typography>
-                    </Box>
-
+    <>
+      <Stack spacing={1.5}>
+        {project.dataMode !== "pit" ? (
+          <Accordion
+            disableGutters
+            disabled={!hasMatchQuestionnaire}
+            sx={accordionSx}
+          >
+            <AccordionSummary expandIcon={<ExpandMoreRoundedIcon />}>
+              <Stack spacing={0.25}>
+                <Typography variant="h6" sx={{ fontWeight: 800 }}>
+                  {title}
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Match schedule generation, assignment, and coverage for this
+                  project.
+                </Typography>
+              </Stack>
+            </AccordionSummary>
+            <AccordionDetails sx={{ p: 0 }}>
+              {!hasMatchQuestionnaire ? (
+                <Box sx={{ p: 2.5 }}>
+                  <Alert severity="info">
+                    {getMissingProjectQuestionnaireMessage("match")}
+                  </Alert>
+                </Box>
+              ) : (
+                <Paper sx={{ p: 2.5, borderRadius: 0, boxShadow: "none" }}>
+                  <Stack spacing={2.5}>
                     <Stack
-                      spacing={1.25}
-                      alignItems={{ xs: "stretch", md: "flex-end" }}
-                      sx={{ minWidth: { md: 360 } }}
+                      direction={{ xs: "column", md: "row" }}
+                      justifyContent="space-between"
+                      alignItems={{ xs: "stretch", md: "center" }}
+                      spacing={2}
                     >
+                      <Box>
+                        <Typography variant="h6" sx={{ fontWeight: 800 }}>
+                          {title}
+                        </Typography>
+                        <Typography variant="body2" color="text.secondary">
+                          Build a match schedule from real qualification
+                          matches, then save it to this scouting project.
+                          Editing is manual on purpose so it does not change by
+                          accident.
+                        </Typography>
+                      </Box>
+
                       <Stack
-                        direction="row"
-                        spacing={0.75}
-                        useFlexGap
-                        flexWrap="wrap"
-                        justifyContent={{ xs: "flex-start", md: "flex-end" }}
+                        spacing={1.25}
+                        alignItems={{ xs: "stretch", md: "flex-end" }}
+                        sx={{ minWidth: { md: 360 } }}
                       >
-                        <Chip
-                          label={`${matchNumbers.length} matches`}
-                          size="small"
-                          sx={{
-                            borderRadius: 2,
-                            backgroundColor: "rgba(15,23,42,0.04)",
-                            color: "text.secondary",
-                            fontWeight: 600,
-                          }}
-                        />
-                        <Chip
-                          label={
-                            summaryMode === "robot"
-                              ? "Robot mode"
-                              : "Alliance mode"
-                          }
-                          size="small"
-                          sx={{
-                            borderRadius: 2,
-                            backgroundColor: "rgba(15,23,42,0.04)",
-                            color: "text.secondary",
-                            fontWeight: 600,
-                          }}
-                        />
-                        {hasSavedSchedule ? (
+                        <Stack
+                          direction="row"
+                          spacing={0.75}
+                          useFlexGap
+                          flexWrap="wrap"
+                          justifyContent={{ xs: "flex-start", md: "flex-end" }}
+                        >
                           <Chip
-                            label={`${savedSchedule?.scouterNames.length ?? 0} scouters`}
+                            label={`${matchNumbers.length} matches`}
                             size="small"
                             sx={{
                               borderRadius: 2,
@@ -1206,506 +1316,679 @@ export default function ScoutingSchedule({
                               fontWeight: 600,
                             }}
                           />
-                        ) : null}
-                      </Stack>
-
-                      <Stack
-                        direction="row"
-                        spacing={0.5}
-                        alignItems="center"
-                        justifyContent={{ xs: "flex-start", md: "flex-end" }}
-                      >
-                        {effectiveSchedule ? (
-                          <Tooltip
-                            arrow
-                            title={
-                              selectedScouterFilters.length > 0
-                                ? `Filtering by ${
-                                    scouterFilterMode === "all" ? "all" : "any"
-                                  } of ${selectedScouterFilters.join(", ")}`
-                                : "Filter the schedule by one or more scouters"
+                          <Chip
+                            label={
+                              summaryMode === "robot"
+                                ? "Robot mode"
+                                : "Alliance mode"
                             }
-                          >
-                            <IconButton
-                              aria-label="Filter schedule by scouter"
-                              onClick={handleOpenFilterMenu}
+                            size="small"
+                            sx={{
+                              borderRadius: 2,
+                              backgroundColor: "rgba(15,23,42,0.04)",
+                              color: "text.secondary",
+                              fontWeight: 600,
+                            }}
+                          />
+                          {hasSavedSchedule ? (
+                            <Chip
+                              label={`${savedSchedule?.scouterNames.length ?? 0} scouters`}
                               size="small"
                               sx={{
-                                border: "1px solid rgba(15,23,42,0.08)",
                                 borderRadius: 2,
-                                color:
-                                  selectedScouterFilters.length > 0
-                                    ? "primary.main"
-                                    : "text.secondary",
-                                backgroundColor:
-                                  selectedScouterFilters.length > 0
-                                    ? "rgba(37,99,235,0.08)"
-                                    : "transparent",
-                              }}
-                            >
-                              <FilterListOutlinedIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        ) : null}
-
-                        {effectiveSchedule ? (
-                          <Tooltip
-                            arrow
-                            title="Export the current schedule to CSV, including match status and assignments."
-                          >
-                            <IconButton
-                              aria-label="Export scouting schedule to CSV"
-                              onClick={handleExportCsv}
-                              size="small"
-                              sx={{
-                                border: "1px solid rgba(15,23,42,0.08)",
-                                borderRadius: 2,
+                                backgroundColor: "rgba(15,23,42,0.04)",
                                 color: "text.secondary",
-                              }}
-                            >
-                              <DownloadOutlinedIcon fontSize="small" />
-                            </IconButton>
-                          </Tooltip>
-                        ) : null}
-
-                        {!isEditMode && canEdit ? (
-                          <>
-                            {effectiveSchedule ? (
-                              <Divider
-                                orientation="vertical"
-                                flexItem
-                                sx={{
-                                  mx: 0.25,
-                                  borderColor: "rgba(15,23,42,0.08)",
-                                }}
-                              />
-                            ) : null}
-                            <Button
-                              variant="text"
-                              startIcon={<EditOutlinedIcon />}
-                              onClick={handleStartEditing}
-                              sx={{
-                                px: 1,
-                                minWidth: 0,
-                                color: "text.primary",
                                 fontWeight: 600,
                               }}
-                            >
-                              Edit
-                            </Button>
-                          </>
-                        ) : null}
-                      </Stack>
-                    </Stack>
-                  </Stack>
-
-                  {matchesError ? (
-                    <Alert severity="warning">{matchesError}</Alert>
-                  ) : null}
-
-                  {isLoadingCoverage ? (
-                    <Alert severity="info">
-                      Checking submitted match data...
-                    </Alert>
-                  ) : null}
-
-                  {saveError ? (
-                    <Alert severity="error">{saveError}</Alert>
-                  ) : null}
-
-                  {configurationNeedsRegeneration ? (
-                    <Alert severity="info">
-                      The scouter list or schedule mode changed. Regenerate the
-                      schedule before saving so the table stays consistent.
-                    </Alert>
-                  ) : null}
-
-                  {!canEdit ? (
-                    <Alert severity="info">
-                      Schedule editing is currently read-only for your account.
-                    </Alert>
-                  ) : null}
-
-                  <Stack spacing={2}>
-                    {showConfigurationEditor ? (
-                      <>
-                        <Stack
-                          direction={{ xs: "column", md: "row" }}
-                          spacing={2}
-                        >
-                          <Stack spacing={1} sx={{ minWidth: { md: 220 } }}>
-                            <FieldLabelWithHelp
-                              label="Schedule Mode"
-                              tooltip="Robot mode creates six scouting positions per match. Alliance mode creates one red and one blue assignment per match."
                             />
-
-                            {hasSavedSchedule ? (
-                              <TextField
-                                size="small"
-                                value={workingMode}
-                                InputProps={{ readOnly: true }}
-                                helperText="Schedule mode is locked after the first save."
-                              />
-                            ) : (
-                              <FormControl fullWidth size="small">
-                                <InputLabel id="schedule-mode-label">
-                                  Schedule Mode
-                                </InputLabel>
-                                <Select
-                                  labelId="schedule-mode-label"
-                                  label="Schedule Mode"
-                                  value={workingMode}
-                                  disabled={!isEditMode || !canEdit}
-                                  onChange={(event) =>
-                                    setWorkingMode(
-                                      event.target.value as ScoutingScheduleMode
-                                    )
-                                  }
-                                >
-                                  <MenuItem value="robot">Robot</MenuItem>
-                                  <MenuItem value="alliance">Alliance</MenuItem>
-                                </Select>
-                              </FormControl>
-                            )}
-                          </Stack>
-
-                          <Stack spacing={1} sx={{ flex: 1 }}>
-                            <FieldLabelWithHelp
-                              label="Scouters"
-                              tooltip="Add the names you want included in the schedule. The generator will distribute assignments as evenly as possible."
-                            />
-
-                            <Autocomplete
-                              multiple
-                              freeSolo
-                              options={[]}
-                              value={workingScouterNames}
-                              disabled={!isEditMode || !canEdit}
-                              onChange={(_, newValue) =>
-                                setWorkingScouterNames(
-                                  newValue.map((value) =>
-                                    typeof value === "string"
-                                      ? value
-                                      : String(value)
-                                  )
-                                )
-                              }
-                              renderTags={(value, getTagProps) =>
-                                value.map((name, index) => (
-                                  <Chip
-                                    {...getTagProps({ index })}
-                                    key={name}
-                                    label={name}
-                                  />
-                                ))
-                              }
-                              renderInput={(params) => (
-                                <TextField
-                                  {...params}
-                                  placeholder="Type a name and press Enter"
-                                  helperText={`Use Enter after each name to add it to the schedule pool. Minimum: ${minimumScoutersForMode}.`}
-                                />
-                              )}
-                            />
-                          </Stack>
+                          ) : null}
                         </Stack>
 
-                        <Stack direction="row" spacing={1} flexWrap="wrap">
-                          <Button
-                            variant="contained"
-                            startIcon={<RestartAltOutlinedIcon />}
-                            onClick={handleGenerateSchedule}
-                            disabled={
-                              !isEditMode ||
-                              !canEdit ||
-                              isLoadingMatches ||
-                              matchNumbers.length === 0
-                            }
-                          >
-                            {hasDraftSchedule
-                              ? "Regenerate Schedule"
-                              : "Generate Schedule"}
-                          </Button>
-
-                          {isEditMode && canEdit ? (
-                            <>
-                              <Button
-                                variant="contained"
-                                color="success"
-                                startIcon={<SaveOutlinedIcon />}
-                                onClick={() => void handleSaveSchedule()}
-                                disabled={
-                                  isSaving ||
-                                  !hasDraftSchedule ||
-                                  configurationNeedsRegeneration ||
-                                  isLoadingMatches
-                                }
+                        <Stack
+                          direction="row"
+                          spacing={0.5}
+                          alignItems="center"
+                          justifyContent={{ xs: "flex-start", md: "flex-end" }}
+                        >
+                          {effectiveSchedule ? (
+                            <Tooltip
+                              arrow
+                              title={
+                                selectedScouterFilters.length > 0
+                                  ? `Filtering by ${
+                                      scouterFilterMode === "all"
+                                        ? "all"
+                                        : "any"
+                                    } of ${selectedScouterFilters.join(", ")}`
+                                  : "Filter the schedule by one or more scouters"
+                              }
+                            >
+                              <IconButton
+                                aria-label="Filter schedule by scouter"
+                                onClick={handleOpenFilterMenu}
+                                size="small"
+                                sx={{
+                                  border: "1px solid rgba(15,23,42,0.08)",
+                                  borderRadius: 2,
+                                  color:
+                                    selectedScouterFilters.length > 0
+                                      ? "primary.main"
+                                      : "text.secondary",
+                                  backgroundColor:
+                                    selectedScouterFilters.length > 0
+                                      ? "rgba(37,99,235,0.08)"
+                                      : "transparent",
+                                }}
                               >
-                                {isSaving ? "Saving..." : "Save Schedule"}
-                              </Button>
+                                <FilterListOutlinedIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          ) : null}
 
+                          {effectiveSchedule ? (
+                            <Tooltip
+                              arrow
+                              title="Export the current schedule to CSV, including match status and assignments."
+                            >
+                              <IconButton
+                                aria-label="Export scouting schedule to CSV"
+                                onClick={handleExportCsv}
+                                size="small"
+                                sx={{
+                                  border: "1px solid rgba(15,23,42,0.08)",
+                                  borderRadius: 2,
+                                  color: "text.secondary",
+                                }}
+                              >
+                                <DownloadOutlinedIcon fontSize="small" />
+                              </IconButton>
+                            </Tooltip>
+                          ) : null}
+
+                          {!isEditMode && canEdit ? (
+                            <>
+                              {effectiveSchedule ? (
+                                <Divider
+                                  orientation="vertical"
+                                  flexItem
+                                  sx={{
+                                    mx: 0.25,
+                                    borderColor: "rgba(15,23,42,0.08)",
+                                  }}
+                                />
+                              ) : null}
                               <Button
                                 variant="text"
-                                color="inherit"
-                                startIcon={<CloseOutlinedIcon />}
-                                onClick={handleCancelEditing}
-                                disabled={isSaving}
+                                startIcon={<EditOutlinedIcon />}
+                                onClick={handleStartEditing}
+                                sx={{
+                                  px: 1,
+                                  minWidth: 0,
+                                  color: "text.primary",
+                                  fontWeight: 600,
+                                }}
                               >
-                                Cancel
+                                Edit
                               </Button>
                             </>
                           ) : null}
                         </Stack>
-                      </>
+                      </Stack>
+                    </Stack>
+
+                    {matchesError ? (
+                      <Alert severity="warning">{matchesError}</Alert>
+                    ) : null}
+
+                    {isLoadingCoverage ? (
+                      <Alert severity="info">
+                        Checking submitted match data...
+                      </Alert>
+                    ) : null}
+
+                    {saveError ? (
+                      <Alert severity="error">{saveError}</Alert>
+                    ) : null}
+
+                    {configurationNeedsRegeneration ? (
+                      <Alert severity="info">
+                        The scouter list or schedule mode changed. Regenerate
+                        the schedule before saving so the table stays
+                        consistent.
+                      </Alert>
+                    ) : null}
+
+                    {!canEdit ? (
+                      <Alert severity="info">
+                        Schedule editing is currently read-only for your
+                        account.
+                      </Alert>
+                    ) : null}
+
+                    <Stack spacing={2}>
+                      {showConfigurationEditor ? (
+                        <>
+                          <Stack
+                            direction={{ xs: "column", md: "row" }}
+                            spacing={2}
+                          >
+                            <Stack spacing={1} sx={{ minWidth: { md: 220 } }}>
+                              <FieldLabelWithHelp
+                                label="Schedule Mode"
+                                tooltip="Robot mode creates six scouting positions per match. Alliance mode creates one red and one blue assignment per match."
+                              />
+
+                              {hasSavedSchedule ? (
+                                <TextField
+                                  size="small"
+                                  value={workingMode}
+                                  InputProps={{ readOnly: true }}
+                                  helperText="Schedule mode is locked after the first save."
+                                />
+                              ) : (
+                                <FormControl fullWidth size="small">
+                                  <InputLabel id="schedule-mode-label">
+                                    Schedule Mode
+                                  </InputLabel>
+                                  <Select
+                                    labelId="schedule-mode-label"
+                                    label="Schedule Mode"
+                                    value={workingMode}
+                                    disabled={!isEditMode || !canEdit}
+                                    onChange={(event) =>
+                                      setWorkingMode(
+                                        event.target
+                                          .value as ScoutingScheduleMode
+                                      )
+                                    }
+                                  >
+                                    <MenuItem value="robot">Robot</MenuItem>
+                                    <MenuItem value="alliance">
+                                      Alliance
+                                    </MenuItem>
+                                  </Select>
+                                </FormControl>
+                              )}
+                            </Stack>
+
+                            <Stack spacing={1} sx={{ flex: 1 }}>
+                              <FieldLabelWithHelp
+                                label="Scouters"
+                                tooltip="Add the names you want included in the schedule. The generator will distribute assignments as evenly as possible."
+                              />
+
+                              <Autocomplete
+                                multiple
+                                freeSolo
+                                options={[]}
+                                value={workingScouterNames}
+                                disabled={!isEditMode || !canEdit}
+                                onChange={(_, newValue) =>
+                                  setWorkingScouterNames(
+                                    newValue.map((value) =>
+                                      typeof value === "string"
+                                        ? value
+                                        : String(value)
+                                    )
+                                  )
+                                }
+                                renderTags={(value, getTagProps) =>
+                                  value.map((name, index) => (
+                                    <Chip
+                                      {...getTagProps({ index })}
+                                      key={name}
+                                      label={name}
+                                    />
+                                  ))
+                                }
+                                renderInput={(params) => (
+                                  <TextField
+                                    {...params}
+                                    placeholder="Type a name and press Enter"
+                                    helperText={`Use Enter after each name to add it to the schedule pool. Minimum: ${minimumScoutersForMode}.`}
+                                  />
+                                )}
+                              />
+                            </Stack>
+                          </Stack>
+
+                          <Stack direction="row" spacing={1} flexWrap="wrap">
+                            <Button
+                              variant="contained"
+                              startIcon={<RestartAltOutlinedIcon />}
+                              onClick={handleGenerateSchedule}
+                              disabled={
+                                !isEditMode ||
+                                !canEdit ||
+                                isLoadingMatches ||
+                                matchNumbers.length === 0
+                              }
+                            >
+                              {hasDraftSchedule
+                                ? "Regenerate Schedule"
+                                : "Generate Schedule"}
+                            </Button>
+
+                            {isEditMode && canEdit ? (
+                              <>
+                                <Button
+                                  variant="contained"
+                                  color="success"
+                                  startIcon={<SaveOutlinedIcon />}
+                                  onClick={() => void handleSaveSchedule()}
+                                  disabled={
+                                    isSaving ||
+                                    !hasDraftSchedule ||
+                                    configurationNeedsRegeneration ||
+                                    isLoadingMatches
+                                  }
+                                >
+                                  {isSaving ? "Saving..." : "Save Schedule"}
+                                </Button>
+
+                                <Button
+                                  variant="text"
+                                  color="inherit"
+                                  startIcon={<CloseOutlinedIcon />}
+                                  onClick={handleCancelEditing}
+                                  disabled={isSaving}
+                                >
+                                  Cancel
+                                </Button>
+                              </>
+                            ) : null}
+                          </Stack>
+                        </>
+                      ) : null}
+                    </Stack>
+
+                    {isLoadingMatches ? (
+                      <Stack direction="row" spacing={1} alignItems="center">
+                        <CircularProgress size={18} />
+                        <Typography color="text.secondary">
+                          Loading match schedule from TBA...
+                        </Typography>
+                      </Stack>
+                    ) : null}
+
+                    {!effectiveSchedule && !isLoadingMatches ? (
+                      <Alert severity="info">
+                        No schedule has been generated yet. Add your scouters,
+                        pick a mode, and generate the table from this
+                        event&apos;s qualification matches.
+                      </Alert>
+                    ) : null}
+
+                    <Menu
+                      anchorEl={filterAnchorEl}
+                      open={isFilterMenuOpen}
+                      onClose={handleCloseFilterMenu}
+                      anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
+                      transformOrigin={{ vertical: "top", horizontal: "right" }}
+                    >
+                      <Box sx={{ p: 1.5, width: 280 }}>
+                        <Stack spacing={1}>
+                          <FieldLabelWithHelp
+                            label="Filter by Scouter"
+                            tooltip="Choose one or more scouters, then decide whether a match should include any of them or all of them."
+                          />
+
+                          <Autocomplete
+                            multiple
+                            options={normalizedWorkingScouterNames}
+                            value={selectedScouterFilters}
+                            onChange={(_, newValue) =>
+                              setSelectedScouterFilters(newValue)
+                            }
+                            renderInput={(params) => (
+                              <TextField
+                                {...params}
+                                size="small"
+                                placeholder="All scouters"
+                                helperText={
+                                  selectedScouterFilters.length > 0
+                                    ? `${filteredDisplayRows.length} matches shown`
+                                    : "Show all assigned matches"
+                                }
+                              />
+                            )}
+                          />
+
+                          {selectedScouterFilters.length > 1 ? (
+                            <ToggleButtonGroup
+                              size="small"
+                              exclusive
+                              value={scouterFilterMode}
+                              onChange={(
+                                _,
+                                nextValue: ScouterFilterMode | null
+                              ) => {
+                                if (nextValue) {
+                                  setScouterFilterMode(nextValue);
+                                }
+                              }}
+                              sx={{ alignSelf: "flex-start" }}
+                            >
+                              <ToggleButton value="any">Any</ToggleButton>
+                              <ToggleButton value="all">All</ToggleButton>
+                            </ToggleButtonGroup>
+                          ) : null}
+
+                          {selectedScouterFilters.length > 0 ? (
+                            <Button
+                              size="small"
+                              variant="text"
+                              onClick={() => setSelectedScouterFilters([])}
+                              sx={{ alignSelf: "flex-start" }}
+                            >
+                              Clear Filter
+                            </Button>
+                          ) : null}
+                        </Stack>
+                      </Box>
+                    </Menu>
+
+                    {effectiveSchedule ? (
+                      <Stack spacing={1.5}>
+                        <Box sx={{ width: "100%" }}>
+                          <DataGrid<DisplayRow>
+                            rows={filteredDisplayRows}
+                            columns={columns}
+                            editMode="row"
+                            processRowUpdate={processRowUpdate}
+                            onProcessRowUpdateError={
+                              handleProcessRowUpdateError
+                            }
+                            getRowClassName={getRowClassName}
+                            disableRowSelectionOnClick
+                            disableColumnResize
+                            autoHeight
+                            pageSizeOptions={[10, 25, 50]}
+                            initialState={{
+                              pagination: {
+                                paginationModel: {
+                                  pageSize: 10,
+                                  page: 0,
+                                },
+                              },
+                              sorting: {
+                                sortModel: [
+                                  { field: "matchNumber", sort: "asc" },
+                                ],
+                              },
+                            }}
+                            slots={{
+                              toolbar: GridToolbar,
+                            }}
+                            sx={{
+                              border: 0,
+                              "--DataGrid-overlayHeight": "220px",
+                              "& .MuiDataGrid-toolbarContainer": {
+                                px: 1,
+                                py: 0.5,
+                              },
+                              "& .MuiDataGrid-columnHeaders": {
+                                borderRadius: 2,
+                              },
+                              "& .MuiDataGrid-cell:focus, & .MuiDataGrid-columnHeader:focus":
+                                {
+                                  outline: "none",
+                                },
+                              "& .schedule-header-red": {
+                                bgcolor: "error.light",
+                                color: "error.contrastText",
+                                fontWeight: 800,
+                              },
+                              "& .schedule-header-blue": {
+                                bgcolor: "info.light",
+                                color: "info.contrastText",
+                                fontWeight: 800,
+                              },
+                              "& .schedule-cell-red": {
+                                bgcolor: "rgba(244, 67, 54, 0.04)",
+                              },
+                              "& .schedule-cell-blue": {
+                                bgcolor: "rgba(33, 150, 243, 0.04)",
+                              },
+                              "& .schedule-divider-right": {
+                                borderRight: (theme) =>
+                                  `2px solid ${theme.palette.divider}`,
+                              },
+                              "& .schedule-block-even": {
+                                backgroundColor: "rgba(15, 23, 42, 0.018)",
+                              },
+                              "& .schedule-block-start": {
+                                borderTop: (theme) =>
+                                  `3px solid ${theme.palette.divider}`,
+                              },
+                            }}
+                          />
+                        </Box>
+                      </Stack>
                     ) : null}
                   </Stack>
+                </Paper>
+              )}
+            </AccordionDetails>
+          </Accordion>
+        ) : null}
 
-                  {isLoadingMatches ? (
-                    <Stack direction="row" spacing={1} alignItems="center">
-                      <CircularProgress size={18} />
-                      <Typography color="text.secondary">
-                        Loading match schedule from TBA...
-                      </Typography>
-                    </Stack>
+        {hasPitData(project.dataMode) ? (
+          <Accordion
+            disableGutters
+            disabled={!hasPitQuestionnaire}
+            sx={accordionSx}
+          >
+            <AccordionSummary expandIcon={<ExpandMoreRoundedIcon />}>
+              <Stack spacing={0.25}>
+                <Typography variant="h6" sx={{ fontWeight: 800 }}>
+                  Pit Scouting
+                </Typography>
+                <Typography variant="body2" color="text.secondary">
+                  Placeholder section for project pit scouting tools and
+                  summaries.
+                </Typography>
+              </Stack>
+            </AccordionSummary>
+            <AccordionDetails>
+              {!hasPitQuestionnaire ? (
+                <Alert severity="info">
+                  {getMissingProjectQuestionnaireMessage("pit")}
+                </Alert>
+              ) : (
+                <Stack spacing={1.5}>
+                  {pitTeamsError ? (
+                    <Alert severity="warning">{pitTeamsError}</Alert>
                   ) : null}
 
-                  {!effectiveSchedule && !isLoadingMatches ? (
-                    <Alert severity="info">
-                      No schedule has been generated yet. Add your scouters,
-                      pick a mode, and generate the table from this event&apos;s
-                      qualification matches.
-                    </Alert>
+                  {isLoadingPitTeams || isLoadingPitCoverage ? (
+                    <Alert severity="info">Loading pit scouting teams...</Alert>
                   ) : null}
 
-                  <Menu
-                    anchorEl={filterAnchorEl}
-                    open={isFilterMenuOpen}
-                    onClose={handleCloseFilterMenu}
-                    anchorOrigin={{ vertical: "bottom", horizontal: "right" }}
-                    transformOrigin={{ vertical: "top", horizontal: "right" }}
-                  >
-                    <Box sx={{ p: 1.5, width: 280 }}>
-                      <Stack spacing={1}>
-                        <FieldLabelWithHelp
-                          label="Filter by Scouter"
-                          tooltip="Choose one or more scouters, then decide whether a match should include any of them or all of them."
-                        />
-
-                        <Autocomplete
-                          multiple
-                          options={normalizedWorkingScouterNames}
-                          value={selectedScouterFilters}
-                          onChange={(_, newValue) =>
-                            setSelectedScouterFilters(newValue)
-                          }
-                          renderInput={(params) => (
-                            <TextField
-                              {...params}
-                              size="small"
-                              placeholder="All scouters"
-                              helperText={
-                                selectedScouterFilters.length > 0
-                                  ? `${filteredDisplayRows.length} matches shown`
-                                  : "Show all assigned matches"
-                              }
-                            />
-                          )}
-                        />
-
-                        {selectedScouterFilters.length > 1 ? (
-                          <ToggleButtonGroup
-                            size="small"
-                            exclusive
-                            value={scouterFilterMode}
-                            onChange={(
-                              _,
-                              nextValue: ScouterFilterMode | null
-                            ) => {
-                              if (nextValue) {
-                                setScouterFilterMode(nextValue);
-                              }
-                            }}
-                            sx={{ alignSelf: "flex-start" }}
-                          >
-                            <ToggleButton value="any">Any</ToggleButton>
-                            <ToggleButton value="all">All</ToggleButton>
-                          </ToggleButtonGroup>
-                        ) : null}
-
-                        {selectedScouterFilters.length > 0 ? (
-                          <Button
-                            size="small"
-                            variant="text"
-                            onClick={() => setSelectedScouterFilters([])}
-                            sx={{ alignSelf: "flex-start" }}
-                          >
-                            Clear Filter
-                          </Button>
-                        ) : null}
-                      </Stack>
-                    </Box>
-                  </Menu>
-
-                  {effectiveSchedule ? (
-                    <Stack spacing={1.5}>
-                      <Box sx={{ width: "100%" }}>
-                        <DataGrid<DisplayRow>
-                          rows={filteredDisplayRows}
-                          columns={columns}
-                          editMode="row"
-                          processRowUpdate={processRowUpdate}
-                          onProcessRowUpdateError={handleProcessRowUpdateError}
-                          getRowClassName={getRowClassName}
-                          disableRowSelectionOnClick
-                          disableColumnResize
-                          autoHeight
-                          pageSizeOptions={[10, 25, 50]}
-                          initialState={{
-                            pagination: {
-                              paginationModel: {
-                                pageSize: 10,
-                                page: 0,
-                              },
-                            },
-                            sorting: {
-                              sortModel: [
-                                { field: "matchNumber", sort: "asc" },
-                              ],
-                            },
-                          }}
-                          slots={{
-                            toolbar: GridToolbar,
-                          }}
-                          sx={{
-                            border: 0,
-                            "--DataGrid-overlayHeight": "220px",
-                            "& .MuiDataGrid-toolbarContainer": {
-                              px: 1,
-                              py: 0.5,
-                            },
-                            "& .MuiDataGrid-columnHeaders": {
-                              borderRadius: 2,
-                            },
-                            "& .MuiDataGrid-cell:focus, & .MuiDataGrid-columnHeader:focus":
-                              {
-                                outline: "none",
-                              },
-                            "& .schedule-header-red": {
-                              bgcolor: "error.light",
-                              color: "error.contrastText",
-                              fontWeight: 800,
-                            },
-                            "& .schedule-header-blue": {
-                              bgcolor: "info.light",
-                              color: "info.contrastText",
-                              fontWeight: 800,
-                            },
-                            "& .schedule-cell-red": {
-                              bgcolor: "rgba(244, 67, 54, 0.04)",
-                            },
-                            "& .schedule-cell-blue": {
-                              bgcolor: "rgba(33, 150, 243, 0.04)",
-                            },
-                            "& .schedule-divider-right": {
-                              borderRight: (theme) =>
-                                `2px solid ${theme.palette.divider}`,
-                            },
-                            "& .schedule-block-even": {
-                              backgroundColor: "rgba(15, 23, 42, 0.018)",
-                            },
-                            "& .schedule-block-start": {
-                              borderTop: (theme) =>
-                                `3px solid ${theme.palette.divider}`,
-                            },
-                          }}
-                        />
-                      </Box>
-                    </Stack>
-                  ) : null}
+                  <Box sx={{ width: "100%" }}>
+                    <DataGrid<PitDisplayRow>
+                      rows={pitRows}
+                      columns={pitColumns}
+                      disableRowSelectionOnClick
+                      disableColumnResize
+                      autoHeight
+                      pageSizeOptions={[10, 25, 50]}
+                      initialState={{
+                        pagination: {
+                          paginationModel: {
+                            pageSize: 10,
+                            page: 0,
+                          },
+                        },
+                        sorting: {
+                          sortModel: [{ field: "teamNumber", sort: "asc" }],
+                        },
+                      }}
+                      slots={{
+                        toolbar: GridToolbar,
+                      }}
+                      sx={{
+                        border: 0,
+                        "--DataGrid-overlayHeight": "220px",
+                        "& .MuiDataGrid-toolbarContainer": {
+                          px: 1,
+                          py: 0.5,
+                        },
+                        "& .MuiDataGrid-columnHeaders": {
+                          borderRadius: 2,
+                        },
+                        "& .MuiDataGrid-cell:focus, & .MuiDataGrid-columnHeader:focus":
+                          {
+                            outline: "none",
+                          },
+                      }}
+                    />
+                  </Box>
                 </Stack>
-              </Paper>
-            )}
-          </AccordionDetails>
-        </Accordion>
-      ) : null}
+              )}
+            </AccordionDetails>
+          </Accordion>
+        ) : null}
+      </Stack>
 
-      {hasPitData(project.dataMode) ? (
-        <Accordion
-          disableGutters
-          disabled={!hasPitQuestionnaire}
-          sx={accordionSx}
-        >
-          <AccordionSummary expandIcon={<ExpandMoreRoundedIcon />}>
-            <Stack spacing={0.25}>
-              <Typography variant="h6" sx={{ fontWeight: 800 }}>
-                Pit Scouting
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Placeholder section for project pit scouting tools and
-                summaries.
-              </Typography>
-            </Stack>
-          </AccordionSummary>
-          <AccordionDetails>
-            {!hasPitQuestionnaire ? (
-              <Alert severity="info">
-                {getMissingProjectQuestionnaireMessage("pit")}
-              </Alert>
+      <Dialog
+        open={Boolean(matchSlotModal)}
+        onClose={handleCloseMatchSlotModal}
+        fullWidth
+        maxWidth="sm"
+      >
+        <DialogTitle>
+          {matchSlotModal
+            ? `Match ${matchSlotModal.matchNumber} ${matchSlotModal.slot}`
+            : "Scouting assignment"}
+        </DialogTitle>
+        <DialogContent dividers>
+          <Stack spacing={2}>
+            {matchSlotModal ? (
+              <Box>
+                <Typography variant="body2" color="text.secondary">
+                  Assigned scout
+                </Typography>
+                <Typography variant="body1" sx={{ fontWeight: 700 }}>
+                  {matchSlotModal.assignedName ?? "Unassigned"}
+                </Typography>
+              </Box>
+            ) : null}
+
+            {isLoadingMatchSlotDetails ? (
+              <Stack spacing={1.25}>
+                <Skeleton variant="text" width="45%" height={32} />
+                <Skeleton variant="rounded" height={84} />
+                <Skeleton variant="rounded" height={84} />
+              </Stack>
+            ) : matchSlotDetailsError ? (
+              <Alert severity="error">{matchSlotDetailsError}</Alert>
+            ) : matchSlotDetails.length === 0 ? (
+              <Stack spacing={1.5}>
+                <Alert severity="info">
+                  No data has been collected for this assignment yet.
+                </Alert>
+                {matchSlotPrefillHref ? (
+                  <Button
+                    component={Link}
+                    href={matchSlotPrefillHref}
+                    startIcon={<OpenInNewIcon />}
+                    variant="contained"
+                  >
+                    Open preloaded match scouting
+                  </Button>
+                ) : null}
+              </Stack>
             ) : (
               <Stack spacing={1.5}>
-                {pitTeamsError ? (
-                  <Alert severity="warning">{pitTeamsError}</Alert>
-                ) : null}
+                <Typography variant="subtitle2" color="text.secondary">
+                  Collected entries
+                </Typography>
+                {matchSlotDetails.map((entry) => (
+                  <Paper
+                    key={entry.entryId}
+                    variant="outlined"
+                    sx={{ p: 1.5, borderRadius: 3 }}
+                  >
+                    <Stack spacing={1.25}>
+                      <Stack
+                        direction={{ xs: "column", sm: "row" }}
+                        justifyContent="space-between"
+                        spacing={0.75}
+                      >
+                        <Box>
+                          <Typography
+                            variant="subtitle1"
+                            sx={{ fontWeight: 700 }}
+                          >
+                            {entry.teamNumber != null
+                              ? `#${entry.teamNumber} ${entry.teamName ?? ""}`.trim()
+                              : (entry.teamName ?? "Unknown Team")}
+                          </Typography>
+                          <Typography variant="body2" color="text.secondary">
+                            {entry.scoutingPosition ?? "Unknown position"}
+                            {entry.teamPresence
+                              ? ` • ${entry.teamPresence}`
+                              : ""}
+                          </Typography>
+                        </Box>
+                        <Chip
+                          label={entry.savedAt ?? "Saved"}
+                          size="small"
+                          variant="outlined"
+                        />
+                      </Stack>
 
-                {isLoadingPitTeams || isLoadingPitCoverage ? (
-                  <Alert severity="info">Loading pit scouting teams...</Alert>
-                ) : null}
+                      <Divider />
 
-                <Box sx={{ width: "100%" }}>
-                  <DataGrid<PitDisplayRow>
-                    rows={pitRows}
-                    columns={pitColumns}
-                    disableRowSelectionOnClick
-                    disableColumnResize
-                    autoHeight
-                    pageSizeOptions={[10, 25, 50]}
-                    initialState={{
-                      pagination: {
-                        paginationModel: {
-                          pageSize: 10,
-                          page: 0,
-                        },
-                      },
-                      sorting: {
-                        sortModel: [{ field: "teamNumber", sort: "asc" }],
-                      },
-                    }}
-                    slots={{
-                      toolbar: GridToolbar,
-                    }}
-                    sx={{
-                      border: 0,
-                      "--DataGrid-overlayHeight": "220px",
-                      "& .MuiDataGrid-toolbarContainer": {
-                        px: 1,
-                        py: 0.5,
-                      },
-                      "& .MuiDataGrid-columnHeaders": {
-                        borderRadius: 2,
-                      },
-                      "& .MuiDataGrid-cell:focus, & .MuiDataGrid-columnHeader:focus":
-                        {
-                          outline: "none",
-                        },
-                    }}
-                  />
-                </Box>
+                      <List
+                        disablePadding
+                        dense
+                        sx={{
+                          display: "grid",
+                          gridTemplateColumns: {
+                            xs: "1fr",
+                            sm: "1fr 1fr",
+                          },
+                          columnGap: 2,
+                        }}
+                      >
+                        {entry.answers.map((answer) => (
+                          <ListItem
+                            key={`${entry.entryId}-${answer.label}`}
+                            disableGutters
+                            sx={{
+                              py: 0.5,
+                              alignItems: "flex-start",
+                            }}
+                          >
+                            <ListItemText
+                              primary={answer.label}
+                              secondary={answer.value}
+                              primaryTypographyProps={{
+                                variant: "body2",
+                                sx: { fontWeight: 700 },
+                              }}
+                              secondaryTypographyProps={{
+                                variant: "body2",
+                                color: "text.secondary",
+                              }}
+                            />
+                          </ListItem>
+                        ))}
+                      </List>
+                    </Stack>
+                  </Paper>
+                ))}
               </Stack>
             )}
-          </AccordionDetails>
-        </Accordion>
-      ) : null}
-    </Stack>
+          </Stack>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseMatchSlotModal}>Close</Button>
+        </DialogActions>
+      </Dialog>
+    </>
   );
 }
 

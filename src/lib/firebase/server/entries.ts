@@ -4,7 +4,11 @@ import type {
 } from "firebase-admin/firestore";
 import type { MatchScoutingEntryDoc } from "@/lib/firebase/shared/types";
 import { getAdminDb } from "@/lib/firebase/server/admin";
-import { ProjectMatchCoverageByMatch } from "@/lib/scouting-projects/matchCoverage";
+import {
+  ProjectMatchCoverageByMatch,
+  slotMatchesRecordedPosition,
+} from "@/lib/scouting-projects/matchCoverage";
+import type { ScoutingScheduleSlot } from "@/lib/scouting-projects/types";
 
 export type QuestionnaireEntryDoc = {
   entryId?: string | null;
@@ -243,6 +247,30 @@ export async function getProjectTeamMatchQuestionnaireEntries(
 
       return String(a.savedAt ?? "").localeCompare(String(b.savedAt ?? ""));
     });
+}
+
+export async function getProjectMatchQuestionnaireEntriesForScheduleSlot(
+  projectId: string,
+  eventKey: string,
+  matchNumber: number,
+  slot: ScoutingScheduleSlot
+): Promise<QuestionnaireEntryDoc[]> {
+  const entries = await getAllMatchScoutingEntriesForEvent(eventKey);
+
+  return (entries as QuestionnaireEntryDoc[])
+    .filter((entry) => {
+      const setup = entry.setup;
+      return (
+        setup?.kind === "match" &&
+        setup.projectId === projectId &&
+        setup.matchNumber === matchNumber &&
+        typeof setup.scoutingPosition === "string" &&
+        slotMatchesRecordedPosition(slot, setup.scoutingPosition)
+      );
+    })
+    .sort((a, b) =>
+      String(b.savedAt ?? "").localeCompare(String(a.savedAt ?? ""))
+    );
 }
 
 export async function getProjectTeamPitQuestionnaireEntries(

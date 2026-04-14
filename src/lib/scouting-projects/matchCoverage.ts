@@ -9,23 +9,32 @@ export type ProjectMatchCoverageByMatch = Record<
   }
 >;
 
-export function slotHasRecordedData(
+export function slotMatchesRecordedPosition(
   slot: ScoutingScheduleSlot,
-  positionsWithData: string[]
+  recordedPosition: string
 ): boolean {
-  if (positionsWithData.includes(slot)) {
+  if (slot === recordedPosition) {
     return true;
   }
 
   if (slot === "redAlliance") {
-    return positionsWithData.some((position) => position.startsWith("red"));
+    return recordedPosition.startsWith("red");
   }
 
   if (slot === "blueAlliance") {
-    return positionsWithData.some((position) => position.startsWith("blue"));
+    return recordedPosition.startsWith("blue");
   }
 
   return false;
+}
+
+export function slotHasRecordedData(
+  slot: ScoutingScheduleSlot,
+  positionsWithData: string[]
+): boolean {
+  return positionsWithData.some((position) =>
+    slotMatchesRecordedPosition(slot, position)
+  );
 }
 
 export function countRecordedScheduleSlots(
