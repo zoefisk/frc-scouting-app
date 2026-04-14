@@ -39,30 +39,6 @@ export const navItems: NavItem[] = [
     section: "primary",
   },
   {
-    label: "Match Scouting",
-    href: "/match-scouting",
-    icon: <EditNoteIcon />,
-    section: "primary",
-  },
-  {
-    label: "Alliance Selector",
-    href: "/alliance-selector",
-    icon: <GroupsIcon />,
-    section: "workspace",
-  },
-  {
-    label: "Analysis",
-    href: "/analysis",
-    icon: <AnalyticsIcon />,
-    section: "workspace",
-  },
-  {
-    label: "Scan QR",
-    href: "/scan",
-    icon: <QrCodeScannerIcon />,
-    section: "workspace",
-  },
-  {
     label: "Offline",
     href: "/offline",
     icon: <CloudOffIcon />,
