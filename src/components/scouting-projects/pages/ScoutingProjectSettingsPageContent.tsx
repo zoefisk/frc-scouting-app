@@ -31,7 +31,10 @@ import {
 import { useToast } from "@/lib/hooks/useToast";
 import {
   getProjectMemberRole,
+  hasMatchData,
+  hasPitData,
   type ProjectAllianceSelectorRole,
+  type ProjectDataMode,
   type ProjectMemberRole,
   type ScoutingProjectDoc,
 } from "@/lib/scouting-projects/types";
@@ -75,7 +78,13 @@ export default function ScoutingProjectSettingsPageContent({
   const canManageProject = memberRole === "owner" || memberRole === "admin";
   const canReassignRoles = memberRole === "owner";
   const canDeleteProject = memberRole === "owner";
+  const canChangeDataMode = memberRole === "owner";
   const [projectStatus, setProjectStatus] = React.useState(project.status);
+  const [projectDataMode, setProjectDataMode] = React.useState(
+    project.dataMode
+  );
+  const showsMatchBuilder = hasMatchData(projectDataMode);
+  const showsPitBuilder = hasPitData(projectDataMode);
   const [allowMemberInvites, setAllowMemberInvites] = React.useState(
     project.allowMemberInvites
   );
@@ -163,6 +172,10 @@ export default function ScoutingProjectSettingsPageContent({
   }, [project.status]);
 
   React.useEffect(() => {
+    setProjectDataMode(project.dataMode);
+  }, [project.dataMode]);
+
+  React.useEffect(() => {
     setAllowMemberInvites(project.allowMemberInvites);
   }, [project.allowMemberInvites]);
 
@@ -225,6 +238,102 @@ export default function ScoutingProjectSettingsPageContent({
       console.error("Failed to update project status:", error);
       setProjectStatus(previousValue);
       toast.error("Could not update project status.");
+    } finally {
+      setIsSavingStatus(false);
+    }
+  };
+
+  const handleProjectDataModeChange = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const nextValue = event.target.value as ProjectDataMode;
+    const previousValue = projectDataMode;
+
+    if (!canChangeDataMode) {
+      return;
+    }
+
+    if (!effectiveOnline) {
+      toast.warning("Project settings cannot be changed while offline.");
+      return;
+    }
+
+    const removesMatchData =
+      hasMatchData(project.dataMode) &&
+      !hasMatchData(nextValue) &&
+      hasMatchScoutingData;
+    const removesPitData =
+      hasPitData(project.dataMode) &&
+      !hasPitData(nextValue) &&
+      hasPitScoutingData;
+
+    if (removesMatchData || removesPitData) {
+      const deletedKinds = [
+        removesMatchData ? "match scouting entries" : null,
+        removesPitData ? "pit scouting entries" : null,
+      ]
+        .filter(Boolean)
+        .join(" and ");
+
+      const firstConfirmed = window.confirm(
+        `Changing this scouting mode will delete existing ${deletedKinds} that no longer fit this project. Do you want to continue?`
+      );
+
+      if (!firstConfirmed) {
+        return;
+      }
+
+      const secondConfirmed = window.confirm(
+        `Please confirm again: existing ${deletedKinds} will be permanently deleted.`
+      );
+
+      if (!secondConfirmed) {
+        return;
+      }
+    }
+
+    setProjectDataMode(nextValue);
+    setIsSavingStatus(true);
+
+    try {
+      const idToken = await getCurrentUserIdToken();
+
+      if (!idToken) {
+        throw new Error("You must be signed in as the project owner.");
+      }
+
+      const response = await fetch(
+        `/api/scouting-projects/${project.id}/data-mode`,
+        {
+          method: "PUT",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${idToken}`,
+          },
+          body: JSON.stringify({
+            dataMode: nextValue,
+          }),
+        }
+      );
+
+      const data = await response.json();
+
+      if (!response.ok || !data?.ok) {
+        throw new Error(
+          data?.error ?? "Could not update project scouting modes."
+        );
+      }
+
+      toast.success("Project scouting modes updated.");
+      router.refresh();
+    } catch (error) {
+      console.error("Failed to update project scouting modes:", error);
+      setProjectDataMode(previousValue);
+      toast.error(
+        error instanceof Error
+          ? error.message
+          : "Could not update project scouting modes."
+      );
     } finally {
       setIsSavingStatus(false);
     }
@@ -523,6 +632,35 @@ export default function ScoutingProjectSettingsPageContent({
             Owners and admins can mark projects inactive when they should stay
             visible but are no longer in active use.
           </Typography>
+
+          {canChangeDataMode ? (
+            <>
+              <TextField
+                select
+                size="small"
+                label="Scouting Modes"
+                value={projectDataMode}
+                disabled={isSavingStatus}
+                onChange={handleProjectDataModeChange}
+                sx={{ maxWidth: 220 }}
+              >
+                <MenuItem value="match">match</MenuItem>
+                <MenuItem value="pit">pit</MenuItem>
+                <MenuItem value="both">both</MenuItem>
+              </TextField>
+
+              <Alert severity="warning">
+                Changing which scouting modes are enabled can remove access to
+                existing questionnaire setups for the disabled mode. Changes
+                made to those questionnaires may be lost.
+              </Alert>
+
+              <Typography variant="body2" color="text.secondary">
+                Only the project owner can change whether this project uses
+                match scouting, pit scouting, or both.
+              </Typography>
+            </>
+          ) : null}
         </Stack>
       </Paper>
 
@@ -546,38 +684,46 @@ export default function ScoutingProjectSettingsPageContent({
             ) : null}
 
             <Stack direction={{ xs: "column", sm: "row" }} spacing={1.5}>
-              <Link
-                href={`/scouting-projects/${project.id}/settings/match-scouting-builder`}
-                style={{ textDecoration: "none" }}
-              >
-                <Button variant="contained" disabled={hasMatchScoutingData}>
-                  Match Scouting Builder
-                </Button>
-              </Link>
+              {showsMatchBuilder ? (
+                <Link
+                  href={`/scouting-projects/${project.id}/settings/match-scouting-builder`}
+                  style={{ textDecoration: "none" }}
+                >
+                  <Button variant="contained" disabled={hasMatchScoutingData}>
+                    Match Scouting Builder
+                  </Button>
+                </Link>
+              ) : null}
 
-              <Link
-                href={`/scouting-projects/${project.id}/settings/pit-scouting-builder`}
-                style={{ textDecoration: "none" }}
-              >
-                <Button variant="outlined" disabled={hasPitScoutingData}>
-                  Pit Scouting Builder
-                </Button>
-              </Link>
+              {showsPitBuilder ? (
+                <Link
+                  href={`/scouting-projects/${project.id}/settings/pit-scouting-builder`}
+                  style={{ textDecoration: "none" }}
+                >
+                  <Button variant="outlined" disabled={hasPitScoutingData}>
+                    Pit Scouting Builder
+                  </Button>
+                </Link>
+              ) : null}
             </Stack>
 
             <Stack spacing={0.5}>
-              <Typography variant="body2" color="text.secondary">
-                Match scouting builder:{" "}
-                {hasMatchScoutingData
-                  ? "Unavailable because this project already has match scouting data."
-                  : "Available"}
-              </Typography>
-              <Typography variant="body2" color="text.secondary">
-                Pit scouting builder:{" "}
-                {hasPitScoutingData
-                  ? "Unavailable because this project already has pit scouting data."
-                  : "Available"}
-              </Typography>
+              {showsMatchBuilder ? (
+                <Typography variant="body2" color="text.secondary">
+                  Match scouting builder:{" "}
+                  {hasMatchScoutingData
+                    ? "Unavailable because this project already has match scouting data."
+                    : "Available"}
+                </Typography>
+              ) : null}
+              {showsPitBuilder ? (
+                <Typography variant="body2" color="text.secondary">
+                  Pit scouting builder:{" "}
+                  {hasPitScoutingData
+                    ? "Unavailable because this project already has pit scouting data."
+                    : "Available"}
+                </Typography>
+              ) : null}
             </Stack>
           </Stack>
         </Paper>
