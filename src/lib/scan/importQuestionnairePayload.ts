@@ -4,6 +4,10 @@ import {
   savePitScoutingEntry,
 } from "@/lib/firebase/client/entries";
 import { getBuiltInQuestionnaireById } from "@/lib/scouting/questionnaire/registry";
+import {
+  getAlliancePerfFieldId,
+  PERF_FIELDS,
+} from "@/lib/scouting/performanceRatings";
 import type {
   QuestionnaireAnswers,
   QuestionnaireDefinition,
@@ -32,12 +36,21 @@ export type ImportedQuestionnairePayload = {
     kind: "match" | "pit";
     projectId: string | null;
     eventKey: string;
+    matchCollectionMode?: "robot" | "alliance" | null;
     matchNumber: number | null;
     scoutingPosition: string | null;
     teamPresence: string | null;
     teamKey: string | null;
     teamNumber: number | null;
     teamName: string;
+    allianceTeams?: Array<{
+      slot: number;
+      teamKey: string | null;
+      teamNumber: number | null;
+      teamName: string;
+      teamPresence: string | null;
+      robotPosition: string | null;
+    }>;
   };
   answers: QuestionnaireAnswers;
   savedAt: string;
@@ -93,6 +106,66 @@ function generateEntryId() {
   return typeof crypto !== "undefined" && "randomUUID" in crypto
     ? crypto.randomUUID()
     : `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+function buildDerivedTeamKey(teamNumber: number | null): string | null {
+  return Number.isFinite(teamNumber) ? `frc${teamNumber}` : null;
+}
+
+function normalizeImportedAllianceTeams(
+  rawAllianceTeams: unknown
+): ImportedQuestionnairePayload["setup"]["allianceTeams"] {
+  if (!Array.isArray(rawAllianceTeams)) {
+    return [];
+  }
+
+  return rawAllianceTeams.map((entry, index) => {
+    const record =
+      entry && typeof entry === "object"
+        ? (entry as Record<string, unknown>)
+        : {};
+    const teamNumber = Number(record.teamNumber);
+    const normalizedTeamNumber = Number.isFinite(teamNumber)
+      ? teamNumber
+      : null;
+
+    return {
+      slot: Number(record.slot) || index + 1,
+      teamKey:
+        typeof record.teamKey === "string" && record.teamKey.trim()
+          ? record.teamKey.trim()
+          : buildDerivedTeamKey(normalizedTeamNumber),
+      teamNumber: normalizedTeamNumber,
+      teamName: String(
+        record.teamName ??
+          (normalizedTeamNumber != null ? `Team ${normalizedTeamNumber}` : "")
+      ),
+      teamPresence:
+        typeof record.teamPresence === "string" ? record.teamPresence : null,
+      robotPosition:
+        typeof record.robotPosition === "string" ? record.robotPosition : null,
+    };
+  });
+}
+
+function buildAnswersForImportedAllianceTeam(
+  answers: QuestionnaireAnswers,
+  teamKey: string
+): QuestionnaireAnswers {
+  const nextAnswers: QuestionnaireAnswers = { ...answers };
+
+  for (const field of PERF_FIELDS) {
+    const teamSpecificValue =
+      answers[getAlliancePerfFieldId(teamKey, field.id)];
+
+    if (typeof teamSpecificValue === "number") {
+      nextAnswers[field.id] = teamSpecificValue;
+    } else {
+      delete nextAnswers[field.id];
+    }
+  }
+
+  return nextAnswers;
 }
 
 function parseCsvLine(line: string): string[] {
@@ -217,6 +290,11 @@ function normalizeRawJsonPayload(
     rawMatchNumber == null || rawMatchNumber === ""
       ? null
       : Number(rawMatchNumber);
+  const matchCollectionMode =
+    setup.matchCollectionMode === "alliance" ? "alliance" : "robot";
+  const allianceTeams = normalizeImportedAllianceTeams(setup.allianceTeams);
+  const teamNumber = Number(payload.teamNumber ?? setup.teamNumber);
+  const normalizedTeamNumber = Number.isFinite(teamNumber) ? teamNumber : null;
 
   return {
     v: typeof payload.v === "number" ? payload.v : 1,
@@ -245,9 +323,7 @@ function normalizeRawJsonPayload(
           ? String(setup.teamPresence)
           : null,
     teamKey,
-    teamNumber: Number.isFinite(Number(payload.teamNumber ?? setup.teamNumber))
-      ? Number(payload.teamNumber ?? setup.teamNumber)
-      : null,
+    teamNumber: normalizedTeamNumber,
     teamName: String(payload.teamName ?? setup.teamName ?? teamKey),
     selectedTeamKey: teamKey,
     questionnaire: {
@@ -262,6 +338,7 @@ function normalizeRawJsonPayload(
           setup.projectId ?? payload.projectId ?? fallbackProjectId ?? ""
         ).trim() || null,
       eventKey,
+      matchCollectionMode,
       matchNumber:
         Number.isFinite(numericMatchNumber) && kind === "match"
           ? numericMatchNumber
@@ -279,12 +356,9 @@ function normalizeRawJsonPayload(
             ? payload.teamPresence
             : null,
       teamKey,
-      teamNumber: Number.isFinite(
-        Number(payload.teamNumber ?? setup.teamNumber)
-      )
-        ? Number(payload.teamNumber ?? setup.teamNumber)
-        : null,
+      teamNumber: normalizedTeamNumber,
       teamName: String(payload.teamName ?? setup.teamName ?? teamKey),
+      allianceTeams,
     },
     answers:
       typeof payload.answers === "object" && payload.answers != null
@@ -294,6 +368,41 @@ function normalizeRawJsonPayload(
       typeof payload.savedAt === "string"
         ? payload.savedAt
         : new Date().toISOString(),
+  };
+}
+
+function parseAllianceTeamCsvEntry(
+  record: Record<string, string>,
+  slot: number
+): ImportedQuestionnairePayload["setup"]["allianceTeams"][number] | null {
+  const explicitTeamKey = String(record[`allianceTeam${slot}Key`] ?? "").trim();
+  const explicitTeamNumber = Number(record[`allianceTeam${slot}Number`] ?? "");
+  const fallbackLabel = String(record[`allianceTeam${slot}`] ?? "").trim();
+  const fallbackMatch = fallbackLabel.match(/^#(\d+)\s*(.*)$/);
+  const teamNumber = Number.isFinite(explicitTeamNumber)
+    ? explicitTeamNumber
+    : fallbackMatch
+      ? Number(fallbackMatch[1])
+      : null;
+  const teamKey = explicitTeamKey || buildDerivedTeamKey(teamNumber) || null;
+  const teamName = String(
+    record[`allianceTeam${slot}Name`] ??
+      (fallbackMatch?.[2]?.trim() || fallbackLabel || "")
+  ).trim();
+
+  if (!teamKey && teamNumber == null && !teamName) {
+    return null;
+  }
+
+  return {
+    slot,
+    teamKey,
+    teamNumber,
+    teamName: teamName || (teamNumber != null ? `Team ${teamNumber}` : ""),
+    teamPresence:
+      String(record[`allianceTeam${slot}Presence`] ?? "").trim() || null,
+    robotPosition:
+      String(record[`allianceTeam${slot}Position`] ?? "").trim() || null,
   };
 }
 
@@ -341,6 +450,10 @@ async function parseCsvPayload(
       : questionnaireId.includes("pit")
         ? "pit"
         : "match";
+  const matchCollectionMode =
+    String(record.matchCollectionMode ?? "").trim() === "alliance"
+      ? "alliance"
+      : "robot";
 
   const answers: QuestionnaireAnswers = {};
   for (const [key, value] of Object.entries(record)) {
@@ -356,9 +469,26 @@ async function parseCsvPayload(
   const rawMatchNumber = String(record.matchNumber ?? "").trim();
   const numericMatchNumber =
     rawMatchNumber === "" ? null : Number(rawMatchNumber);
+  const allianceTeams =
+    matchCollectionMode === "alliance"
+      ? [1, 2, 3]
+          .map((slot) => parseAllianceTeamCsvEntry(record, slot))
+          .filter(Boolean)
+      : [];
 
-  if (!teamKey || !eventKey) {
-    throw new Error("CSV import is missing teamKey or eventKey.");
+  const fallbackTeamNumber = allianceTeams[0]?.teamNumber ?? null;
+  const fallbackTeamKey = allianceTeams[0]?.teamKey ?? "";
+
+  if (!eventKey) {
+    throw new Error("CSV import is missing eventKey.");
+  }
+
+  if (matchCollectionMode !== "alliance" && !teamKey) {
+    throw new Error("CSV import is missing teamKey.");
+  }
+
+  if (matchCollectionMode === "alliance" && allianceTeams.length === 0) {
+    throw new Error("Alliance-mode CSV import is missing alliance team data.");
   }
 
   return {
@@ -377,12 +507,12 @@ async function parseCsvPayload(
         ? String(record.scoutingPosition ?? "").trim() || null
         : null,
     teamPresence: String(record.teamPresence ?? "").trim() || null,
-    teamKey,
+    teamKey: teamKey || fallbackTeamKey || null,
     teamNumber: Number.isFinite(Number(record.teamNumber))
       ? Number(record.teamNumber)
-      : null,
-    teamName: String(record.teamName ?? teamKey),
-    selectedTeamKey: teamKey,
+      : fallbackTeamNumber,
+    teamName: String(record.teamName ?? allianceTeams[0]?.teamName ?? teamKey),
+    selectedTeamKey: teamKey || fallbackTeamKey || null,
     questionnaire: {
       id: questionnaireId,
       name: String(
@@ -399,6 +529,7 @@ async function parseCsvPayload(
       projectId:
         String(record.projectId ?? fallbackProjectId ?? "").trim() || null,
       eventKey,
+      matchCollectionMode,
       matchNumber:
         kind === "match" && Number.isFinite(numericMatchNumber)
           ? numericMatchNumber
@@ -408,21 +539,76 @@ async function parseCsvPayload(
           ? String(record.scoutingPosition ?? "").trim() || null
           : null,
       teamPresence: String(record.teamPresence ?? "").trim() || null,
-      teamKey,
+      teamKey: teamKey || fallbackTeamKey || null,
       teamNumber: Number.isFinite(Number(record.teamNumber))
         ? Number(record.teamNumber)
-        : null,
-      teamName: String(record.teamName ?? teamKey),
+        : fallbackTeamNumber,
+      teamName: String(
+        record.teamName ?? allianceTeams[0]?.teamName ?? teamKey
+      ),
+      allianceTeams,
     },
     answers,
     savedAt: String(record.savedAt ?? new Date().toISOString()),
   };
 }
 
-export async function normalizeImportedQuestionnaireText(
+function expandImportedQuestionnairePayload(
+  payload: ImportedQuestionnairePayload
+): ImportedQuestionnairePayload[] {
+  if (
+    payload.setup.kind !== "match" ||
+    payload.setup.matchCollectionMode !== "alliance"
+  ) {
+    return [payload];
+  }
+
+  const allianceTeams = (payload.setup.allianceTeams ?? []).filter(
+    (team) => team.teamKey || team.teamNumber != null
+  );
+
+  if (allianceTeams.length === 0) {
+    return [payload];
+  }
+
+  return allianceTeams.map((team, index) => {
+    const resolvedTeamKey =
+      team.teamKey ?? buildDerivedTeamKey(team.teamNumber) ?? null;
+    const entryIdBase = payload.entryId || generateEntryId();
+
+    return {
+      ...payload,
+      entryId:
+        resolvedTeamKey != null
+          ? `${entryIdBase}-${resolvedTeamKey}`
+          : `${entryIdBase}-${index + 1}`,
+      teamKey: resolvedTeamKey,
+      teamNumber: team.teamNumber,
+      teamName: team.teamName,
+      selectedTeamKey: resolvedTeamKey,
+      teamPresence: team.teamPresence,
+      setup: {
+        ...payload.setup,
+        teamKey: resolvedTeamKey,
+        teamNumber: team.teamNumber,
+        teamName: team.teamName,
+        teamPresence: team.teamPresence,
+      },
+      answers:
+        resolvedTeamKey != null
+          ? buildAnswersForImportedAllianceTeam(
+              payload.answers,
+              resolvedTeamKey
+            )
+          : payload.answers,
+    };
+  });
+}
+
+export async function normalizeImportedQuestionnaireTexts(
   rawText: string,
   fallbackProjectId?: string
-): Promise<ImportedQuestionnairePayload> {
+): Promise<ImportedQuestionnairePayload[]> {
   const trimmed = rawText.trim();
   if (!trimmed) {
     throw new Error("Import text is empty.");
@@ -430,10 +616,44 @@ export async function normalizeImportedQuestionnaireText(
 
   if (trimmed.startsWith("{")) {
     const parsed = JSON.parse(trimmed) as Record<string, unknown>;
-    return normalizeRawJsonPayload(parsed, fallbackProjectId);
+    if (
+      parsed.type === "questionnaire_response_batch" &&
+      Array.isArray(parsed.entries)
+    ) {
+      return parsed.entries.flatMap((entry) =>
+        expandImportedQuestionnairePayload(
+          normalizeRawJsonPayload(
+            (entry ?? {}) as Record<string, unknown>,
+            fallbackProjectId
+          )
+        )
+      );
+    }
+
+    return expandImportedQuestionnairePayload(
+      normalizeRawJsonPayload(parsed, fallbackProjectId)
+    );
   }
 
-  return parseCsvPayload(trimmed, fallbackProjectId);
+  return expandImportedQuestionnairePayload(
+    await parseCsvPayload(trimmed, fallbackProjectId)
+  );
+}
+
+export async function normalizeImportedQuestionnaireText(
+  rawText: string,
+  fallbackProjectId?: string
+): Promise<ImportedQuestionnairePayload> {
+  const payloads = await normalizeImportedQuestionnaireTexts(
+    rawText,
+    fallbackProjectId
+  );
+
+  if (payloads.length === 0) {
+    throw new Error("Import text did not contain any scouting entries.");
+  }
+
+  return payloads[0];
 }
 
 export async function uploadImportedQuestionnairePayload(

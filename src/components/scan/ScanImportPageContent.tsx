@@ -34,7 +34,7 @@ import {
 import type { ScannedEntry } from "@/lib/qr-scanner/types";
 import {
   buildImportedQuestionnaireDuplicateKey,
-  normalizeImportedQuestionnaireText,
+  normalizeImportedQuestionnaireTexts,
   type ImportedQuestionnairePayload,
   uploadImportedQuestionnairePayload,
 } from "@/lib/scan/importQuestionnairePayload";
@@ -213,10 +213,19 @@ export default function ScanImportPageContent({
           .sort((a, b) => b.scannedAt.localeCompare(a.scannedAt))
           .map(async (entry) => {
             try {
-              const payload = await normalizeImportedQuestionnaireText(
-                entry.rawText,
-                entry.fallbackProjectId ?? defaultProjectId
-              );
+              const payload = (
+                await normalizeImportedQuestionnaireTexts(
+                  entry.rawText,
+                  entry.fallbackProjectId ?? defaultProjectId
+                )
+              )[0];
+
+              if (!payload) {
+                throw new Error(
+                  "Imported entry did not contain a scouting payload."
+                );
+              }
+
               return { entry, payload, error: null, duplicateKey: null };
             } catch (error) {
               return {
@@ -316,27 +325,37 @@ export default function ScanImportPageContent({
 
   const saveRawImportText = React.useCallback(
     async (rawText: string) => {
-      const payload = await normalizeImportedQuestionnaireText(
+      const payloads = await normalizeImportedQuestionnaireTexts(
         rawText,
         defaultProjectId
       );
-      const duplicateKey = buildImportedQuestionnaireDuplicateKey(payload);
+
+      if (payloads.length === 0) {
+        throw new Error("Import did not contain any scouting entries.");
+      }
+
+      const duplicateKeys = payloads.map((payload) =>
+        buildImportedQuestionnaireDuplicateKey(payload)
+      );
       const saved = await getScannedEntries<ScannedEntry>();
 
       for (const savedEntry of saved) {
         try {
-          const savedPayload = await normalizeImportedQuestionnaireText(
+          const savedPayloads = await normalizeImportedQuestionnaireTexts(
             savedEntry.rawText,
             savedEntry.fallbackProjectId ?? defaultProjectId
           );
 
-          if (
-            buildImportedQuestionnaireDuplicateKey(savedPayload) ===
-            duplicateKey
-          ) {
-            throw new Error(
-              "That scouting entry is already in the import queue."
-            );
+          for (const savedPayload of savedPayloads) {
+            if (
+              duplicateKeys.includes(
+                buildImportedQuestionnaireDuplicateKey(savedPayload)
+              )
+            ) {
+              throw new Error(
+                "That scouting entry is already in the import queue."
+              );
+            }
           }
         } catch (error) {
           if (
@@ -349,12 +368,16 @@ export default function ScanImportPageContent({
         }
       }
 
-      await saveScannedEntry(
-        buildScannedEntry(rawText, {
-          fallbackProjectId: defaultProjectId ?? null,
-        })
-      );
+      for (const payload of payloads) {
+        await saveScannedEntry(
+          buildScannedEntry(JSON.stringify(payload), {
+            fallbackProjectId: defaultProjectId ?? null,
+          })
+        );
+      }
+
       await loadQueue();
+      return payloads.length;
     },
     [defaultProjectId, loadQueue]
   );
@@ -370,8 +393,12 @@ export default function ScanImportPageContent({
         recentScanRef.current.delete(decodedText);
       }, 2500);
 
-      await saveRawImportText(decodedText);
-      toast.success("Scouting QR imported into the queue.");
+      const importedCount = await saveRawImportText(decodedText);
+      toast.success(
+        importedCount === 1
+          ? "Scouting QR imported into the queue."
+          : `Scouting QR imported ${importedCount} entries into the queue.`
+      );
     },
     [saveRawImportText, toast]
   );
@@ -413,9 +440,13 @@ export default function ScanImportPageContent({
     }
 
     try {
-      await saveRawImportText(trimmed);
+      const importedCount = await saveRawImportText(trimmed);
       setPasteValue("");
-      toast.success("Imported pasted scouting entry into the queue.");
+      toast.success(
+        importedCount === 1
+          ? "Imported pasted scouting entry into the queue."
+          : `Imported ${importedCount} pasted scouting entries into the queue.`
+      );
     } catch (error) {
       console.error(error);
       toast.error("Could not import pasted scouting data.");
@@ -430,15 +461,16 @@ export default function ScanImportPageContent({
       }
 
       try {
+        let importedCount = 0;
         for (const file of files) {
           const text = await file.text();
-          await saveRawImportText(text);
+          importedCount += await saveRawImportText(text);
         }
 
         toast.success(
-          files.length === 1
-            ? "Imported 1 CSV into the queue."
-            : `Imported ${files.length} CSV files into the queue.`
+          importedCount === 1
+            ? "Imported 1 scouting entry from CSV into the queue."
+            : `Imported ${importedCount} scouting entries from CSV into the queue.`
         );
       } catch (error) {
         console.error(error);

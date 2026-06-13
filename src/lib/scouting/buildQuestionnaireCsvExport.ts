@@ -103,6 +103,18 @@ export function buildQuestionnaireCsvExport({
           : "",
       ]);
       metadataEntries.push([
+        `allianceTeam${team.slot}Key`,
+        team.team?.key ?? "",
+      ]);
+      metadataEntries.push([
+        `allianceTeam${team.slot}Number`,
+        team.team?.team_number ?? "",
+      ]);
+      metadataEntries.push([
+        `allianceTeam${team.slot}Name`,
+        team.team?.nickname ?? team.team?.name ?? team.team?.key ?? "",
+      ]);
+      metadataEntries.push([
         `allianceTeam${team.slot}Presence`,
         team.teamPresence,
       ]);

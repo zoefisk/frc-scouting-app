@@ -21,10 +21,10 @@ import {
   Typography,
 } from "@mui/material";
 import ArrowBackRoundedIcon from "@mui/icons-material/ArrowBackRounded";
+import ExpandMoreRoundedIcon from "@mui/icons-material/ExpandMoreRounded";
 import LockOutlinedIcon from "@mui/icons-material/LockOutlined";
 import PlaylistAddRoundedIcon from "@mui/icons-material/PlaylistAddRounded";
 import UploadFileRoundedIcon from "@mui/icons-material/UploadFileRounded";
-import ExpandMoreRoundedIcon from "@mui/icons-material/ExpandMoreRounded";
 import { useRouter } from "next/navigation";
 import { ZodError } from "zod";
 
@@ -41,6 +41,7 @@ import ScoutingPositionField, {
   type ScoutingPosition,
 } from "@/components/scouting/form/fields/match-info/ScoutingPositionField";
 import TeamAutocompleteField from "@/components/scouting/form/fields/match-info/TeamAutocompleteField";
+import QuestionnaireBuilderChatWidget from "@/components/scouting-projects/pages/QuestionnaireBuilderChatWidget";
 import QuestionnaireSchemaReference from "@/components/scouting-projects/pages/QuestionnaireSchemaReference";
 import { useAuth } from "@/components/app/providers/AuthProvider";
 import { useSyncMode } from "@/components/app/providers/SyncModeProvider";
@@ -900,6 +901,15 @@ export default function ProjectQuestionnaireBuilderPageContent({
           </Accordion>
         </Stack>
       )}
+
+      {editableQuestionnaire ? (
+        <QuestionnaireBuilderChatWidget
+          projectId={project.id}
+          kind={kind}
+          questionnaireName={name}
+          definitionText={definitionText}
+        />
+      ) : null}
     </Stack>
   );
 }

@@ -7,14 +7,15 @@ import { useToast } from "@/lib/hooks/useToast";
 import type { ScannedEntry } from "@/lib/qr-scanner/types";
 import {
   buildImportedQuestionnaireDuplicateKey,
-  normalizeImportedQuestionnaireText,
+  normalizeImportedQuestionnaireTexts,
   uploadImportedQuestionnairePayload,
 } from "@/lib/scan/importQuestionnairePayload";
 import { deleteScannedEntry, getScannedEntries } from "@/lib/db/scans";
 
 type ParsedQueueEntry = {
   entry: ScannedEntry;
-  duplicateKey: string;
+  payloads: Awaited<ReturnType<typeof normalizeImportedQuestionnaireTexts>>;
+  duplicateKeys: string[];
 };
 
 export default function ScannedEntriesSyncProvider({
@@ -41,34 +42,43 @@ export default function ScannedEntriesSyncProvider({
 
       for (const entry of savedEntries) {
         try {
-          const payload = await normalizeImportedQuestionnaireText(
+          const payloads = await normalizeImportedQuestionnaireTexts(
             entry.rawText,
             entry.fallbackProjectId ?? undefined
           );
-          const duplicateKey = buildImportedQuestionnaireDuplicateKey(payload);
-          duplicateCounts.set(
-            duplicateKey,
-            (duplicateCounts.get(duplicateKey) ?? 0) + 1
+          const duplicateKeys = payloads.map((payload) =>
+            buildImportedQuestionnaireDuplicateKey(payload)
           );
-          parsedEntries.push({ entry, duplicateKey });
+
+          for (const duplicateKey of duplicateKeys) {
+            duplicateCounts.set(
+              duplicateKey,
+              (duplicateCounts.get(duplicateKey) ?? 0) + 1
+            );
+          }
+
+          parsedEntries.push({ entry, payloads, duplicateKeys });
         } catch (error) {
           console.error("Skipping invalid scanned queue entry:", error);
         }
       }
 
       for (const parsedEntry of parsedEntries) {
-        if ((duplicateCounts.get(parsedEntry.duplicateKey) ?? 0) > 1) {
+        if (
+          parsedEntry.duplicateKeys.some(
+            (duplicateKey) => (duplicateCounts.get(duplicateKey) ?? 0) > 1
+          )
+        ) {
           continue;
         }
 
         try {
-          const payload = await normalizeImportedQuestionnaireText(
-            parsedEntry.entry.rawText,
-            parsedEntry.entry.fallbackProjectId ?? undefined
-          );
-          await uploadImportedQuestionnairePayload(payload);
+          for (const payload of parsedEntry.payloads) {
+            await uploadImportedQuestionnairePayload(payload);
+          }
+
           await deleteScannedEntry(parsedEntry.entry.scanId);
-          syncedCount += 1;
+          syncedCount += parsedEntry.payloads.length;
         } catch (error) {
           console.error(
             `Failed to sync scanned entry ${parsedEntry.entry.scanId}:`,
