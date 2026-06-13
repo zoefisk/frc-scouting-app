@@ -8,12 +8,15 @@ type Props = {
   defaultEventKey?: string;
   defaultMatchNumber?: string;
   defaultScoutingPosition?:
+    | "blueAlliance"
     | "blue1"
     | "blue2"
     | "blue3"
+    | "redAlliance"
     | "red1"
     | "red2"
     | "red3";
+  matchCollectionMode?: "robot" | "alliance";
   lockEvent?: boolean;
   enableDraftHydration?: boolean;
   title?: string;
@@ -26,6 +29,7 @@ export default function MatchScoutingPageContent({
   defaultEventKey = "2026cthar",
   defaultMatchNumber,
   defaultScoutingPosition,
+  matchCollectionMode = "robot",
   lockEvent = false,
   enableDraftHydration = true,
   title,
@@ -38,6 +42,7 @@ export default function MatchScoutingPageContent({
       defaultEventKey={defaultEventKey}
       defaultMatchNumber={defaultMatchNumber}
       defaultScoutingPosition={defaultScoutingPosition}
+      matchCollectionMode={matchCollectionMode}
       lockEvent={lockEvent}
       enableDraftHydration={enableDraftHydration}
       title={title}

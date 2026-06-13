@@ -19,6 +19,7 @@ import { buildProjectQuestionnaireDoc } from "@/lib/scouting-projects/questionna
 import {
   buildDefaultQuestionnaireTemplate,
   buildScratchQuestionnaireTemplate,
+  getDefaultQuestionnaireTemplateId,
 } from "@/lib/scouting-projects/questionnaires/templates";
 import { getProjectMemberRole } from "@/lib/scouting-projects/types";
 
@@ -113,13 +114,15 @@ export async function POST(
         source: "custom",
         basedOnQuestionnaireId:
           template === "default"
-            ? kind === "match"
-              ? "match-scouting"
-              : "pit-scouting"
+            ? getDefaultQuestionnaireTemplateId(kind, {
+                matchCollectionMode: project.matchCollectionMode,
+              })
             : null,
         definition:
           template === "default"
-            ? buildDefaultQuestionnaireTemplate(kind)
+            ? buildDefaultQuestionnaireTemplate(kind, {
+                matchCollectionMode: project.matchCollectionMode,
+              })
             : buildScratchQuestionnaireTemplate(kind),
       },
       questionnaireId,

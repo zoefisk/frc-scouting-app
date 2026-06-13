@@ -26,17 +26,14 @@ import {
   DialogActions,
   DialogContent,
   DialogTitle,
-  FormControl,
-  InputLabel,
   Divider,
   List,
   ListItem,
   ListItemText,
   Menu,
-  MenuItem,
   Paper,
-  Select,
   Skeleton,
+  Slider,
   Stack,
   TextField,
   Tooltip,
@@ -58,13 +55,13 @@ import { useToast } from "@/lib/hooks/useToast";
 import { updateScoutingProjectClient } from "@/lib/firebase/client/projects";
 import {
   buildBlankScoutingSchedule,
-  DEFAULT_SCOUTING_SCHEDULE_BLOCK_SIZE,
   generateFairScoutingSchedule,
   getQualificationMatches,
   getScheduleSlotsForMode,
   getScoutingDataCollectionStatusForMatch,
   isTbaMatchPlayed,
   normalizeScouterNames,
+  regenerateFairScoutingScheduleAfterMatch,
 } from "@/lib/scouting-projects/schedule";
 import {
   getMinimumScoutersForMode,
@@ -72,6 +69,7 @@ import {
   validateScoutingScheduleDocument,
 } from "@/lib/scouting-projects/scouting-schedule/validation";
 import type {
+  ScoutingScheduleBlockSize,
   MatchCollectionMode,
   ScoutingProjectDoc,
   ScoutingScheduleDoc,
@@ -80,6 +78,8 @@ import type {
   ScoutingScheduleSlot,
 } from "@/lib/scouting-projects/types";
 import {
+  getScoutingScheduleBlockSize,
+  SCOUTING_SCHEDULE_BLOCK_SIZE_OPTIONS,
   getProjectMemberRole,
   hasMatchData,
   hasPitData,
@@ -236,8 +236,11 @@ function buildDisplayRows(
       return {
         id: `match-${entry.matchNumber}`,
         matchNumber: entry.matchNumber,
-        blockIndex: Math.floor(index / DEFAULT_SCOUTING_SCHEDULE_BLOCK_SIZE),
-        isBlockStart: index % DEFAULT_SCOUTING_SCHEDULE_BLOCK_SIZE === 0,
+        blockIndex: Math.floor(
+          index / getScoutingScheduleBlockSize(schedule.blockSize)
+        ),
+        isBlockStart:
+          index % getScoutingScheduleBlockSize(schedule.blockSize) === 0,
         statusLabel: matchStatus.label,
         statusTone: matchStatus.tone,
         collectionLabel: `${recordedDataCount}/${totalDataSlots}`,
@@ -322,10 +325,7 @@ function getAssignmentColumns(
       const prefillParams = new URLSearchParams({
         match: String(params.row.matchNumber),
       });
-
-      if (config.slot !== "redAlliance" && config.slot !== "blueAlliance") {
-        prefillParams.set("position", config.slot);
-      }
+      prefillParams.set("position", config.slot);
 
       return (
         <Stack
@@ -411,6 +411,10 @@ export default function ScoutingSchedule({
     project.scoutingSchedule?.mode ??
       getDefaultScheduleMode(project.matchCollectionMode)
   );
+  const [workingBlockSize, setWorkingBlockSize] =
+    React.useState<ScoutingScheduleBlockSize>(
+      getScoutingScheduleBlockSize(project.scoutingSchedule?.blockSize)
+    );
   const [workingScouterNames, setWorkingScouterNames] = React.useState<
     string[]
   >(project.scoutingSchedule?.scouterNames ?? []);
@@ -424,6 +428,7 @@ export default function ScoutingSchedule({
   const [isEditMode, setIsEditMode] = React.useState(!project.scoutingSchedule);
   const [isSaving, setIsSaving] = React.useState(false);
   const [saveError, setSaveError] = React.useState<string | null>(null);
+  const [regenerateAfterMatch, setRegenerateAfterMatch] = React.useState("");
   const [coverageByMatch, setCoverageByMatch] =
     React.useState<ProjectMatchCoverageByMatch>({});
   const [isLoadingCoverage, setIsLoadingCoverage] = React.useState(false);
@@ -516,6 +521,9 @@ export default function ScoutingSchedule({
     setWorkingMode(
       nextSavedSchedule?.mode ??
         getDefaultScheduleMode(project.matchCollectionMode)
+    );
+    setWorkingBlockSize(
+      getScoutingScheduleBlockSize(nextSavedSchedule?.blockSize)
     );
     setWorkingScouterNames(nextSavedSchedule?.scouterNames ?? []);
     setIsEditMode(!nextSavedSchedule);
@@ -710,8 +718,10 @@ export default function ScoutingSchedule({
   const configurationNeedsRegeneration =
     isEditMode &&
     draftSchedule != null &&
-    JSON.stringify(draftSchedule.scouterNames) !==
-      JSON.stringify(normalizedWorkingScouterNames);
+    (JSON.stringify(draftSchedule.scouterNames) !==
+      JSON.stringify(normalizedWorkingScouterNames) ||
+      getScoutingScheduleBlockSize(draftSchedule.blockSize) !==
+        workingBlockSize);
 
   const hasDraftSchedule =
     draftSchedule != null && draftSchedule.matches.length > 0;
@@ -719,6 +729,19 @@ export default function ScoutingSchedule({
     savedSchedule != null && savedSchedule.matches.length > 0;
   const showConfigurationEditor = isEditMode || !hasSavedSchedule;
   const minimumScoutersForMode = getMinimumScoutersForMode(workingMode);
+  const matchNumbersWithRecordedData = React.useMemo(
+    () =>
+      Object.entries(coverageByMatch)
+        .filter(([, coverage]) => coverage?.hasAnyData)
+        .map(([matchNumber]) => Number(matchNumber))
+        .filter((matchNumber) => Number.isFinite(matchNumber))
+        .sort((a, b) => a - b),
+    [coverageByMatch]
+  );
+  const hasPersistedMatchData = matchNumbersWithRecordedData.length > 0;
+  const latestRecordedMatchNumber = hasPersistedMatchData
+    ? matchNumbersWithRecordedData[matchNumbersWithRecordedData.length - 1]
+    : null;
 
   const processRowUpdate = React.useCallback(
     (newRow: GridRowModel<DisplayRow>) => {
@@ -779,13 +802,59 @@ export default function ScoutingSchedule({
     }
 
     try {
-      setDraftSchedule(
-        generateFairScoutingSchedule(
-          workingMode,
-          matchNumbers,
-          normalizedWorkingScouterNames
-        )
-      );
+      const parsedRegenerateAfterMatch = regenerateAfterMatch.trim()
+        ? Number(regenerateAfterMatch.trim())
+        : null;
+
+      if (
+        parsedRegenerateAfterMatch != null &&
+        (!Number.isInteger(parsedRegenerateAfterMatch) ||
+          parsedRegenerateAfterMatch < 0)
+      ) {
+        setSaveError("Enter a valid match number to regenerate after.");
+        return;
+      }
+
+      const sourceSchedule = draftSchedule ?? savedSchedule;
+
+      if (parsedRegenerateAfterMatch != null) {
+        if (!sourceSchedule || sourceSchedule.matches.length === 0) {
+          setSaveError(
+            "Generate or load an existing schedule before regenerating after a specific match."
+          );
+          return;
+        }
+
+        if (
+          !sourceSchedule.matches.some(
+            (entry) => entry.matchNumber <= parsedRegenerateAfterMatch
+          )
+        ) {
+          setSaveError(
+            "Choose a match number that exists in the current scouting schedule."
+          );
+          return;
+        }
+
+        setDraftSchedule(
+          regenerateFairScoutingScheduleAfterMatch(
+            sourceSchedule,
+            parsedRegenerateAfterMatch,
+            normalizedWorkingScouterNames,
+            workingBlockSize
+          )
+        );
+      } else {
+        setDraftSchedule(
+          generateFairScoutingSchedule(
+            workingMode,
+            matchNumbers,
+            normalizedWorkingScouterNames,
+            workingBlockSize
+          )
+        );
+      }
+
       setSaveError(null);
       setIsEditMode(true);
     } catch (error) {
@@ -797,9 +866,13 @@ export default function ScoutingSchedule({
       );
     }
   }, [
+    draftSchedule,
     matchNumbers,
     minimumScoutersForMode,
     normalizedWorkingScouterNames,
+    regenerateAfterMatch,
+    savedSchedule,
+    workingBlockSize,
     workingMode,
   ]);
 
@@ -810,12 +883,14 @@ export default function ScoutingSchedule({
         : buildBlankScoutingSchedule(
             workingMode,
             matchNumbers,
-            normalizedWorkingScouterNames
+            normalizedWorkingScouterNames,
+            workingBlockSize
           )
     );
     setWorkingMode(
       savedSchedule?.mode ?? getDefaultScheduleMode(project.matchCollectionMode)
     );
+    setWorkingBlockSize(getScoutingScheduleBlockSize(savedSchedule?.blockSize));
     setWorkingScouterNames(savedSchedule?.scouterNames ?? []);
     setSaveError(null);
     setIsEditMode(true);
@@ -824,6 +899,7 @@ export default function ScoutingSchedule({
     normalizedWorkingScouterNames,
     project.matchCollectionMode,
     savedSchedule,
+    workingBlockSize,
     workingMode,
   ]);
 
@@ -832,6 +908,7 @@ export default function ScoutingSchedule({
     setWorkingMode(
       savedSchedule?.mode ?? getDefaultScheduleMode(project.matchCollectionMode)
     );
+    setWorkingBlockSize(getScoutingScheduleBlockSize(savedSchedule?.blockSize));
     setWorkingScouterNames(savedSchedule?.scouterNames ?? []);
     setSaveError(null);
     setIsEditMode(!savedSchedule);
@@ -864,6 +941,7 @@ export default function ScoutingSchedule({
 
       validateScoutingScheduleDocument({
         mode: workingMode,
+        blockSize: workingBlockSize,
         scouterNames: normalizedWorkingScouterNames,
         matches: draftSchedule.matches,
       });
@@ -871,6 +949,7 @@ export default function ScoutingSchedule({
       const nextSchedule: ScoutingScheduleDoc = {
         ...draftSchedule,
         mode: workingMode,
+        blockSize: workingBlockSize,
         scouterNames: normalizedWorkingScouterNames,
         updatedAt: new Date().toISOString(),
       };
@@ -900,6 +979,7 @@ export default function ScoutingSchedule({
     normalizedWorkingScouterNames,
     project.id,
     toast,
+    workingBlockSize,
     workingMode,
   ]);
 
@@ -1215,13 +1295,7 @@ export default function ScoutingSchedule({
     const params = new URLSearchParams({
       match: String(matchSlotModal.matchNumber),
     });
-
-    if (
-      matchSlotModal.slot !== "redAlliance" &&
-      matchSlotModal.slot !== "blueAlliance"
-    ) {
-      params.set("position", matchSlotModal.slot);
-    }
+    params.set("position", matchSlotModal.slot);
 
     return `/scouting-projects/${project.id}/match-scouting?${params.toString()}`;
   }, [matchSlotModal, project.id]);
@@ -1452,9 +1526,21 @@ export default function ScoutingSchedule({
 
                     {configurationNeedsRegeneration ? (
                       <Alert severity="info">
-                        The scouter list or schedule mode changed. Regenerate
+                        The scouter list or match group size changed. Regenerate
                         the schedule before saving so the table stays
                         consistent.
+                      </Alert>
+                    ) : null}
+
+                    {hasPersistedMatchData &&
+                    regenerateAfterMatch.trim() === "" ? (
+                      <Alert severity="warning">
+                        Match scouting data already exists through at least
+                        match {latestRecordedMatchNumber}. Leaving
+                        &quot;Regenerate After Match&quot; blank will rebuild
+                        those saved assignments too. To keep the earlier matches
+                        unchanged, enter that match number or a later one before
+                        regenerating.
                       </Alert>
                     ) : null}
 
@@ -1472,45 +1558,6 @@ export default function ScoutingSchedule({
                             direction={{ xs: "column", md: "row" }}
                             spacing={2}
                           >
-                            <Stack spacing={1} sx={{ minWidth: { md: 220 } }}>
-                              <FieldLabelWithHelp
-                                label="Schedule Mode"
-                                tooltip="Robot mode creates six scouting positions per match. Alliance mode creates one red and one blue assignment per match."
-                              />
-
-                              {hasSavedSchedule ? (
-                                <TextField
-                                  size="small"
-                                  value={workingMode}
-                                  InputProps={{ readOnly: true }}
-                                  helperText="Schedule mode is locked after the first save."
-                                />
-                              ) : (
-                                <FormControl fullWidth size="small">
-                                  <InputLabel id="schedule-mode-label">
-                                    Schedule Mode
-                                  </InputLabel>
-                                  <Select
-                                    labelId="schedule-mode-label"
-                                    label="Schedule Mode"
-                                    value={workingMode}
-                                    disabled={!isEditMode || !canEdit}
-                                    onChange={(event) =>
-                                      setWorkingMode(
-                                        event.target
-                                          .value as ScoutingScheduleMode
-                                      )
-                                    }
-                                  >
-                                    <MenuItem value="robot">Robot</MenuItem>
-                                    <MenuItem value="alliance">
-                                      Alliance
-                                    </MenuItem>
-                                  </Select>
-                                </FormControl>
-                              )}
-                            </Stack>
-
                             <Stack spacing={1} sx={{ flex: 1 }}>
                               <FieldLabelWithHelp
                                 label="Scouters"
@@ -1550,9 +1597,81 @@ export default function ScoutingSchedule({
                                 )}
                               />
                             </Stack>
+
+                            <Stack
+                              spacing={1}
+                              sx={{
+                                minWidth: { md: 240 },
+                                px: { xs: 0.5, md: 1 },
+                                pt: 0.25,
+                              }}
+                            >
+                              <FieldLabelWithHelp
+                                label="Match Group Size"
+                                tooltip="Choose how many matches should share the same scouter assignments before the schedule rotates to a new group."
+                              />
+
+                              <Slider
+                                value={workingBlockSize}
+                                onChange={(_, value) =>
+                                  setWorkingBlockSize(
+                                    value as ScoutingScheduleBlockSize
+                                  )
+                                }
+                                disabled={!isEditMode || !canEdit}
+                                min={SCOUTING_SCHEDULE_BLOCK_SIZE_OPTIONS[0]}
+                                max={
+                                  SCOUTING_SCHEDULE_BLOCK_SIZE_OPTIONS[
+                                    SCOUTING_SCHEDULE_BLOCK_SIZE_OPTIONS.length -
+                                      1
+                                  ]
+                                }
+                                marks={SCOUTING_SCHEDULE_BLOCK_SIZE_OPTIONS.map(
+                                  (value) => ({
+                                    value,
+                                    label: String(value),
+                                  })
+                                )}
+                                step={null}
+                                valueLabelDisplay="auto"
+                                sx={{
+                                  mt: 0.5,
+                                  mb: 1.5,
+                                  mx: 0.5,
+                                  "& .MuiSlider-markLabel": {
+                                    mt: 1,
+                                  },
+                                }}
+                              />
+
+                              <Typography
+                                variant="body2"
+                                color="text.secondary"
+                                sx={{ mt: 2 }}
+                              >
+                                Assignments rotate every {workingBlockSize}{" "}
+                                matches.
+                              </Typography>
+                            </Stack>
                           </Stack>
 
                           <Stack direction="row" spacing={1} flexWrap="wrap">
+                            <TextField
+                              size="small"
+                              type="number"
+                              label="Regenerate After Match"
+                              value={regenerateAfterMatch}
+                              onChange={(event) =>
+                                setRegenerateAfterMatch(event.target.value)
+                              }
+                              disabled={
+                                !isEditMode || !canEdit || isLoadingMatches
+                              }
+                              sx={{ width: { xs: "100%", sm: 220 } }}
+                              helperText="Leave blank to regenerate the full schedule."
+                              inputProps={{ min: 0, step: 1 }}
+                            />
+
                             <Button
                               variant="contained"
                               startIcon={<RestartAltOutlinedIcon />}
@@ -1613,9 +1732,9 @@ export default function ScoutingSchedule({
 
                     {!effectiveSchedule && !isLoadingMatches ? (
                       <Alert severity="info">
-                        No schedule has been generated yet. Add your scouters,
-                        pick a mode, and generate the table from this
-                        event&apos;s qualification matches.
+                        No schedule has been generated yet. Add your scouters
+                        and generate the table from this event&apos;s
+                        qualification matches.
                       </Alert>
                     ) : null}
 
@@ -1993,3 +2112,7 @@ export default function ScoutingSchedule({
 }
 
 // TODO -- implement column groups and make them collapsible (only want to see red, only want to see blue, etc.)
+
+// TODO -- if the schedule needs to be updated mid-competition, add the option to say "only edit matches after X number"
+
+// TODO -- add import CSV option that matches the export format, for easy manual editing in spreadsheet software

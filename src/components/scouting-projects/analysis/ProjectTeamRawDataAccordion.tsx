@@ -12,12 +12,12 @@ import {
 import { DataGrid, type GridColDef } from "@mui/x-data-grid";
 
 import type {
-  ProjectTeamRawTable,
-  ProjectTeamRawTableRow,
-} from "@/lib/scouting-projects/analysis/buildProjectTeamAnalysisOverview";
+  ProjectRawTable,
+  ProjectRawTableRow,
+} from "@/lib/scouting-projects/analysis/rawTables";
 
 type Props = {
-  table: ProjectTeamRawTable;
+  table: ProjectRawTable;
   defaultExpanded?: boolean;
 };
 
@@ -25,7 +25,7 @@ export default function ProjectTeamRawDataAccordion({
   table,
   defaultExpanded = false,
 }: Props) {
-  const columns = React.useMemo<GridColDef<ProjectTeamRawTableRow>[]>(
+  const columns = React.useMemo<GridColDef<ProjectRawTableRow>[]>(
     () =>
       table.columns.map((column) => ({
         field: column.field,
@@ -95,7 +95,7 @@ export default function ProjectTeamRawDataAccordion({
             </Typography>
           </Stack>
         ) : (
-          <DataGrid<ProjectTeamRawTableRow>
+          <DataGrid<ProjectRawTableRow>
             rows={table.rows}
             columns={columns}
             autoHeight

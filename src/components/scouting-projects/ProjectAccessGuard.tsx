@@ -5,6 +5,7 @@ import { CircularProgress, Stack } from "@mui/material";
 
 import NoAccess from "@/components/auth/NoAccess";
 import { useAuth } from "@/components/app/providers/AuthProvider";
+import ArchivedProjectContent from "@/components/scouting-projects/ArchivedProjectContent";
 import {
   getProjectMemberRole,
   type ScoutingProjectDoc,
@@ -43,6 +44,10 @@ export default function ProjectAccessGuard({ project, children }: Props) {
     return (
       <NoAccess note="If you should have access, ask an owner or admin to add your account to this project." />
     );
+  }
+
+  if (project.status === "inactive") {
+    return <ArchivedProjectContent>{children}</ArchivedProjectContent>;
   }
 
   return <>{children}</>;

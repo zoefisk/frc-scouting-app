@@ -14,6 +14,7 @@ import {
   type DocumentData,
 } from "firebase/firestore";
 import {
+  getScoutingScheduleBlockSize,
   ProjectAllianceSelectorRole,
   ProjectMemberRole,
   ScoutingProjectDoc,
@@ -58,6 +59,38 @@ function normalizeProjectDoc(
   const memberUids = Array.isArray(data.memberUids)
     ? data.memberUids
     : members.map((member) => member.uid);
+  const scoutingSchedule =
+    data.scoutingSchedule &&
+    typeof data.scoutingSchedule === "object" &&
+    !Array.isArray(data.scoutingSchedule) &&
+    (data.scoutingSchedule as { mode?: unknown }).mode &&
+    Array.isArray(
+      (data.scoutingSchedule as { scouterNames?: unknown }).scouterNames
+    ) &&
+    Array.isArray((data.scoutingSchedule as { matches?: unknown }).matches) &&
+    typeof (data.scoutingSchedule as { updatedAt?: unknown }).updatedAt ===
+      "string"
+      ? {
+          mode: (
+            data.scoutingSchedule as {
+              mode: NonNullable<ScoutingProjectDoc["scoutingSchedule"]>["mode"];
+            }
+          ).mode,
+          blockSize: getScoutingScheduleBlockSize(
+            (data.scoutingSchedule as { blockSize?: number }).blockSize
+          ),
+          scouterNames: (data.scoutingSchedule as { scouterNames: string[] })
+            .scouterNames,
+          matches: (
+            data.scoutingSchedule as {
+              matches: NonNullable<
+                ScoutingProjectDoc["scoutingSchedule"]
+              >["matches"];
+            }
+          ).matches,
+          updatedAt: (data.scoutingSchedule as { updatedAt: string }).updatedAt,
+        }
+      : undefined;
 
   return {
     id,
@@ -71,6 +104,7 @@ function normalizeProjectDoc(
       typeof data.lockAllianceSelectorEditing === "boolean"
         ? data.lockAllianceSelectorEditing
         : false,
+    scoutingSchedule,
     members,
     memberUids,
   };
@@ -149,9 +183,10 @@ export async function updateScoutingProjectClient(
       | "memberUids"
       | "members"
       | "activeQuestionnaireIds"
-      | "scoutingSchedule"
     >
-  >
+  > & {
+    scoutingSchedule?: ScoutingProjectDoc["scoutingSchedule"] | null;
+  }
 ): Promise<void> {
   const ref = doc(db, PROJECTS_COLLECTION, projectId);
 

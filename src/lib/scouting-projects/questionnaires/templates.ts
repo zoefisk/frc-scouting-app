@@ -1,7 +1,9 @@
 import type { QuestionnaireDefinition } from "@/lib/scouting/questionnaire/types";
+import { matchScoutingAllianceV1 } from "@/lib/scouting/questionnaire/builtins/matchScoutingAllianceV1";
 import { matchScoutingV1 } from "@/lib/scouting/questionnaire/builtins/matchScoutingV1";
 import { pitScoutingV1 } from "@/lib/scouting/questionnaire/builtins/pitScoutingV1";
 import type { ProjectQuestionnaireKind } from "@/lib/scouting-projects/questionnaires/types";
+import type { MatchCollectionMode } from "@/lib/scouting-projects/types";
 
 function cloneDefinition(
   definition: QuestionnaireDefinition
@@ -10,9 +12,35 @@ function cloneDefinition(
 }
 
 export function buildDefaultQuestionnaireTemplate(
-  kind: ProjectQuestionnaireKind
+  kind: ProjectQuestionnaireKind,
+  options?: {
+    matchCollectionMode?: MatchCollectionMode | null;
+  }
 ): QuestionnaireDefinition {
-  return cloneDefinition(kind === "match" ? matchScoutingV1 : pitScoutingV1);
+  if (kind === "pit") {
+    return cloneDefinition(pitScoutingV1);
+  }
+
+  return cloneDefinition(
+    options?.matchCollectionMode === "alliance"
+      ? matchScoutingAllianceV1
+      : matchScoutingV1
+  );
+}
+
+export function getDefaultQuestionnaireTemplateId(
+  kind: ProjectQuestionnaireKind,
+  options?: {
+    matchCollectionMode?: MatchCollectionMode | null;
+  }
+): string {
+  if (kind === "pit") {
+    return pitScoutingV1.id;
+  }
+
+  return options?.matchCollectionMode === "alliance"
+    ? matchScoutingAllianceV1.id
+    : matchScoutingV1.id;
 }
 
 export function buildScratchQuestionnaireTemplate(

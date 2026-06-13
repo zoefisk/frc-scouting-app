@@ -4,12 +4,18 @@ import type {
   QuestionnaireAnswers,
   QuestionnaireDefinition,
 } from "@/lib/scouting/questionnaire/types";
+import type {
+  AllianceTeamSetup,
+  MatchCollectionMode,
+} from "@/components/scouting/submission/types";
 import { TeamOption } from "@/lib/scouting/tba/loadEventTeams";
 
 export type DraftScoutingPosition =
+  | "blueAlliance"
   | "blue1"
   | "blue2"
   | "blue3"
+  | "redAlliance"
   | "red1"
   | "red2"
   | "red3";
@@ -22,7 +28,9 @@ export type InProgressMatchScoutingSnapshot = {
   matchNumber: string;
   scoutingPosition: DraftScoutingPosition | null;
   teamPresence: DraftTeamPresence;
+  matchCollectionMode?: MatchCollectionMode;
   selectedTeam: TeamOption | null;
+  allianceTeams?: AllianceTeamSetup[];
   robotPosition: DraftRobotPosition;
   answers: QuestionnaireAnswers;
 };
@@ -71,6 +79,7 @@ export function shouldCacheInProgressMatchScouting(
     snapshot.eventKey.trim() !== "" ||
     snapshot.matchNumber.trim() !== "" ||
     snapshot.scoutingPosition != null ||
+    (snapshot.allianceTeams ?? []).length > 0 ||
     snapshot.selectedTeam != null ||
     snapshot.robotPosition != null ||
     snapshot.teamPresence !== "present" ||

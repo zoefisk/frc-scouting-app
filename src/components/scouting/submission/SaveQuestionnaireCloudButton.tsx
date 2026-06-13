@@ -11,6 +11,10 @@ import type {
   QuestionnaireDefinition,
 } from "@/lib/scouting/questionnaire/types";
 import { ScoutingSetupState } from "@/components/scouting/submission/types";
+import {
+  buildGenericQuestionnairePayload,
+  buildMatchQuestionnairePayloads,
+} from "@/lib/scouting/match/buildSubmissionPayloads";
 
 type Props = {
   questionnaire: QuestionnaireDefinition;
@@ -20,53 +24,6 @@ type Props = {
   onReset?: () => void;
   onSuccess?: () => void;
 };
-
-function buildGenericQuestionnairePayload(
-  questionnaire: QuestionnaireDefinition,
-  answers: QuestionnaireAnswers,
-  setup: ScoutingSetupState,
-  entryId: string
-) {
-  const numericMatchNumber = setup.matchNumber
-    ? Number(setup.matchNumber)
-    : null;
-  const selectedTeam = setup.selectedTeam;
-
-  return {
-    v: 1,
-    type: "questionnaire_response",
-    entryId,
-    projectId: setup.projectId ?? null,
-    eventKey: setup.eventKey,
-    matchNumber: numericMatchNumber,
-    scoutingPosition: setup.scoutingPosition ?? null,
-    teamPresence: setup.teamPresence ?? null,
-    teamKey: selectedTeam?.key ?? null,
-    teamNumber: selectedTeam?.team_number ?? null,
-    teamName:
-      selectedTeam?.nickname ?? selectedTeam?.name ?? selectedTeam?.key ?? "",
-    selectedTeamKey: selectedTeam?.key ?? null,
-    questionnaire: {
-      id: questionnaire.id,
-      name: questionnaire.name,
-      version: questionnaire.version,
-    },
-    setup: {
-      kind: setup.kind,
-      projectId: setup.projectId ?? null,
-      eventKey: setup.eventKey,
-      matchNumber: numericMatchNumber,
-      scoutingPosition: setup.scoutingPosition ?? null,
-      teamPresence: setup.teamPresence ?? null,
-      teamKey: selectedTeam?.key ?? null,
-      teamNumber: selectedTeam?.team_number ?? null,
-      teamName:
-        selectedTeam?.nickname ?? selectedTeam?.name ?? selectedTeam?.key ?? "",
-    },
-    answers,
-    savedAt: new Date().toISOString(),
-  };
-}
 
 export default function SaveQuestionnaireCloudButton({
   questionnaire,
@@ -79,7 +36,30 @@ export default function SaveQuestionnaireCloudButton({
   const toast = useToast();
 
   const handleSaveCloud = async () => {
-    if (!setup.selectedTeam?.team_number) {
+    const selectedAllianceTeams =
+      setup.matchCollectionMode === "alliance"
+        ? (setup.allianceTeams ?? []).filter((entry) => entry.team != null)
+        : [];
+
+    if (
+      setup.kind === "match" &&
+      setup.matchCollectionMode === "alliance" &&
+      selectedAllianceTeams.length !== 3
+    ) {
+      toast.warning("All three alliance teams must be available.");
+      return;
+    }
+
+    if (setup.kind === "pit" && !setup.selectedTeam?.team_number) {
+      toast.warning("No team selected.");
+      return;
+    }
+
+    if (
+      setup.kind === "match" &&
+      setup.matchCollectionMode !== "alliance" &&
+      !setup.selectedTeam?.team_number
+    ) {
       toast.warning("No team selected.");
       return;
     }
@@ -91,29 +71,48 @@ export default function SaveQuestionnaireCloudButton({
     }
 
     try {
-      const entryId =
-        typeof crypto !== "undefined" && "randomUUID" in crypto
-          ? crypto.randomUUID()
-          : `${Date.now()}-${setup.selectedTeam.key}`;
-
-      const payload = buildGenericQuestionnairePayload(
-        questionnaire,
-        answers,
-        setup,
-        entryId
-      );
-
       if (setup.kind === "match") {
-        await saveMatchScoutingEntry({
-          eventKey: setup.eventKey,
-          matchNumber,
-          entryId,
-          payload,
-        });
+        const payloads = buildMatchQuestionnairePayloads(
+          questionnaire,
+          answers,
+          setup,
+          (teamKey) =>
+            typeof crypto !== "undefined" && "randomUUID" in crypto
+              ? crypto.randomUUID()
+              : `${Date.now()}-${teamKey ?? "match"}`
+        );
+
+        await Promise.all(
+          payloads.map(({ entryId, payload }) =>
+            saveMatchScoutingEntry({
+              eventKey: setup.eventKey,
+              matchNumber,
+              entryId,
+              payload,
+            })
+          )
+        );
       } else {
+        const selectedTeam = setup.selectedTeam;
+
+        if (!selectedTeam) {
+          toast.warning("No team selected.");
+          return;
+        }
+
+        const entryId =
+          typeof crypto !== "undefined" && "randomUUID" in crypto
+            ? crypto.randomUUID()
+            : `${Date.now()}-${selectedTeam.key}`;
+        const payload = buildGenericQuestionnairePayload(
+          questionnaire,
+          answers,
+          setup,
+          entryId
+        );
         await savePitScoutingEntry({
           eventKey: setup.eventKey,
-          teamKey: setup.selectedTeam.key,
+          teamKey: selectedTeam.key,
           entryId,
           payload,
         });

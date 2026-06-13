@@ -263,3 +263,5 @@ export default function QrScannerPage() {
     </div>
   );
 }
+
+// TODO -- this is out of date with the new system for alliance/robot scouting working properly

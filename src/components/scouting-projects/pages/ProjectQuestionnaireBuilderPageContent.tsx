@@ -31,6 +31,7 @@ import { ZodError } from "zod";
 import NoAccess from "@/components/auth/NoAccess";
 import UnsavedChangesGuard from "@/components/app/guards/UnsavedChangesGuard";
 import JsonEditor from "@/components/common/JsonEditor";
+import AllianceMatchSetupTable from "@/components/scouting/form/AllianceMatchSetupTable";
 import QuestionnaireForm from "@/components/scouting/form/QuestionnaireForm";
 import PerformanceRatingsCard from "@/components/scouting/form/PerformanceRatingsCard";
 import EventField from "@/components/scouting/form/fields/match-info/EventField";
@@ -57,6 +58,7 @@ import type {
 } from "@/lib/scouting-projects/questionnaires/types";
 import {
   getProjectMemberRole,
+  type MatchCollectionMode,
   type ScoutingProjectDoc,
 } from "@/lib/scouting-projects/types";
 
@@ -103,6 +105,27 @@ type Props = {
 
 type BuilderTemplate = "default" | "scratch";
 
+const PREVIEW_MATCH_TEAMS: TeamOption[] = [
+  {
+    key: "frc155",
+    team_number: 155,
+    nickname: "The TechnoNuts",
+    name: "The TechnoNuts",
+  },
+  {
+    key: "frc230",
+    team_number: 230,
+    nickname: "Gaelhawks",
+    name: "Gaelhawks",
+  },
+  {
+    key: "frc195",
+    team_number: 195,
+    nickname: "CyberKnights",
+    name: "CyberKnights",
+  },
+];
+
 function getKindLabel(kind: ProjectQuestionnaireKind) {
   return kind === "match" ? "Match Scouting" : "Pit Scouting";
 }
@@ -114,18 +137,10 @@ function QuestionnairePreviewSetupCard({
   kind: ProjectQuestionnaireKind;
   project: ScoutingProjectDoc & { id: string };
 }) {
-  const previewTeams = React.useMemo<TeamOption[]>(
-    () => [
-      {
-        key: "frc155",
-        team_number: 155,
-        nickname: "The TechnoNuts",
-        name: "The TechnoNuts",
-      },
-    ],
-    []
-  );
-  const previewScoutingPosition: ScoutingPosition = "red2";
+  const matchCollectionMode: MatchCollectionMode =
+    project.matchCollectionMode ?? "robot";
+  const previewScoutingPosition: ScoutingPosition =
+    matchCollectionMode === "alliance" ? "redAlliance" : "red2";
 
   return (
     <Card variant="outlined">
@@ -150,39 +165,74 @@ function QuestionnairePreviewSetupCard({
                 <ScoutingPositionField
                   value={previewScoutingPosition}
                   onChange={() => {}}
+                  mode={matchCollectionMode}
                   disabled
                 />
-                <RobotPositionField
-                  value="center"
-                  onChange={() => {}}
-                  disabled
+                {matchCollectionMode === "robot" ? (
+                  <RobotPositionField
+                    value="center"
+                    onChange={() => {}}
+                    disabled
+                  />
+                ) : (
+                  <div style={{ flex: 1 }} />
+                )}
+              </Stack>
+
+              {matchCollectionMode === "robot" ? (
+                <>
+                  <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
+                    <TextField
+                      select
+                      label="Team Presence"
+                      value="present"
+                      fullWidth
+                      size="small"
+                      disabled
+                    >
+                      <MenuItem value="present">Present</MenuItem>
+                      <MenuItem value="absent">Absent</MenuItem>
+                      <MenuItem value="surrogate">Surrogate</MenuItem>
+                    </TextField>
+
+                    <div style={{ flex: 1 }} />
+                  </Stack>
+
+                  <TeamAutocompleteField
+                    teams={PREVIEW_MATCH_TEAMS}
+                    selectedTeamKey="frc155"
+                    loading={false}
+                    disabled
+                    onChange={() => {}}
+                  />
+                </>
+              ) : (
+                <AllianceMatchSetupTable
+                  allianceColor="red"
+                  rows={[
+                    {
+                      slot: 1,
+                      team: PREVIEW_MATCH_TEAMS[0] ?? null,
+                      teamPresence: "present",
+                      robotPosition: "left",
+                    },
+                    {
+                      slot: 2,
+                      team: PREVIEW_MATCH_TEAMS[1] ?? null,
+                      teamPresence: "present",
+                      robotPosition: "center",
+                    },
+                    {
+                      slot: 3,
+                      team: PREVIEW_MATCH_TEAMS[2] ?? null,
+                      teamPresence: "present",
+                      robotPosition: "right",
+                    },
+                  ]}
+                  onPresenceChange={() => {}}
+                  onRobotPositionChange={() => {}}
                 />
-              </Stack>
-
-              <Stack direction={{ xs: "column", md: "row" }} spacing={2}>
-                <TextField
-                  select
-                  label="Team Presence"
-                  value="present"
-                  fullWidth
-                  size="small"
-                  disabled
-                >
-                  <MenuItem value="present">Present</MenuItem>
-                  <MenuItem value="absent">Absent</MenuItem>
-                  <MenuItem value="surrogate">Surrogate</MenuItem>
-                </TextField>
-
-                <div style={{ flex: 1 }} />
-              </Stack>
-
-              <TeamAutocompleteField
-                teams={previewTeams}
-                selectedTeamKey="frc155"
-                loading={false}
-                disabled
-                onChange={() => {}}
-              />
+              )}
             </>
           ) : (
             <>
@@ -194,7 +244,7 @@ function QuestionnairePreviewSetupCard({
               />
 
               <TeamAutocompleteField
-                teams={previewTeams}
+                teams={PREVIEW_MATCH_TEAMS}
                 selectedTeamKey="frc155"
                 loading={false}
                 disabled
@@ -584,8 +634,13 @@ export default function ProjectQuestionnaireBuilderPageContent({
                   </Typography>
                 </Stack>
                 <Typography color="text.secondary">
-                  Copy the current built-in {getKindLabel(kind).toLowerCase()}{" "}
-                  form and customize it for this project.
+                  {kind === "match"
+                    ? `Copy the current built-in ${
+                        (project.matchCollectionMode ?? "robot") === "alliance"
+                          ? "alliance-mode"
+                          : "robot-mode"
+                      } ${getKindLabel(kind).toLowerCase()} form and customize it for this project.`
+                    : `Copy the current built-in ${getKindLabel(kind).toLowerCase()} form and customize it for this project.`}
                 </Typography>
                 <Button
                   variant="contained"
@@ -808,7 +863,21 @@ export default function ProjectQuestionnaireBuilderPageContent({
                       showSubmitButton={false}
                     />
 
-                    <PerformanceRatingsCard answers={{}} locked />
+                    <PerformanceRatingsCard
+                      answers={{}}
+                      locked
+                      mode={
+                        kind === "match"
+                          ? (project.matchCollectionMode ?? "robot")
+                          : "robot"
+                      }
+                      teams={
+                        kind === "match" &&
+                        (project.matchCollectionMode ?? "robot") === "alliance"
+                          ? PREVIEW_MATCH_TEAMS
+                          : [PREVIEW_MATCH_TEAMS[0]]
+                      }
+                    />
 
                     <Stack direction={{ xs: "column", sm: "row" }} spacing={1}>
                       <Button

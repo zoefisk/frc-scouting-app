@@ -72,12 +72,15 @@ export default async function ProjectMatchScoutingPage({
             questionnaire={questionnaire}
             defaultEventKey={project.eventKey}
             defaultMatchNumber={resolvedSearchParams?.match}
+            matchCollectionMode={project.matchCollectionMode ?? "robot"}
             lockEvent
             enableDraftHydration={false}
             defaultScoutingPosition={
+              resolvedSearchParams?.position === "blueAlliance" ||
               resolvedSearchParams?.position === "blue1" ||
               resolvedSearchParams?.position === "blue2" ||
               resolvedSearchParams?.position === "blue3" ||
+              resolvedSearchParams?.position === "redAlliance" ||
               resolvedSearchParams?.position === "red1" ||
               resolvedSearchParams?.position === "red2" ||
               resolvedSearchParams?.position === "red3"

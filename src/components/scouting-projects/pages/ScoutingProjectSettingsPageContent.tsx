@@ -19,6 +19,7 @@ import {
 } from "@mui/material";
 
 import NoAccess from "@/components/auth/NoAccess";
+import ArchivedProjectContent from "@/components/scouting-projects/ArchivedProjectContent";
 import { useAuth } from "@/components/app/providers/AuthProvider";
 import { useSyncMode } from "@/components/app/providers/SyncModeProvider";
 import { getCurrentUserIdToken } from "@/lib/firebase/client/auth";
@@ -26,13 +27,17 @@ import { updateScoutingProjectClient } from "@/lib/firebase/client/projects";
 import { getUserProfile } from "@/lib/firebase/client/users";
 import {
   removeJoinedScoutingProject,
+  restoreArchivedScoutingProjectLocally,
   unpinScoutingProject,
 } from "@/lib/db/projects";
 import { useToast } from "@/lib/hooks/useToast";
 import {
+  getMatchCollectionModeDescription,
+  getMatchCollectionModeLabel,
   getProjectMemberRole,
   hasMatchData,
   hasPitData,
+  type MatchCollectionMode,
   type ProjectAllianceSelectorRole,
   type ProjectDataMode,
   type ProjectMemberRole,
@@ -83,6 +88,8 @@ export default function ScoutingProjectSettingsPageContent({
   const [projectDataMode, setProjectDataMode] = React.useState(
     project.dataMode
   );
+  const [projectMatchCollectionMode, setProjectMatchCollectionMode] =
+    React.useState<MatchCollectionMode | null>(project.matchCollectionMode);
   const showsMatchBuilder = hasMatchData(projectDataMode);
   const showsPitBuilder = hasPitData(projectDataMode);
   const [allowMemberInvites, setAllowMemberInvites] = React.useState(
@@ -174,6 +181,10 @@ export default function ScoutingProjectSettingsPageContent({
   React.useEffect(() => {
     setProjectDataMode(project.dataMode);
   }, [project.dataMode]);
+
+  React.useEffect(() => {
+    setProjectMatchCollectionMode(project.matchCollectionMode);
+  }, [project.matchCollectionMode]);
 
   React.useEffect(() => {
     setAllowMemberInvites(project.allowMemberInvites);
@@ -367,6 +378,40 @@ export default function ScoutingProjectSettingsPageContent({
     }
   };
 
+  const handleMatchCollectionModeChange = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const nextValue = event.target.value as MatchCollectionMode;
+    const previousValue = projectMatchCollectionMode;
+
+    if (!canManageProject || hasMatchScoutingData) {
+      return;
+    }
+
+    if (!effectiveOnline) {
+      toast.warning("Project settings cannot be changed while offline.");
+      return;
+    }
+
+    setProjectMatchCollectionMode(nextValue);
+    setIsSavingStatus(true);
+
+    try {
+      await updateScoutingProjectClient(project.id, {
+        matchCollectionMode: nextValue,
+        ...(project.scoutingSchedule ? { scoutingSchedule: null } : {}),
+      });
+      toast.success("Match scouting mode updated.");
+      router.refresh();
+    } catch (error) {
+      console.error("Failed to update match scouting mode:", error);
+      setProjectMatchCollectionMode(previousValue);
+      toast.error("Could not update match scouting mode.");
+    } finally {
+      setIsSavingStatus(false);
+    }
+  };
+
   const handleMemberRoleChange = async (
     uid: string,
     nextRole: Extract<ProjectMemberRole, "admin" | "member">
@@ -475,6 +520,7 @@ export default function ScoutingProjectSettingsPageContent({
 
       await Promise.all([
         removeJoinedScoutingProject(project.id),
+        restoreArchivedScoutingProjectLocally(project.id),
         unpinScoutingProject(project.id),
       ]);
 
@@ -529,7 +575,7 @@ export default function ScoutingProjectSettingsPageContent({
     );
   }
 
-  return (
+  const content = (
     <Stack spacing={3}>
       <Box>
         <Typography variant="h4" sx={{ fontWeight: 700 }}>
@@ -659,6 +705,50 @@ export default function ScoutingProjectSettingsPageContent({
                 Only the project owner can change whether this project uses
                 match scouting, pit scouting, or both.
               </Typography>
+            </>
+          ) : null}
+
+          {showsMatchBuilder ? (
+            <>
+              <TextField
+                select
+                size="small"
+                label="Match Scouting Mode"
+                value={projectMatchCollectionMode ?? "robot"}
+                disabled={
+                  !canManageProject || hasMatchScoutingData || isSavingStatus
+                }
+                onChange={handleMatchCollectionModeChange}
+                sx={{ maxWidth: 260 }}
+                helperText={getMatchCollectionModeDescription(
+                  projectMatchCollectionMode
+                )}
+              >
+                <MenuItem value="robot">
+                  {getMatchCollectionModeLabel("robot")}
+                </MenuItem>
+                <MenuItem value="alliance">
+                  {getMatchCollectionModeLabel("alliance")}
+                </MenuItem>
+              </TextField>
+
+              <Typography variant="body2" color="text.secondary">
+                This controls how the scouting schedule is generated and how
+                match scouting assignments are organized across the project.
+              </Typography>
+
+              {hasMatchScoutingData ? (
+                <Alert severity="info">
+                  Match scouting mode is locked because match scouting data has
+                  already been collected for this project.
+                </Alert>
+              ) : project.scoutingSchedule ? (
+                <Alert severity="warning">
+                  Changing match scouting mode will clear the current scouting
+                  schedule so it can be regenerated with the new assignment
+                  layout.
+                </Alert>
+              ) : null}
             </>
           ) : null}
         </Stack>
@@ -894,6 +984,12 @@ export default function ScoutingProjectSettingsPageContent({
         </Link>
       </Box>
     </Stack>
+  );
+
+  return project.status === "inactive" ? (
+    <ArchivedProjectContent>{content}</ArchivedProjectContent>
+  ) : (
+    content
   );
 }
 

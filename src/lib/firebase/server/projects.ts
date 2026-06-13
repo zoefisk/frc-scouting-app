@@ -8,6 +8,7 @@ import {
 } from "@/lib/firebase/server/entries";
 import { deleteProjectQuestionnairesServer } from "@/lib/firebase/server/questionnaires";
 import {
+  getScoutingScheduleBlockSize,
   ProjectAllianceSelectorRole,
   ProjectMemberRole,
   ScoutingProjectDoc,
@@ -55,6 +56,42 @@ function normalizeProjectDoc(
   const memberUids = Array.isArray(normalized.memberUids)
     ? normalized.memberUids
     : members.map((member) => member.uid);
+  const scoutingSchedule =
+    normalized.scoutingSchedule &&
+    typeof normalized.scoutingSchedule === "object" &&
+    !Array.isArray(normalized.scoutingSchedule) &&
+    (normalized.scoutingSchedule as { mode?: unknown }).mode &&
+    Array.isArray(
+      (normalized.scoutingSchedule as { scouterNames?: unknown }).scouterNames
+    ) &&
+    Array.isArray(
+      (normalized.scoutingSchedule as { matches?: unknown }).matches
+    ) &&
+    typeof (normalized.scoutingSchedule as { updatedAt?: unknown })
+      .updatedAt === "string"
+      ? {
+          mode: (
+            normalized.scoutingSchedule as {
+              mode: NonNullable<ScoutingProjectDoc["scoutingSchedule"]>["mode"];
+            }
+          ).mode,
+          blockSize: getScoutingScheduleBlockSize(
+            (normalized.scoutingSchedule as { blockSize?: number }).blockSize
+          ),
+          scouterNames: (
+            normalized.scoutingSchedule as { scouterNames: string[] }
+          ).scouterNames,
+          matches: (
+            normalized.scoutingSchedule as {
+              matches: NonNullable<
+                ScoutingProjectDoc["scoutingSchedule"]
+              >["matches"];
+            }
+          ).matches,
+          updatedAt: (normalized.scoutingSchedule as { updatedAt: string })
+            .updatedAt,
+        }
+      : undefined;
 
   return {
     ...(normalized as ScoutingProjectDoc),
@@ -67,6 +104,7 @@ function normalizeProjectDoc(
       typeof normalized.lockAllianceSelectorEditing === "boolean"
         ? normalized.lockAllianceSelectorEditing
         : false,
+    scoutingSchedule,
     members,
     memberUids,
   };
@@ -211,9 +249,10 @@ export async function updateScoutingProjectServer(
       | "memberUids"
       | "members"
       | "activeQuestionnaireIds"
-      | "scoutingSchedule"
     >
-  >
+  > & {
+    scoutingSchedule?: ScoutingProjectDoc["scoutingSchedule"] | null;
+  }
 ): Promise<void> {
   await db
     .collection(PROJECTS_COLLECTION)

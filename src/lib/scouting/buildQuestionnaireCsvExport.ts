@@ -28,15 +28,23 @@ function getAllFields(
 export function isQuestionnaireSetupComplete(
   setup: ScoutingSetupState
 ): boolean {
-  if (!setup.eventKey || !setup.selectedTeam) {
+  if (!setup.eventKey) {
     return false;
   }
 
   if (setup.kind === "pit") {
-    return true;
+    return setup.selectedTeam != null;
   }
 
-  return Boolean(setup.matchNumber && setup.scoutingPosition);
+  if (!setup.matchNumber || !setup.scoutingPosition) {
+    return false;
+  }
+
+  if (setup.matchCollectionMode === "alliance") {
+    return (setup.allianceTeams ?? []).length === 3;
+  }
+
+  return setup.selectedTeam != null;
 }
 
 export function buildQuestionnaireCsvExport({
@@ -56,6 +64,7 @@ export function buildQuestionnaireCsvExport({
     ["questionnaireName", questionnaire.name],
     ["questionnaireVersion", questionnaire.version],
     ["eventKey", setup.eventKey],
+    ["matchCollectionMode", setup.matchCollectionMode ?? ""],
     ["teamKey", setup.selectedTeam?.key ?? ""],
     ["teamNumber", setup.selectedTeam?.team_number ?? ""],
     [
@@ -83,6 +92,27 @@ export function buildQuestionnaireCsvExport({
     metadataEntries.push(["teamPresence", setup.teamPresence]);
   }
 
+  if (setup.matchCollectionMode === "alliance") {
+    for (const team of setup.allianceTeams ?? []) {
+      metadataEntries.push([
+        `allianceTeam${team.slot}`,
+        team.team
+          ? `#${team.team.team_number} ${
+              team.team.nickname ?? team.team.name ?? team.team.key
+            }`
+          : "",
+      ]);
+      metadataEntries.push([
+        `allianceTeam${team.slot}Presence`,
+        team.teamPresence,
+      ]);
+      metadataEntries.push([
+        `allianceTeam${team.slot}Position`,
+        team.robotPosition ?? "",
+      ]);
+    }
+  }
+
   const answerEntries: Array<[string, unknown]> = fields.map((field) => [
     field.id,
     answers[field.id] ?? "",
@@ -99,7 +129,9 @@ export function buildQuestionnaireCsvExport({
 
   const teamLabel = setup.selectedTeam?.team_number
     ? `team-${setup.selectedTeam.team_number}`
-    : "team";
+    : setup.matchCollectionMode === "alliance"
+      ? (setup.scoutingPosition ?? "alliance")
+      : "team";
   const matchLabel = setup.matchNumber || setup.kind;
 
   const fileName = `${questionnaire.id}-${setup.eventKey}-${matchLabel}-${teamLabel}.csv`;

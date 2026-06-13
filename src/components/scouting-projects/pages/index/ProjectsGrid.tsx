@@ -5,9 +5,13 @@ import ProjectCard from "./ProjectCard";
 export default function ProjectsGrid({
   projects,
   onTogglePinned,
+  onArchive,
+  onRestore,
 }: {
   projects: ProjectListItem[];
   onTogglePinned: (projectId: string, pinned: boolean) => Promise<void>;
+  onArchive: (project: ProjectListItem) => void;
+  onRestore: (project: ProjectListItem) => void;
 }) {
   return (
     <Box
@@ -25,6 +29,8 @@ export default function ProjectsGrid({
           key={project.id}
           project={project}
           onTogglePinned={onTogglePinned}
+          onArchive={onArchive}
+          onRestore={onRestore}
         />
       ))}
     </Box>

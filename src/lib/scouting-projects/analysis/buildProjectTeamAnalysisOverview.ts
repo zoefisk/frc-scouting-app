@@ -8,6 +8,10 @@ import {
 } from "@/lib/firebase/server/entries";
 import { PERF_FIELDS } from "@/lib/scouting/performanceRatings";
 import type { QuestionnaireDefinition } from "@/lib/scouting/questionnaire/types";
+import {
+  buildQuestionnaireRawTable,
+  type ProjectRawTable,
+} from "@/lib/scouting-projects/analysis/rawTables";
 import { resolveProjectQuestionnaireServer } from "@/lib/scouting-projects/questionnaires/resolveProjectQuestionnaireServer";
 import {
   hasMatchData,
@@ -28,22 +32,6 @@ export type ProjectTeamPerformancePoint = {
   totalScore: number | null;
   result: "W" | "L" | "T";
   allianceColor: "red" | "blue";
-};
-
-export type ProjectTeamRawTableColumn = {
-  field: string;
-  headerName: string;
-};
-
-export type ProjectTeamRawTableRow = Record<string, string | number | null> & {
-  id: string;
-};
-
-export type ProjectTeamRawTable = {
-  title: string;
-  description: string;
-  columns: ProjectTeamRawTableColumn[];
-  rows: ProjectTeamRawTableRow[];
 };
 
 export type ProjectTeamRadarSeries = {
@@ -73,8 +61,8 @@ export type ProjectTeamAnalysisOverview = {
   performancePoints: ProjectTeamPerformancePoint[];
   radarSeries: ProjectTeamRadarSeries[];
   radarSampleSize: number;
-  matchRawTable: ProjectTeamRawTable | null;
-  pitRawTable: ProjectTeamRawTable | null;
+  matchRawTable: ProjectRawTable | null;
+  pitRawTable: ProjectRawTable | null;
   missingScouting: ProjectTeamMissingScouting;
 };
 
@@ -110,103 +98,20 @@ function formatSortOrderValue(
     : "-";
 }
 
-function formatSavedAt(value: string | null | undefined): string {
-  if (!value) {
-    return "-";
-  }
-
-  const date = new Date(value);
-  if (Number.isNaN(date.getTime())) {
-    return value;
-  }
-
-  return date.toLocaleString("en-US", {
-    month: "short",
-    day: "numeric",
-    hour: "numeric",
-    minute: "2-digit",
-  });
-}
-
-function formatAnswerValue(value: unknown): string | number | null {
-  if (value == null) {
-    return null;
-  }
-
-  if (typeof value === "string" || typeof value === "number") {
-    return value;
-  }
-
-  if (typeof value === "boolean") {
-    return value ? "Yes" : "No";
-  }
-
-  if (Array.isArray(value)) {
-    return value.map((item) => String(item)).join(", ");
-  }
-
-  return JSON.stringify(value);
-}
-
 function buildRawTable(
   title: string,
   description: string,
   questionnaire: QuestionnaireDefinition | null,
   entries: QuestionnaireEntryDoc[],
   kind: "match" | "pit"
-): ProjectTeamRawTable | null {
-  if (!questionnaire) {
-    return null;
-  }
-
-  const columns: ProjectTeamRawTableColumn[] = [
-    { field: "savedAt", headerName: "Saved" },
-  ];
-
-  if (kind === "match") {
-    columns.push(
-      { field: "matchNumber", headerName: "Match" },
-      { field: "scoutingPosition", headerName: "Pos" },
-      { field: "teamPresence", headerName: "Present" }
-    );
-  }
-
-  for (const section of questionnaire.sections) {
-    for (const field of section.fields) {
-      columns.push({
-        field: field.id,
-        headerName: field.label,
-      });
-    }
-  }
-
-  const rows = entries.map((entry, index) => {
-    const baseRow: ProjectTeamRawTableRow = {
-      id:
-        entry.entryId ??
-        entry.submissionId ??
-        `${kind}-${entry.matchNumber ?? "pit"}-${index}`,
-      savedAt: formatSavedAt(entry.savedAt),
-      matchNumber: entry.matchNumber ?? null,
-      scoutingPosition: entry.scoutingPosition ?? null,
-      teamPresence: entry.teamPresence ?? null,
-    };
-
-    for (const section of questionnaire.sections) {
-      for (const field of section.fields) {
-        baseRow[field.id] = formatAnswerValue(entry.answers?.[field.id]);
-      }
-    }
-
-    return baseRow;
-  });
-
-  return {
+): ProjectRawTable | null {
+  return buildQuestionnaireRawTable({
     title,
     description,
-    columns,
-    rows,
-  };
+    questionnaire,
+    entries,
+    kind,
+  });
 }
 
 function buildRadarSummaryFromEntries(

@@ -4,13 +4,17 @@ import { getAppSetting, saveAppSetting } from "@/lib/db/indexDb";
 import type {
   ProjectAccessMode,
   ProjectDataMode,
+  ProjectMemberRole,
   ProjectStatus,
 } from "@/lib/scouting-projects/types";
 
 const JOINED_SCOUTING_PROJECTS_KEY = "joinedScoutingProjects";
 const PINNED_SCOUTING_PROJECT_IDS_KEY = "pinnedScoutingProjectIds";
+const ARCHIVED_SCOUTING_PROJECT_IDS_KEY = "archivedScoutingProjectIds";
 export const PINNED_SCOUTING_PROJECTS_CHANGED_EVENT =
   "scouting-projects:pinned-changed";
+export const ARCHIVED_SCOUTING_PROJECTS_CHANGED_EVENT =
+  "scouting-projects:archived-changed";
 
 export type JoinedScoutingProjectRecord = {
   projectId: string;
@@ -20,6 +24,7 @@ export type JoinedScoutingProjectRecord = {
   status: ProjectStatus;
   accessMode: ProjectAccessMode;
   dataMode: ProjectDataMode;
+  memberRole?: ProjectMemberRole | null;
   inviteLinkToken: string;
   joinedAt: string;
   lastOpenedAt: string;
@@ -113,6 +118,18 @@ function emitPinnedProjectsChanged(nextPinnedIds: string[]) {
   );
 }
 
+function emitArchivedProjectsChanged(nextArchivedIds: string[]) {
+  if (typeof window === "undefined") {
+    return;
+  }
+
+  window.dispatchEvent(
+    new CustomEvent(ARCHIVED_SCOUTING_PROJECTS_CHANGED_EVENT, {
+      detail: { archivedProjectIds: nextArchivedIds },
+    })
+  );
+}
+
 export async function pinScoutingProject(projectId: string): Promise<void> {
   const existing = await getPinnedScoutingProjectIds();
 
@@ -137,5 +154,47 @@ export async function unpinScoutingProject(projectId: string): Promise<void> {
 
   if (!haveSamePinnedIds(existing, nextPinnedIds)) {
     emitPinnedProjectsChanged(nextPinnedIds);
+  }
+}
+
+export async function getArchivedScoutingProjectIds(): Promise<string[]> {
+  const existing =
+    (await getAppSetting<string[]>(ARCHIVED_SCOUTING_PROJECT_IDS_KEY)) ?? [];
+
+  return existing.filter(
+    (projectId, index) =>
+      typeof projectId === "string" &&
+      projectId.trim() !== "" &&
+      existing.indexOf(projectId) === index
+  );
+}
+
+export async function archiveScoutingProjectLocally(
+  projectId: string
+): Promise<void> {
+  const existing = await getArchivedScoutingProjectIds();
+
+  if (existing.includes(projectId)) {
+    return;
+  }
+
+  const nextArchivedIds = [projectId, ...existing];
+  await saveAppSetting(ARCHIVED_SCOUTING_PROJECT_IDS_KEY, nextArchivedIds);
+
+  if (!haveSamePinnedIds(existing, nextArchivedIds)) {
+    emitArchivedProjectsChanged(nextArchivedIds);
+  }
+}
+
+export async function restoreArchivedScoutingProjectLocally(
+  projectId: string
+): Promise<void> {
+  const existing = await getArchivedScoutingProjectIds();
+  const nextArchivedIds = existing.filter((id) => id !== projectId);
+
+  await saveAppSetting(ARCHIVED_SCOUTING_PROJECT_IDS_KEY, nextArchivedIds);
+
+  if (!haveSamePinnedIds(existing, nextArchivedIds)) {
+    emitArchivedProjectsChanged(nextArchivedIds);
   }
 }

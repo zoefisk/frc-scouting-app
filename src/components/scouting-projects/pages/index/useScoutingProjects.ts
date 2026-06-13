@@ -3,10 +3,14 @@
 import React from "react";
 import { useAuth } from "@/components/app/providers/AuthProvider";
 import {
+  ARCHIVED_SCOUTING_PROJECTS_CHANGED_EVENT,
+  archiveScoutingProjectLocally,
   getJoinedScoutingProjects,
+  getArchivedScoutingProjectIds,
   getPinnedScoutingProjectIds,
   PINNED_SCOUTING_PROJECTS_CHANGED_EVENT,
   pinScoutingProject,
+  restoreArchivedScoutingProjectLocally,
   unpinScoutingProject,
 } from "@/lib/db/projects";
 import { getOfflineProjectBundleRecords } from "@/lib/db/offlineProjects";
@@ -53,7 +57,9 @@ export function useScoutingProjects() {
 
       const projectMap = new Map<string, ProjectListItem>();
       const pinnedProjectIds = await getPinnedScoutingProjectIds();
+      const archivedProjectIds = await getArchivedScoutingProjectIds();
       const pinnedProjectIdSet = new Set(pinnedProjectIds);
+      const archivedProjectIdSet = new Set(archivedProjectIds);
 
       const [joinedOnDevice, offlineProjectBundles] = await Promise.all([
         getJoinedScoutingProjects(),
@@ -70,7 +76,10 @@ export function useScoutingProjects() {
           dataMode: project.dataMode,
           accessMode: project.accessMode,
           source: "device",
+          memberRole: project.memberRole ?? null,
           pinned: pinnedProjectIdSet.has(project.projectId),
+          isGloballyArchived: project.status === "inactive",
+          isLocallyArchived: archivedProjectIdSet.has(project.projectId),
         });
       }
 
@@ -90,7 +99,10 @@ export function useScoutingProjects() {
           accessMode:
             bundle.accessMode === "anonymous" ? "anonymous" : "authenticated",
           source: "device",
+          memberRole: null,
           pinned: pinnedProjectIdSet.has(bundle.projectId),
+          isGloballyArchived: bundle.status === "inactive",
+          isLocallyArchived: archivedProjectIdSet.has(bundle.projectId),
         });
       }
 
@@ -111,7 +123,10 @@ export function useScoutingProjects() {
               dataMode: project.dataMode,
               accessMode: project.accessMode,
               source: role === "owner" || role === "admin" ? "owned" : "joined",
+              memberRole: role,
               pinned: pinnedProjectIdSet.has(project.id),
+              isGloballyArchived: project.status === "inactive",
+              isLocallyArchived: archivedProjectIdSet.has(project.id),
             });
           }
         } catch (err) {
@@ -144,7 +159,10 @@ export function useScoutingProjects() {
                 dataMode: project.dataMode,
                 accessMode: project.accessMode,
                 source: "joined",
+                memberRole: getProjectMemberRole(project, user.uid),
                 pinned: pinnedProjectIdSet.has(project.id),
+                isGloballyArchived: project.status === "inactive",
+                isLocallyArchived: archivedProjectIdSet.has(project.id),
               });
             }
           }
@@ -207,6 +225,24 @@ export function useScoutingProjects() {
     };
   }, [loadProjects]);
 
+  React.useEffect(() => {
+    function handleArchivedProjectsChanged() {
+      void loadProjects();
+    }
+
+    window.addEventListener(
+      ARCHIVED_SCOUTING_PROJECTS_CHANGED_EVENT,
+      handleArchivedProjectsChanged as EventListener
+    );
+
+    return () => {
+      window.removeEventListener(
+        ARCHIVED_SCOUTING_PROJECTS_CHANGED_EVENT,
+        handleArchivedProjectsChanged as EventListener
+      );
+    };
+  }, [loadProjects]);
+
   const togglePinned = React.useCallback(
     async (projectId: string, pinned: boolean) => {
       if (pinned) {
@@ -218,10 +254,22 @@ export function useScoutingProjects() {
     []
   );
 
+  const archiveLocally = React.useCallback(async (projectId: string) => {
+    await unpinScoutingProject(projectId);
+    await archiveScoutingProjectLocally(projectId);
+  }, []);
+
+  const restoreLocally = React.useCallback(async (projectId: string) => {
+    await restoreArchivedScoutingProjectLocally(projectId);
+  }, []);
+
   return {
     projects,
     error,
     isLoading: loading || isLoadingProjects,
     togglePinned,
+    archiveLocally,
+    restoreLocally,
+    reloadProjects: loadProjects,
   };
 }

@@ -5,6 +5,9 @@ export type ProjectStatus = "active" | "inactive";
 export type ScoutingScheduleMode = MatchCollectionMode;
 export type ProjectMemberRole = "owner" | "admin" | "member";
 export type ProjectAllianceSelectorRole = "student_leader";
+export type ScoutingScheduleBlockSize = 3 | 5 | 10 | 15 | 20;
+
+export const SCOUTING_SCHEDULE_BLOCK_SIZE_OPTIONS = [3, 5, 10, 15, 20] as const;
 
 export type ScoutingProjectMember = {
   uid: string;
@@ -28,6 +31,7 @@ export type ScoutingScheduleEntry = {
 
 export type ScoutingScheduleDoc = {
   mode: ScoutingScheduleMode;
+  blockSize?: ScoutingScheduleBlockSize;
   scouterNames: string[];
   matches: ScoutingScheduleEntry[];
   updatedAt: string;
@@ -72,6 +76,42 @@ export function hasMatchData(dataMode: ProjectDataMode): boolean {
 
 export function hasPitData(dataMode: ProjectDataMode): boolean {
   return dataMode === "pit" || dataMode === "both";
+}
+
+export function getScoutingScheduleBlockSize(
+  blockSize: number | null | undefined
+): ScoutingScheduleBlockSize {
+  if (
+    blockSize === 3 ||
+    blockSize === 5 ||
+    blockSize === 10 ||
+    blockSize === 15 ||
+    blockSize === 20
+  ) {
+    return blockSize;
+  }
+
+  return 5;
+}
+
+export function getMatchCollectionModeLabel(
+  mode: MatchCollectionMode | null | undefined
+): string {
+  if (mode === "alliance") {
+    return "Alliance (2 scouts)";
+  }
+
+  return "Robot (6 scouts)";
+}
+
+export function getMatchCollectionModeDescription(
+  mode: MatchCollectionMode | null | undefined
+): string {
+  if (mode === "alliance") {
+    return "Two scouts cover each match, with one scout assigned per alliance.";
+  }
+
+  return "Six scouts cover each match, with one scout assigned to each robot.";
 }
 
 export function getProjectMemberRole(

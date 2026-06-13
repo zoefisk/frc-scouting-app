@@ -22,6 +22,7 @@ import QrCodeScannerIcon from "@mui/icons-material/QrCodeScanner";
 import SettingsIcon from "@mui/icons-material/Settings";
 
 import ScoutingSchedule from "@/components/scouting-projects/dashboard/ScoutingSchedule";
+import ArchivedProjectContent from "@/components/scouting-projects/ArchivedProjectContent";
 import {
   getProjectMemberRole,
   hasMatchData,
@@ -328,7 +329,7 @@ export default function ScoutingProjectPageContent({
     );
   }
 
-  return (
+  const content = (
     <Stack spacing={3}>
       <Box
         sx={{
@@ -534,5 +535,11 @@ export default function ScoutingProjectPageContent({
 
       <ScoutingSchedule project={project} />
     </Stack>
+  );
+
+  return project.status === "inactive" ? (
+    <ArchivedProjectContent>{content}</ArchivedProjectContent>
+  ) : (
+    content
   );
 }

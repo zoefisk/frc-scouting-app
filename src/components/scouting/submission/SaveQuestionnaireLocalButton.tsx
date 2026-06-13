@@ -8,6 +8,10 @@ import type {
   QuestionnaireDefinition,
 } from "@/lib/scouting/questionnaire/types";
 import { ScoutingSetupState } from "@/components/scouting/submission/types";
+import {
+  buildGenericQuestionnairePayload,
+  buildMatchQuestionnairePayloads,
+} from "@/lib/scouting/match/buildSubmissionPayloads";
 
 type Props = {
   questionnaire: QuestionnaireDefinition;
@@ -17,53 +21,6 @@ type Props = {
   onReset?: () => void;
   onSuccess?: () => void;
 };
-
-function buildGenericQuestionnairePayload(
-  questionnaire: QuestionnaireDefinition,
-  answers: QuestionnaireAnswers,
-  setup: ScoutingSetupState,
-  submissionId: string
-) {
-  const numericMatchNumber = setup.matchNumber
-    ? Number(setup.matchNumber)
-    : null;
-  const selectedTeam = setup.selectedTeam;
-
-  return {
-    v: 1,
-    type: "questionnaire_response",
-    submissionId,
-    projectId: setup.projectId ?? null,
-    eventKey: setup.eventKey,
-    matchNumber: numericMatchNumber,
-    scoutingPosition: setup.scoutingPosition ?? null,
-    teamPresence: setup.teamPresence ?? null,
-    teamKey: selectedTeam?.key ?? null,
-    teamNumber: selectedTeam?.team_number ?? null,
-    teamName:
-      selectedTeam?.nickname ?? selectedTeam?.name ?? selectedTeam?.key ?? "",
-    selectedTeamKey: selectedTeam?.key ?? null,
-    questionnaire: {
-      id: questionnaire.id,
-      name: questionnaire.name,
-      version: questionnaire.version,
-    },
-    setup: {
-      kind: setup.kind,
-      projectId: setup.projectId ?? null,
-      eventKey: setup.eventKey,
-      matchNumber: numericMatchNumber,
-      scoutingPosition: setup.scoutingPosition ?? null,
-      teamPresence: setup.teamPresence ?? null,
-      teamKey: selectedTeam?.key ?? null,
-      teamNumber: selectedTeam?.team_number ?? null,
-      teamName:
-        selectedTeam?.nickname ?? selectedTeam?.name ?? selectedTeam?.key ?? "",
-    },
-    answers,
-    savedAt: new Date().toISOString(),
-  };
-}
 
 export default function SaveQuestionnaireLocalButton({
   questionnaire,
@@ -77,25 +34,49 @@ export default function SaveQuestionnaireLocalButton({
 
   const handleSaveLocal = async () => {
     try {
-      const submissionId =
-        typeof crypto !== "undefined" && "randomUUID" in crypto
-          ? crypto.randomUUID()
-          : `${Date.now()}-${setup.selectedTeam?.key ?? "response"}`;
+      if (setup.kind === "match") {
+        const payloads = buildMatchQuestionnairePayloads(
+          questionnaire,
+          answers,
+          setup,
+          (teamKey) =>
+            typeof crypto !== "undefined" && "randomUUID" in crypto
+              ? crypto.randomUUID()
+              : `${Date.now()}-${teamKey ?? "response"}`
+        );
 
-      const payload = buildGenericQuestionnairePayload(
-        questionnaire,
-        answers,
-        setup,
-        submissionId
-      );
+        await Promise.all(
+          payloads.map(({ entryId, payload }) =>
+            saveSubmission({
+              submissionId: entryId,
+              projectId: setup.projectId,
+              eventKey: setup.eventKey,
+              matchNumber: setup.matchNumber,
+              payload,
+            })
+          )
+        );
+      } else {
+        const submissionId =
+          typeof crypto !== "undefined" && "randomUUID" in crypto
+            ? crypto.randomUUID()
+            : `${Date.now()}-${setup.selectedTeam?.key ?? "response"}`;
 
-      await saveSubmission({
-        submissionId,
-        projectId: setup.projectId,
-        eventKey: setup.eventKey,
-        matchNumber: setup.matchNumber,
-        payload,
-      });
+        const payload = buildGenericQuestionnairePayload(
+          questionnaire,
+          answers,
+          setup,
+          submissionId
+        );
+
+        await saveSubmission({
+          submissionId,
+          projectId: setup.projectId,
+          eventKey: setup.eventKey,
+          matchNumber: setup.matchNumber,
+          payload,
+        });
+      }
 
       toast.success("Saved locally.");
       onSuccess?.();

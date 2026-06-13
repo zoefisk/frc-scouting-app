@@ -34,7 +34,9 @@ export type ScoutingPosition =
   | "blue3"
   | "red1"
   | "red2"
-  | "red3";
+  | "red3"
+  | "blueAlliance"
+  | "redAlliance";
 
 type LoadResult<T> = {
   data: T;
@@ -120,6 +122,38 @@ export function getSuggestedTeamKeyForSetup(args: {
       : match.alliances.red.team_keys;
 
   return teamKeys[slotIndex] ?? null;
+}
+
+export function getSuggestedAllianceTeamKeysForSetup(args: {
+  matches: RawTbaMatch[];
+  matchNumber: string;
+  scoutingPosition: ScoutingPosition | null;
+}): string[] {
+  const { matches, matchNumber, scoutingPosition } = args;
+
+  if (
+    !matchNumber ||
+    (scoutingPosition !== "redAlliance" && scoutingPosition !== "blueAlliance")
+  ) {
+    return [];
+  }
+
+  const parsedMatchNumber = Number(matchNumber);
+  if (!Number.isFinite(parsedMatchNumber)) {
+    return [];
+  }
+
+  const match = matches.find(
+    (m) => m.comp_level === "qm" && m.match_number === parsedMatchNumber
+  );
+
+  if (!match) {
+    return [];
+  }
+
+  return scoutingPosition === "blueAlliance"
+    ? [...match.alliances.blue.team_keys]
+    : [...match.alliances.red.team_keys];
 }
 
 function isMatchPlayed(match: RawTbaMatch): boolean {

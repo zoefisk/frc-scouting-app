@@ -249,6 +249,27 @@ export async function getProjectTeamMatchQuestionnaireEntries(
     });
 }
 
+export async function getProjectMatchQuestionnaireEntriesForMatch(
+  projectId: string,
+  eventKey: string,
+  matchNumber: number
+): Promise<QuestionnaireEntryDoc[]> {
+  const entries = await getAllMatchScoutingEntriesForEvent(eventKey);
+
+  return (entries as QuestionnaireEntryDoc[])
+    .filter((entry) => {
+      const setup = entry.setup;
+      return (
+        setup?.kind === "match" &&
+        setup.projectId === projectId &&
+        setup.matchNumber === matchNumber
+      );
+    })
+    .sort((a, b) =>
+      String(b.savedAt ?? "").localeCompare(String(a.savedAt ?? ""))
+    );
+}
+
 export async function getProjectMatchQuestionnaireEntriesForScheduleSlot(
   projectId: string,
   eventKey: string,

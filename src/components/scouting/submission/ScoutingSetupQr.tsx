@@ -20,6 +20,7 @@ import {
   isScoutingSetupComplete,
   ScoutingSetupState,
 } from "@/components/scouting/submission/types";
+import { buildGenericQuestionnairePayload } from "@/lib/scouting/match/buildSubmissionPayloads";
 
 type Props = {
   questionnaire: QuestionnaireDefinition;
@@ -63,36 +64,12 @@ export default function ScoutingSetupQr({
   const isIncomplete = !isScoutingSetupComplete(setup);
 
   const payload = React.useMemo(() => {
-    return {
-      v: 1,
-      type: "questionnaire_response",
-
-      questionnaire: {
-        id: questionnaire.id,
-        name: questionnaire.name,
-        version: questionnaire.version,
-      },
-
-      setup: {
-        kind: setup.kind,
-        projectId: setup.projectId ?? null,
-        eventKey: setup.eventKey,
-        matchNumber: setup.matchNumber ?? null,
-        scoutingPosition: setup.scoutingPosition ?? null,
-        teamPresence: setup.teamPresence ?? null,
-        teamKey: setup.selectedTeam?.key ?? null,
-        teamNumber: setup.selectedTeam?.team_number ?? null,
-        teamName:
-          setup.selectedTeam?.nickname ??
-          setup.selectedTeam?.name ??
-          setup.selectedTeam?.key ??
-          "",
-      },
-
-      answers: sanitizeAnswersForQr(answers),
-
-      savedAt: new Date().toISOString(),
-    };
+    return buildGenericQuestionnairePayload(
+      questionnaire,
+      sanitizeAnswersForQr(answers),
+      setup,
+      "qr-preview"
+    );
   }, [questionnaire, answers, setup]);
 
   const qrValue = React.useMemo(() => JSON.stringify(payload), [payload]);
@@ -155,14 +132,31 @@ export default function ScoutingSetupQr({
                 </Typography>
               ) : null}
               <Typography variant="body2">
-                <strong>Team:</strong>{" "}
-                {setup.selectedTeam
-                  ? `#${setup.selectedTeam.team_number} ${
-                      setup.selectedTeam.nickname ??
-                      setup.selectedTeam.name ??
-                      setup.selectedTeam.key
-                    }`
-                  : "None selected"}
+                <strong>
+                  {setup.matchCollectionMode === "alliance"
+                    ? "Alliance:"
+                    : "Team:"}
+                </strong>{" "}
+                {setup.matchCollectionMode === "alliance"
+                  ? (setup.allianceTeams ?? [])
+                      .map((entry) =>
+                        entry.team
+                          ? `#${entry.team.team_number} ${
+                              entry.team.nickname ??
+                              entry.team.name ??
+                              entry.team.key
+                            }`
+                          : null
+                      )
+                      .filter(Boolean)
+                      .join(", ")
+                  : setup.selectedTeam
+                    ? `#${setup.selectedTeam.team_number} ${
+                        setup.selectedTeam.nickname ??
+                        setup.selectedTeam.name ??
+                        setup.selectedTeam.key
+                      }`
+                    : "None selected"}
               </Typography>
               {setup.teamPresence ? (
                 <Typography variant="body2">

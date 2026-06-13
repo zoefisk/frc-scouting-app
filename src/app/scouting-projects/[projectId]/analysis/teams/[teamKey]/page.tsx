@@ -52,12 +52,6 @@ export default async function ProjectTeamAnalysisPage({ params }: Props) {
             eventInfo={overview.eventInfo}
           />
 
-          <Alert severity="info">
-            The radar profile is still using placeholder values for now. The
-            charts and raw response sections are already structured so we can
-            swap in real project-derived metrics next.
-          </Alert>
-
           {(overview.missingScouting.missingMatchNumbers.length > 0 ||
             overview.missingScouting.missingPit) && (
             <Alert severity="warning">

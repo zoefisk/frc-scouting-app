@@ -8,6 +8,8 @@ import {
   Typography,
 } from "@mui/material";
 import PushPinOutlinedIcon from "@mui/icons-material/PushPinOutlined";
+import ArchiveOutlinedIcon from "@mui/icons-material/ArchiveOutlined";
+import UnarchiveOutlinedIcon from "@mui/icons-material/UnarchiveOutlined";
 import type { ProjectListItem } from "./types";
 
 function sourceLabel(source: ProjectListItem["source"]) {
@@ -35,17 +37,33 @@ function getProjectStatusChipStyles(status: ProjectListItem["status"]) {
 export default function ProjectCard({
   project,
   onTogglePinned,
+  onArchive,
+  onRestore,
 }: {
   project: ProjectListItem;
   onTogglePinned: (projectId: string, pinned: boolean) => Promise<void>;
+  onArchive: (project: ProjectListItem) => void;
+  onRestore: (project: ProjectListItem) => void;
 }) {
+  const isArchived = project.isGloballyArchived || project.isLocallyArchived;
+  const canRestore = project.isGloballyArchived
+    ? project.memberRole === "owner"
+    : project.isLocallyArchived;
+  const archiveLabel = project.isGloballyArchived
+    ? "ARCHIVED"
+    : project.isLocallyArchived
+      ? "HIDDEN"
+      : null;
+
   return (
     <Box
       sx={{
         border: "1px solid rgba(15,23,42,0.08)",
         borderRadius: 4,
         p: 3,
-        backgroundColor: "white",
+        backgroundColor: isArchived ? "rgba(248,250,252,0.9)" : "white",
+        opacity: isArchived ? 0.82 : 1,
+        filter: isArchived ? "grayscale(0.28)" : "none",
       }}
     >
       <Stack spacing={2}>
@@ -75,6 +93,17 @@ export default function ProjectCard({
                 sx={{
                   backgroundColor: "rgba(37,99,235,0.12)",
                   color: "#1d4ed8",
+                  fontWeight: 700,
+                }}
+              />
+            ) : null}
+            {archiveLabel ? (
+              <Chip
+                label={archiveLabel}
+                size="small"
+                sx={{
+                  backgroundColor: "rgba(148,163,184,0.16)",
+                  color: "#475569",
                   fontWeight: 700,
                 }}
               />
@@ -114,21 +143,45 @@ export default function ProjectCard({
           justifyContent="space-between"
           alignItems="center"
         >
-          <Link href={`/scouting-projects/${project.id}`} prefetch={false}>
-            <Button variant="text" sx={{ px: 0 }}>
-              Open Project
-            </Button>
-          </Link>
+          <Stack direction="row" spacing={0.5} alignItems="center">
+            <Link href={`/scouting-projects/${project.id}`} prefetch={false}>
+              <Button variant="text" sx={{ px: 0 }}>
+                Open Project
+              </Button>
+            </Link>
 
-          <IconButton
-            aria-label={project.pinned ? "Unpin project" : "Pin project"}
-            onClick={() => void onTogglePinned(project.id, project.pinned)}
-            sx={{
-              color: project.pinned ? "#1d4ed8" : "text.secondary",
-            }}
-          >
-            <PushPinOutlinedIcon fontSize="small" />
-          </IconButton>
+            {canRestore ? (
+              <Button
+                variant="text"
+                size="small"
+                startIcon={<UnarchiveOutlinedIcon fontSize="small" />}
+                onClick={() => onRestore(project)}
+              >
+                Restore
+              </Button>
+            ) : !isArchived ? (
+              <Button
+                variant="text"
+                size="small"
+                startIcon={<ArchiveOutlinedIcon fontSize="small" />}
+                onClick={() => onArchive(project)}
+              >
+                Archive
+              </Button>
+            ) : null}
+          </Stack>
+
+          {!isArchived ? (
+            <IconButton
+              aria-label={project.pinned ? "Unpin project" : "Pin project"}
+              onClick={() => void onTogglePinned(project.id, project.pinned)}
+              sx={{
+                color: project.pinned ? "#1d4ed8" : "text.secondary",
+              }}
+            >
+              <PushPinOutlinedIcon fontSize="small" />
+            </IconButton>
+          ) : null}
         </Stack>
       </Stack>
     </Box>

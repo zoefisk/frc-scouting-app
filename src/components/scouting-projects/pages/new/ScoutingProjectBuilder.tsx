@@ -26,7 +26,11 @@ import {
   MIN_SCOUTING_PROJECT_YEAR,
   type CreateScoutingProjectInput,
 } from "@/lib/scouting-projects/validation";
-import { hasMatchData } from "@/lib/scouting-projects/types";
+import {
+  getMatchCollectionModeDescription,
+  getMatchCollectionModeLabel,
+  hasMatchData,
+} from "@/lib/scouting-projects/types";
 import { getCurrentUserIdToken } from "@/lib/firebase/client/auth";
 import CreateExampleProjectButton from "@/components/scouting-projects/CreateExampleProjectButton";
 import ProjectBuilderEventField from "@/components/scouting-projects/pages/new/ProjectBuilderEventField";
@@ -565,8 +569,8 @@ export default function ScoutingProjectBuilder() {
             {usesMatchData && (
               <Stack spacing={1}>
                 <FieldLabelWithHelp
-                  label="Match Collection Mode"
-                  tooltip="Choose whether each scout tracks one robot or records a full alliance during a match."
+                  label="Match Scouting Mode"
+                  tooltip="Choose whether your team assigns one scout per robot or one scout per alliance."
                 />
 
                 <TextField
@@ -582,11 +586,15 @@ export default function ScoutingProjectBuilder() {
                   error={Boolean(errors.matchCollectionMode)}
                   helperText={
                     errors.matchCollectionMode ??
-                    "Choose whether scouts collect one robot or a whole alliance."
+                    getMatchCollectionModeDescription(form.matchCollectionMode)
                   }
                 >
-                  <MenuItem value="robot">Robot</MenuItem>
-                  <MenuItem value="alliance">Alliance</MenuItem>
+                  <MenuItem value="robot">
+                    {getMatchCollectionModeLabel("robot")}
+                  </MenuItem>
+                  <MenuItem value="alliance">
+                    {getMatchCollectionModeLabel("alliance")}
+                  </MenuItem>
                 </TextField>
               </Stack>
             )}

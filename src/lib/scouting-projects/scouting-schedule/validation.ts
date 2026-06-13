@@ -1,11 +1,29 @@
 import { z } from "zod";
 import type {
+  ScoutingScheduleBlockSize,
   ScoutingScheduleEntry,
   ScoutingScheduleMode,
+} from "@/lib/scouting-projects/types";
+import {
+  SCOUTING_SCHEDULE_BLOCK_SIZE_OPTIONS,
+  getScoutingScheduleBlockSize,
 } from "@/lib/scouting-projects/types";
 
 export const MIN_SCOUTER_NAME_LENGTH = 1;
 export const MAX_SCOUTER_NAME_LENGTH = 50;
+
+const scoutingScheduleBlockSizeSchema = z
+  .number()
+  .int()
+  .refine(
+    (value): value is ScoutingScheduleBlockSize =>
+      SCOUTING_SCHEDULE_BLOCK_SIZE_OPTIONS.includes(
+        value as ScoutingScheduleBlockSize
+      ),
+    {
+      message: "Choose a valid match group size.",
+    }
+  );
 
 function normalizeScouterNamesForValidation(names: string[]): string[] {
   const seen = new Set<string>();
@@ -39,6 +57,9 @@ export function getMinimumScoutersMessage(mode: ScoutingScheduleMode): string {
 export const scoutingScheduleConfigSchema = z
   .object({
     mode: z.enum(["robot", "alliance"]),
+    blockSize: scoutingScheduleBlockSizeSchema.default(
+      getScoutingScheduleBlockSize(undefined)
+    ),
     scouterNames: z.array(
       z
         .string()
@@ -96,6 +117,9 @@ const scoutingScheduleEntrySchema = z.object({
 export const scoutingScheduleDocumentSchema = z
   .object({
     mode: z.enum(["robot", "alliance"]),
+    blockSize: scoutingScheduleBlockSizeSchema.default(
+      getScoutingScheduleBlockSize(undefined)
+    ),
     scouterNames: z.array(
       z
         .string()
@@ -151,6 +175,7 @@ export const scoutingScheduleDocumentSchema = z
 
 export type ScoutingScheduleDocumentInput = {
   mode: ScoutingScheduleMode;
+  blockSize: ScoutingScheduleBlockSize;
   scouterNames: string[];
   matches: ScoutingScheduleEntry[];
 };
